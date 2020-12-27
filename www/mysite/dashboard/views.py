@@ -11,6 +11,7 @@ from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
 from .logic.reults_visualization.sleep_graph import create_graph
+from .logic.sleep_diary.count_hilev import hilev
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .logic.utils_check import check_all_data, check_extracted_features, check_cached_data, check_model, \
@@ -297,7 +298,17 @@ def utils(request, action=None):
             logger.error('Validation failed with an exception.')
             context = {
                 'fail': 'Validation failed!'}
-
+    elif action == 'hilev':
+        logger.info('Calculate high level features')
+        if hilev():
+            logger.info('HiLev counted')
+            context = {
+                'ok': 'High level features counted'
+            }
+        else:
+            logger.error('Count high level features end up with exception.')
+            context = {
+                'fail': 'Count HiLev failed!'}
     else:
         context = {}
 

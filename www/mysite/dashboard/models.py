@@ -215,3 +215,36 @@ class RBDSQ(models.Model):
                 self.q9,
                 self.q10,
                 ].count(True)
+
+
+class SleepNight(models.Model):
+    diary_day = models.ForeignKey(SleepDiaryDay, on_delete=models.CASCADE)
+    data = models.ForeignKey(CsvData, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    start = models.DateTimeField('start')
+    end = models.DateField('end')
+    sleep_onset = models.DateField('sleep onset')
+    sleep_end = models.DateField('sleep end')
+    tst = models.PositiveIntegerField('total sleep time')
+    waso = models.PositiveIntegerField('wake after sleep onset')
+    se = models.PositiveIntegerField('sleep efficiency')
+
+    @property
+    def name(self):
+        split = path.split(self.data.data.path)
+        folder = f'{split[0]}/../predictions-fin'
+        name = f'{split[1]}_day_{self.diary_day.date}.xlsx'
+        if not path.exists(folder):
+            os.mkdir(folder)
+        return f'{folder}/{name}'
+
+    @staticmethod
+    def convert(n):
+        return timedelta(seconds=n)
+
+    def __str__(self):
+        return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} ' \
+               f'| Sleep onset:{self.sleep_onset} | Sleep end: {self.sleep_end} ' \
+               f'| Total sleep time: {self.convert(self.tst)} ' \
+               f'| Wake after sleep onset: {self.convert(self.waso)} ' \
+               f'| Sleep efficiency: {self.se:.1f}%'
