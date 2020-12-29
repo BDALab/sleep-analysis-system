@@ -65,6 +65,12 @@
                         {% autoescape off %}
                             {{ tup.0 }}
                         {% endautoescape %}
+                        {% if tup.2 %}
+                            Estimated: {{ tup.2 }}<br/>
+                        {% endif %}
+                        {% if tup.3 %}
+                            Diary: {{ tup.3 }}<br/>
+                        {% endif %}
                         <p><a href="{{ tup.1 }}" class="button button-small" download>Download data</a></p>
                     </div>
                 {% endfor %}

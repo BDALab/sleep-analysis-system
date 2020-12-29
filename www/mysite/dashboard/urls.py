@@ -1,5 +1,5 @@
-from django.urls import path
 from django.contrib import admin
+from django.urls import path
 
 from . import views
 
@@ -12,4 +12,5 @@ urlpatterns = [
     path('<code>/', views.detail, name='detail'),
     path('utils/<action>', views.utils, name='utils'),
     path('admin/', admin.site.urls),
+    path('set_timezone', views.set_timezone, name='set_timezone'),
 ]
