@@ -2,6 +2,7 @@ import os
 from datetime import timedelta, datetime
 from os import path
 
+import pytz
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
@@ -160,6 +161,29 @@ class SleepDiaryDay(models.Model):
             return datetime.combine(self.date + timedelta(days=1), time)
         return datetime.combine(self.date, time)
 
+    def __str__(self):
+        return f'Subject: {self.subject.code} | Date: {self.date} | {self.info}'
+
+    @property
+    def wake_intervals(self):
+        return WakeInterval.objects.filter(sleep_diary_day=self)
+
+    @property
+    def wake_intervals_str(self):
+        s = ''
+        for w in self.wake_intervals:
+            s += f'{w} | '
+        return s
+
+    @property
+    def info(self):
+        return f'Bed time: {self.sleep_time} ' \
+               f'| Sleep onset: {self.sleep_duration} ' \
+               f'| Wake count: {self.wake_count} ' \
+               f'| Wake ups: {self.wake_intervals_str}' \
+               f'| Sleep end: {self.wake_time} ' \
+               f'| Get up time: {self.get_up_time}'
+
 
 class WakeInterval(models.Model):
     sleep_diary_day = models.ForeignKey(SleepDiaryDay, on_delete=models.CASCADE)
@@ -167,11 +191,15 @@ class WakeInterval(models.Model):
     start = models.TimeField('start')
     end = models.TimeField('stop')
 
+    @property
     def duration(self):
         t1 = timedelta(hours=self.start.hour, minutes=self.start.minute)
         t2 = timedelta(hours=self.end.hour, minutes=self.end.minute)
         duration = t2 - t1
         return duration if duration.seconds > 60 else timedelta(minutes=1)
+
+    def __str__(self):
+        return f'{self.start}-{self.end} ({self.duration})'
 
 
 class RBDSQ(models.Model):
@@ -221,10 +249,8 @@ class SleepNight(models.Model):
     diary_day = models.ForeignKey(SleepDiaryDay, on_delete=models.CASCADE)
     data = models.ForeignKey(CsvData, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    start = models.DateTimeField('start')
-    end = models.DateField('end')
-    sleep_onset = models.DateField('sleep onset')
-    sleep_end = models.DateField('sleep end')
+    sleep_onset = models.DateTimeField('sleep onset')
+    sleep_end = models.DateTimeField('sleep end')
     tst = models.PositiveIntegerField('total sleep time')
     waso = models.PositiveIntegerField('wake after sleep onset')
     se = models.PositiveIntegerField('sleep efficiency')
@@ -242,9 +268,17 @@ class SleepNight(models.Model):
     def convert(n):
         return timedelta(seconds=n)
 
+    @property
+    def name_url(self):
+        return self.data.data.storage.url(self.name)
+
     def __str__(self):
-        return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} ' \
-               f'| Sleep onset:{self.sleep_onset} | Sleep end: {self.sleep_end} ' \
+        return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} | {self.info}'
+
+    @property
+    def info(self):
+        return f'Sleep onset: {self.sleep_onset.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Sleep end: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
                f'| Total sleep time: {self.convert(self.tst)} ' \
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
                f'| Sleep efficiency: {self.se:.1f}%'

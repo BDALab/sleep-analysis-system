@@ -56,4 +56,6 @@ scale_name = "SLEEP"
 
 prediction_name = "SLEEP_PREDICTION"
 
+hilev_prediction = 'PREDICTION'
+
 model_name = "Model D"

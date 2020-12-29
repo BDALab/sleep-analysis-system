@@ -1,5 +1,6 @@
 import logging
 
+import pytz
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -18,7 +19,7 @@ from .logic.utils_check import check_all_data, check_extracted_features, check_c
     check_predicted_features
 from .logic.utils_delete import delete_all_data, delete_cached_data, delete_extracted_features, delete_model, \
     delete_predicted_data
-from .models import Subject, CsvData, SleepDiaryDay, RBDSQ
+from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
 
 logger = logging.getLogger(__name__)
 
@@ -56,13 +57,22 @@ def detail(request, code):
             'subject': subject,
         }
 
-        csv_data = CsvData.objects.filter(subject=subject)
-        if csv_data.exists():
+        sleep_nights = SleepNight.objects.filter(subject=subject)
+        if sleep_nights.exists():
             data = []
-            for d in csv_data:
-                plot_div = create_graph(d)
-                data.append((plot_div, d.excel_prediction_url))
+            for night in sleep_nights:
+                plot_div = create_graph(night)
+                data.append((plot_div, night.name_url, night.info, night.diary_day.info))
             context['data'] = data
+
+        else:
+            csv_data = CsvData.objects.filter(subject=subject)
+            if csv_data.exists():
+                data = []
+                for d in csv_data:
+                    plot_div = create_graph(d)
+                    data.append((plot_div, d.excel_prediction_url))
+                context['data'] = data
 
         sleep_diary = SleepDiaryDay.objects.filter(subject=subject)
         if sleep_diary.exists():
@@ -313,3 +323,11 @@ def utils(request, action=None):
         context = {}
 
     return HttpResponse(template.render(context, request))
+
+
+def set_timezone(request):
+    if request.method == 'POST':
+        request.session['django_timezone'] = request.POST['timezone']
+        return redirect('/')
+    else:
+        return render(request, 'dashboard/timezone.html', {'timezones': pytz.common_timezones})
