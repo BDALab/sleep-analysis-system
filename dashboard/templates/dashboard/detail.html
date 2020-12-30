@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+{% include "dashboard/head.html" %}
+
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'dashboard/default.css' %}" media="all">
+<link rel="stylesheet" type="text/css" href="{% static 'dashboard/fonts.css' %}" media="all">
+<style>
+    table {
+        border-collapse: collapse;
+        width: 92%;
+        margin: 0% 4%;
+    }
+
+    td, th {
+        border: 1px solid #FFF;
+        text-align: left;
+        padding: 8px;
+        color: #FFF;
+    }
+
+    tr:nth-child(even) {
+        background-color: #6FC06A;
+    }
+
+    tr:nth-child(odd) {
+        background-color: #8DCB89;
+    }
+</style>
+
+
+<div id="header-wrapper">
+    <div id="header" class="container">
+        <div id="menu">
+            <ul>
+                <li><a href="{% url 'dashboard:index' %}" accesskey="1" title="">Homepage</a></li>
+                <li class="current_page_item"><a href="{% url 'dashboard:subjects' %}" accesskey="2"
+                                                 title="">Dashboard</a></li>
+                <li><a href="{% url 'admin:index' %}" accesskey="3" title="">Administration</a></li>
+                {% if request.user.is_superuser %}
+                    <li><a href="{% url 'dashboard:utils' %}" accesskey="4" title="">Utils</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% include "dashboard/logo.html" %}
+    </div>
+</div>
+<div id="wrapper3">
+    <div id="portfolio" class="container">
+        {% if subject %}
+            <div class="title">
+                <h2>Subject detail</h2>
+                <span class="byline">Code: {{ subject.code }}</span>
+                <p>| Age: {{ subject.age }} | Sex: {{ subject.get_sex_display }}
+                    | Sleep disorder: {{ subject.sleep_disorder }} | Diagnosis: {{ subject.diagnosis }}
+                    | Creation date: {{ subject.creation_date }} | RBD-SQ score: {{ rbdsq }} |</p>
+                <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
+
+            </div>
+            <div class="title">
+            {% if data %}
+                <h3>Actigraphy data</h3>
+                {% for tup in data %}
+                    <div>
+                        {% autoescape off %}
+                            {{ tup.0 }}
+                        {% endautoescape %}
+                        {% if tup.2 %}
+                            Estimated: {{ tup.2 }}<br/>
+                        {% endif %}
+                        {% if tup.3 %}
+                            Diary: {{ tup.3 }}<br/>
+                        {% endif %}
+                        <p><a href="{{ tup.1 }}" class="button button-small" download>Download data</a></p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No data for this subject yet.</p>
+            {% endif %}
+
+            {% if diary %}
+                <div class="title">
+                    <h3>Sleep diary</h3>
+                </div>
+                <table>
+                    <tr>
+                        <th> Date</th>
+                        <th> Day sleep nr.</th>
+                        <th> Day sleep time</th>
+                        <th> Alcohol nr.</th>
+                        <th> Alcohol time</th>
+                        <th> Caffeine nr.</th>
+                        <th> Caffeine time</th>
+                        <th> Sleeping pill</th>
+                        <th> Bed time</th>
+                        <th> Sleep time</th>
+                        <th> Wake ups nr.</th>
+                        <th> Awake time</th>
+                        <th> Get up time</th>
+                        <th> Sleep quality</th>
+                        <th> Rest quality</th>
+                    </tr>
+                    {% for day in diary %}
+                        <tr>
+                            <td> {{ day.date }} </td>
+                            <td> {{ day.day_sleep_count }} </td>
+                            <td> {{ day.day_sleep_time }} </td>
+                            <td> {{ day.alcohol_count }} </td>
+                            <td> {{ day.alcohol_time }} </td>
+                            <td> {{ day.caffeine_count }} </td>
+                            <td> {{ day.caffeine_time }} </td>
+                            <td> {{ day.sleeping_pill }} </td>
+                            <td> {{ day.sleep_time }} </td>
+                            <td> {{ day.sleep_duration }} </td>
+                            <td> {{ day.wake_count }} </td>
+                            <td> {{ day.wake_time }} </td>
+                            <td> {{ day.get_up_time }} </td>
+                            <td> {{ day.get_sleep_quality_display }} </td>
+                            <td> {{ day.get_rest_quality_display }} </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p>No sleep diary entries.</p>
+            {% endif %}
+
+        {% else %}
+            <div class="title">
+                <h2>Subject does not found</h2>
+                <span class="byline">Please, select valid subject</span>
+            </div>
+        {% endif %}
+        </div>
+    </div>
+</div>
+
+<div>{% include "dashboard/license.html" %}</div>
+
+</body>
+</html>
