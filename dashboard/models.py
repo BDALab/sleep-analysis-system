@@ -116,7 +116,7 @@ class PsData(models.Model):
         return path.basename(self.data.name)
 
     def __str__(self):
-        return f'Polysomnography data {self.filename()} for CSV data {self.csv_data.filename}'
+        return f'Polysomnography data {self.filename} for CSV data {self.csv_data.filename}'
 
 
 class SleepDiaryDay(models.Model):
