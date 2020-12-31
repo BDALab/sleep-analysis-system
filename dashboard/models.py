@@ -98,9 +98,10 @@ class CsvData(models.Model):
         if not path.exists(self.excel_prediction_path) and path.exists(self.cached_prediction_path):
             df = cache.load_obj(self.cached_prediction_path)
             df.to_excel(self.excel_prediction_path)
+        elif path.exists(self.excel_prediction_path):
+            return self.data.storage.url(self.excel_prediction_path)
         else:
             return ''
-        return self.data.storage.url(self.excel_prediction_path)
 
     def __str__(self):
         return f'CSV data {self.filename} from subject {self.subject.code}'
