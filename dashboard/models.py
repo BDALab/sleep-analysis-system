@@ -34,7 +34,7 @@ class Subject(models.Model):
         return self.code
 
     def is_test(self):
-        return CsvData.objects.filter(subject=self).fiter(training_data=True).exists()
+        return CsvData.objects.filter(subject=self).filter(training_data=True).exists()
 
 
 class CsvData(models.Model):
