@@ -156,10 +156,33 @@ class SleepDiaryDay(models.Model):
     rest_quality = models.PositiveSmallIntegerField('rest quality', choices=REST_QUALITY, blank=True, null=True)
     note = models.CharField('note', max_length=255, blank=True)
 
-    def with_date(self, time):
+    def _with_date(self, time):
         if 0 <= time.hour < 12:
             return datetime.combine(self.date + timedelta(days=1), time)
         return datetime.combine(self.date, time)
+
+    def with_date_base_on_previous(self, time, previous):
+        maybe = self._with_date(time)
+        if maybe < previous:
+            return datetime.combine(maybe.date() + timedelta(days=1), time)
+        else:
+            return maybe
+
+    @property
+    def t1(self):
+        return self._with_date(self.sleep_time)
+
+    @property
+    def t2(self):
+        return self.with_date_base_on_previous(self.sleep_duration, self.t1)
+
+    @property
+    def t3(self):
+        return self.with_date_base_on_previous(self.wake_time, self.t2)
+
+    @property
+    def t4(self):
+        return self.with_date_base_on_previous(self.get_up_time, self.t3)
 
     def __str__(self):
         return f'Subject: {self.subject.code} | Date: {self.date} | {self.info}'
@@ -197,6 +220,14 @@ class WakeInterval(models.Model):
         t2 = timedelta(hours=self.end.hour, minutes=self.end.minute)
         duration = t2 - t1
         return duration if duration.seconds > 60 else timedelta(minutes=1)
+
+    @property
+    def start_with_date(self):
+        return self.sleep_diary_day.with_date_base_on_previous(self.start, self.sleep_diary_day.t2)
+
+    @property
+    def end_with_date(self):
+        return self.sleep_diary_day.with_date_base_on_previous(self.end, self.start_with_date)
 
     def __str__(self):
         return f'{self.start}-{self.end} ({self.duration})'

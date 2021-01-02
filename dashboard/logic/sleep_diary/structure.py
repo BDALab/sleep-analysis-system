@@ -1,34 +1,39 @@
 import logging
 
-from dashboard.models import SleepDiaryDay, CsvData
+from dashboard.logic import cache
+from dashboard.models import SleepDiaryDay, CsvData, Subject
 
 logger = logging.getLogger(__name__)
 
 
 def create_structure():
     structure = []
-    sleep_days_cluster = []
-    ordered_days = SleepDiaryDay.objects.order_by('subject')
-    previous_subject = ordered_days.first().subject
-    for sleepDay in ordered_days.all():
-        # Save cluster into dict by subject and find relevant csv data
-        if previous_subject != sleepDay.subject:
-            data = CsvData.objects.filter(subject=previous_subject).first()
-            if data is None:
-                logger.warning(
-                    f'Missing csv data for subject {previous_subject} with {len(sleep_days_cluster)} sleep diary days')
-            else:
-                structure.append((previous_subject, data, sleep_days_cluster))
-                logger.info(
-                    f'Subject {previous_subject} added to validation structure with {len(sleep_days_cluster)} sleep diary days')
-            sleep_days_cluster = []
-            previous_subject = sleepDay.subject
-
-        # Cluster sleepDays by subject
-        sleep_days_cluster.append(sleepDay)
-    data = CsvData.objects.filter(subject=previous_subject).first()
-    structure.append((previous_subject, data, sleep_days_cluster))
-    logger.info(
-        f'Subject {previous_subject} added to structure with {len(sleep_days_cluster)} sleep diary days (Last subject)')
-    logger.info('Validation structure created')
+    for subject in Subject.objects.all():
+        sleep_days = SleepDiaryDay.objects.filter(subject=subject)
+        if (sleep_days.exists()):
+            for sleep_day in sleep_days:
+                assert isinstance(sleep_day, SleepDiaryDay)
+                data = CsvData.objects.filter(subject=subject)
+                if not data.exists():  # no CSV data
+                    logger.warning(
+                        f'Missing csv data for subject {subject} with {len(sleep_days)} sleep diary days')
+                else:
+                    maching_data = None
+                    if len(data) == 1:  # single CSV data file
+                        matching_data = data.first()
+                    else:  # data need to be found
+                        s = sleep_day.t1
+                        e = sleep_day.t4
+                        for d in data:
+                            assert isinstance(d, CsvData)
+                            pred = cache.load_obj(d.cached_prediction_path)
+                            interval = pred[s:e]
+                            if len(interval) > 0:  # matchin data found
+                                matching_data = d
+                                break
+                    if matching_data is None:
+                        continue
+                    structure.append((subject, matching_data, sleep_day))
+                    logger.debug(
+                        f'{subject.code} - {data.first().filename} - {sleep_day.date} added to validation structure ')
     return structure
