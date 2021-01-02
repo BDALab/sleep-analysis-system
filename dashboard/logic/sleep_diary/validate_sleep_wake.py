@@ -20,8 +20,8 @@ def validate_sleep_wake():
         df = pd.read_excel(night.name, index_col=0)
         day = night.diary_day
         assert isinstance(day, SleepDiaryDay)
-        s = day.with_date(day.sleep_time)
-        e = day.with_date(day.get_up_time)
+        s = day.t1
+        e = day.t4
         prediction = df[s:e]
         TP = 0
         TN = 0
@@ -31,22 +31,23 @@ def validate_sleep_wake():
         # in bed before sleep: sleep_time -> sleep_duration
         sleep, remaining_values = _select_interval(prediction,
                                                    s,
-                                                   day.with_date(day.sleep_duration))
+                                                   day.t2)
         TN += sleep.count('W')
         FP += sleep.count('S')
 
         # wakeup intervals during night
         for wake_interval in WakeInterval.objects.filter(sleep_diary_day=day).all():
+            assert isinstance(wake_interval, WakeInterval)
             sleep, remaining_values = _select_interval(remaining_values,
-                                                       day.with_date(wake_interval.start),
-                                                       day.with_date(wake_interval.end))
+                                                       wake_interval.start_with_date,
+                                                       wake_interval.end_with_date)
             TN += sleep.count('W')
             FP += sleep.count('S')
 
         # after wake in bed: wake_time -> get_up_time
         sleep, remaining_values = _select_interval(remaining_values,
-                                                   day.with_date(day.wake_time),
-                                                   day.with_date(day.get_up_time))
+                                                   day.t3,
+                                                   day.t4)
         TN += sleep.count('W')
         FP += sleep.count('S')
 
