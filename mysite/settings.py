@@ -57,7 +57,7 @@ CSRF_COOKIE_SECURE = True
 # SECURE_REFERRER_POLICY = True
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['192.168.174.130', '192.168.0.122', '10.0.2.15', '192.168.0.59', '192.168.0.227', 'localhost', 'linda.utko.feec.vutbr.cz']
 RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'localhost:8080'
@@ -65,6 +65,7 @@ RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'localhost:8080'
 # Application definition
 
 INSTALLED_APPS = [
+    'whitenoise.runserver_nostatic',
     'dashboard.apps.DashboardConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -78,6 +79,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -224,3 +226,7 @@ LOGGING = {
 
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 MEDIA_URL = '/media/'
+
+# Simplified static file serving.
+# https://warehouse.python.org/project/whitenoise/
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
