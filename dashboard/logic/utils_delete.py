@@ -67,6 +67,7 @@ def _delete_cached_data(data):
 def _delete_cached_prediction(data):
     if data.prediction_cached:
         safe_delete(data.cached_prediction_path)
+        safe_delete(data.excel_prediction_path)
         data.prediction_cached = False
         data.save()
 
