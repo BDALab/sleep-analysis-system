@@ -13,13 +13,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='sleepnight',
             name='data',
-            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='dashboard.csvdata'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dashboard.csvdata'),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='sleepnight',
             name='subject',
-            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='dashboard.subject'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dashboard.subject'),
             preserve_default=False,
         ),
     ]
