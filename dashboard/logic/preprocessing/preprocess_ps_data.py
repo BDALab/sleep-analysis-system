@@ -12,7 +12,7 @@ def get_ps_start(ps_data):
             after_midnight = False
             for row in reader:
                 if header_end and row != []:
-                    if row[2].startswith('00'):
+                    if not after_midnight and 0 < int(row[2][:2]) < 12:
                         after_midnight = True
                     return convert_ps_timestamp(date, row[2], after_midnight)
                 if row == ['Sleep Stage', 'Position', 'Time [hh:mm:ss]', 'Event', 'Duration[s]']:
