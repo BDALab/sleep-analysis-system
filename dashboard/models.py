@@ -285,7 +285,9 @@ class SleepNight(models.Model):
     sleep_end = models.DateTimeField('sleep end')
     tst = models.PositiveIntegerField('total sleep time')
     waso = models.PositiveIntegerField('wake after sleep onset')
-    se = models.PositiveIntegerField('sleep efficiency')
+    se = models.FloatField('sleep efficiency')
+    sf = models.FloatField('sleep fragmentation')
+    sol = models.PositiveIntegerField('sleep onset latency')
 
     @property
     def name(self):
@@ -313,4 +315,6 @@ class SleepNight(models.Model):
                f'| Sleep end: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
                f'| Total sleep time: {self.convert(self.tst)} ' \
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
-               f'| Sleep efficiency: {self.se:.1f}%'
+               f'| Sleep efficiency: {self.se:.1f}% ' \
+               f'| Sleep fragmentation: {self.sf:.2f} ' \
+               f'| Sleep onset latency: {self.convert(self.sol)}'

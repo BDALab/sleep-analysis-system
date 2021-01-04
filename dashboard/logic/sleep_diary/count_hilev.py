@@ -61,7 +61,11 @@ def hilev():
         night.tst = (night.sleep_end - night.sleep_onset).seconds
         night.waso = len(wake) * 30
         night.se = ((night.tst - night.waso) / night.tst) * 100
-
+        pred["number_prediction"] = numpy.where(pred[hilev_prediction] == 'S', 1, 0)
+        wakes_counts = (pred["number_prediction"].diff() == -1).sum()
+        night.sf = wakes_counts / (night.convert(night.tst).seconds / 3600)
+        onset_latency = sleep[0] - day.t1 if sleep[0] > day.t1 else timedelta(seconds=0)
+        night.sol = onset_latency.seconds
         logger.info(night)
         night.save()
     return res
