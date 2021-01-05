@@ -27,20 +27,40 @@
     <div id="welcome" class="container">
         <div id="welcome" class="container">
             <div class="title">
-                <h2>Welcome to GENEActiv data processing website</h2>
-                <span class="byline">A website created as Master thesis</span></div>
+                <h2>Welcome to Intelligent sleep monitoring system</h2>
+                <span class="byline">A system created thanks to
+                    <a href="https://www.interreg-central.eu/Content.Node/niCE-life.html">
+                        niCE-life, INTERREG CENTRAL EUROPE</a>
+                    support
+                </span>
+            </div>
             <div class="content">
-                <p>This site was created to manage study about sleep disorders using <a
-                        href="https://www.activinsights.com/products/geneactiv/">GENEActiv actigraph</a> and to present
-                    its
-                    results. But the template could be used pretty well to manage any study, even yours. There is the <a
-                            href="{% url 'dashboard:subjects' %}" title="">Dashboard</a>, that presents the results of
-                    the
-                    study in a friendly way. And there is the <a href="../admin" title="">Administration</a> site. There
-                    you
-                    can manage the subjects of study, upload the data etc.
+                <p>This site was created to manage study about sleep disorders using
+                    <a href="https://www.activinsights.com/products/geneactiv/">GENEActiv actigraph</a> and to present
+                    its results. Site consists of this parts:
+                    <a href="{% url 'dashboard:subjects' %}" title="">Dashboard</a>,
+                    that presents the results of the study subject by subject.
+                    <a href="admin:index" title="">Administration</a> site used to login &amp manage the system.
+                    Administrators of the system can access <a href="{% url 'dashboard:utils' %}">Utils</a> page that
+                    contains commands to perform batch operations.
                 </p>
-                <a href="https://gitlab.com/MarekMikulec/geneactiv-processing-data" class="button">Source codes</a>
+                <p>
+                    Documentation of the system:
+                    <a href="https://drive.google.com/file/d/1GhF-NPfS5LwgeXdwgzhfwjHTAS16Ai1D/view?usp=sharing">D.T.2.1.1</a>
+                    System specification,
+                    <a href="https://drive.google.com/file/d/1Jeav90CmAMfWYA6KR5m8bqFnBG2dFQ5Y/view?usp=sharing">D.T.2.1.2</a>
+                    Coordination meeting,
+                    <a href="https://drive.google.com/file/d/11TRyY3hdQD28rji9Bw4JFGhUbHIw0tVk/view?usp=sharing">D.T.2.1.3</a>
+                    Design of platform,
+                    <a href="https://drive.google.com/file/d/1Y5BkFUQ2vFLM479aBJBiuERyonXbTc-a/view?usp=sharing">D.T.2.1.4 </a>
+                    Testing,
+                    <a href="https://drive.google.com/file/d/1lBPTvQeDuaQcCam6aSo7Rf1pkNpwApzC/view?usp=sharing">D.T.2.1.5</a>
+                    Deployment,
+                    <a href="https://drive.google.com/file/d/1HF6jkpXT_eCDkju-ksBP16gABovEozO_/view?usp=sharing">D.T.2.1</a>
+                    Summary.
+                </p>
+
+                <a href="{% url 'dashboard:subjects' %}" class="button">Dashboard</a>
             </div>
         </div>
     </div>
@@ -48,45 +68,77 @@
 <div id="wrapper3">
     <div id="portfolio" class="container">
         <div class="title">
-            <h2>What to visit next?</h2>
-            <span class="byline">Those are the related pages to help you find more info</span></div>
+            <h2>Searching for more information?</h2>
+            <span class="byline">Those are the related web pages to help you find more info</span></div>
         <div class="column">
-            <div class="box"><a href="https://www.vutbr.cz/studenti/zav-prace/detail/122674"><img
-                    src="{% static 'dashboard/images/vutbr.png' %}" alt="" class="image image-full"/></a>
-                <h3>Master thesis</h3>
-                <p>See the details about the master thesis and the thesis itself, to find related study and more
-                    infomation. The thesis is in czech language.</p>
-                <a href="https://www.vutbr.cz/studenti/zav-prace/detail/122674" class="button button-small">Visit
-                    site</a></div>
+            <div class="box">
+                <a href="https://www.vutbr.cz/">
+                    <img src="{% static 'dashboard/images/vutbr.png' %}" alt="" class="image image-full"/>
+                </a>
+                <h3>Brno University of Technology</h3>
+                <p>See the details about the institution that stands behind the system.</p>
+                <a href="https://www.vutbr.cz/" class="button button-small">Visit site</a>
+            </div>
+        </div>
+        <div class="column">
+            <div class="box">
+                <a href="https://bdalab.utko.feec.vutbr.cz/"><img
+                        src="{% static 'dashboard/images/bda.png' %}" alt="" class="image image-full"/></a>
+                <h3>BDALab</h3>
+                <p>Find more information about team that created the system.</p>
+                <a href="https://bdalab.utko.feec.vutbr.cz/" class="button button-small">Visit site</a>
+            </div>
+        </div>
+        <div class="column">
+            <div class="box">
+                <a href="https://www.interreg-central.eu/Content.Node/niCE-life.html"><img
+                        src="{% static 'dashboard/images/nicelife.png' %}" alt="" class="image image-full"/></a>
+                <h3>niCE-life</h3>
+                <p>Project supported by Interreg CENTRAL EUROPE, innovation and knowledge development.</p>
+                <a href="https://www.interreg-central.eu/Content.Node/niCE-life.html" class="button button-small">Visit
+                    site</a>
+            </div>
+        </div>
+        <div class="column">
+            <div class="box"><a href="https://github.com/BDALab/sleep-analysis-system"><img
+                    src="{% static 'dashboard/images/github.png' %}" alt="" class="image image-full"/></a>
+                <h3>Source codes</h3>
+                <p>Source codes of the project are accessible via its Github repository.</p>
+                <a href="https://github.com/BDALab/sleep-analysis-system" class="button button-small">Visit site</a>
+            </div>
         </div>
         <div class="column">
             <div class="box"><a href="https://www.activinsights.com/"><img
                     src="{% static 'dashboard/images/activinsights.png' %}" alt="" class="image image-full"/></a>
                 <h3>Activinsights</h3>
-                <p>Visit the website of GENEActiv creators. Find more information about the device, its
-                    specifications
-                    etc. Similar studies are referenced here too.</p>
-                <a href="https://www.activinsights.com/" class="button button-small">Visit site</a></div>
-        </div>
-        <div class="column">
-            <div class="box"><a href="https://bdalab.utko.feec.vutbr.cz/"><img
-                    src="{% static 'dashboard/images/bda.png' %}" alt="" class="image image-full"/></a>
-                <h3>BDALab</h3>
-                <p>Find more information about us, and about our other studies. You can find more about the major
-                    study,
-                    that this project was part of. </p>
-                <a href="https://bdalab.utko.feec.vutbr.cz/" class="button button-small">Visit site</a></div>
+                <p>Visit the website of the manufacturer of GENEActiv actigraph.</p>
+                <a href="https://www.activinsights.com/" class="button button-small">Visit site</a>
+            </div>
         </div>
         <div class="column">
             <div class="box"><a href="https://www.nature.com/articles/s41598-018-31266-z#data-availability"><img
                     src="{% static 'dashboard/images/dataset.png' %}" alt="" class="image image-full"/></a>
                 <h3>Dataset</h3>
-                <p>The open source dataset presented by <i>Estimating sleep parameters using an accelerometer
-                    without
-                    sleep
-                    diary</i> study will be used to train the datamodel. </p>
+                <p>Open source dataset of actigraphy and polysomnography data.</p>
                 <a href="https://www.nature.com/articles/s41598-018-31266-z#data-availability"
-                   class="button button-small">Visit site</a></div>
+                   class="button button-small">Visit site</a>
+            </div>
+        </div>
+        <div class="column">
+            <div class="box"><a href="https://www.djangoproject.com/"><img
+                    src="{% static 'dashboard/images/django.png' %}" alt="" class="image image-full"/></a>
+                <h3>Django</h3>
+                <p>System was created based on the web framework Django.</p>
+                <a href="https://www.djangoproject.com/" class="button button-small">Visit site</a>
+            </div>
+        </div>
+        <div class="column">
+            <div class="box"><a href="https://xgboost.ai/"><img
+                    src="{% static 'dashboard/images/xgboost.png' %}" alt="" class="image image-full"/></a>
+                <h3>XGBoost</h3>
+                <p>Predictions of sleep are made with XGBoost algorithm.</p>
+                <a href="https://xgboost.ai/" class="button button-small">Visit site</a>
+            </div>
         </div>
     </div>
 </div>
