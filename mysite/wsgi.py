@@ -1,6 +1,7 @@
 import os
 import sys
 from django.core.wsgi import get_wsgi_application
+from wsgi_sslify import sslify
 from pathlib import Path
 
 # Add project directory to the sys.path
@@ -10,4 +11,4 @@ if path_home not in sys.path:
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings'
 
-application = get_wsgi_application()
+application = sslify(get_wsgi_application())
