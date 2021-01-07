@@ -25,6 +25,12 @@ body {
     }
 }
 
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 @media screen and (max-width: 640px) {
     body {
         font-size: 2.5vw;
@@ -348,7 +354,7 @@ ul.style1 {
 
 #copyright {
     overflow: hidden;
-    padding: 2% 5%;
+    padding: 1% 1%;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -447,4 +453,30 @@ ul.style1 {
     float: left;
     margin: 2% 2%;
 
+}
+
+.plain-column {
+    width: 21%;
+}
+
+@media screen and (max-width: 1280px) {
+    .plain-column {
+        width: 29%;
+    }
+}
+
+@media screen and (max-width: 960px) {
+    .plain-column {
+        width: 46%;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .plain-column {
+        width: 96%;
+    }
+}
+
+.plain-column {
+    float: left;
 }
