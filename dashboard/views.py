@@ -50,7 +50,10 @@ def subjects_page(request):
 @staff_member_required
 def detail(request, code):
     subject = get_object_or_404(Subject, code=code)
-    if request.user.get_username() == code or request.user.is_superuser:
+    if request.user.get_username() == code or \
+            request.user.is_superuser or \
+            request.user.groups.filter(name='researchers').exists() or \
+            request.user.groups.filter(name='administrators').exists():
         logger.warning(f'User {request.user} access details of subject {code}')
         context = {
             'subject': subject,
