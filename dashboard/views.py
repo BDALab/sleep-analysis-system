@@ -33,7 +33,9 @@ def index(request):
 
 
 def subjects_page(request):
-    if request.user.is_superuser:
+    if request.user.is_superuser or \
+            request.user.groups.filter(name='researchers').exists() or \
+            request.user.groups.filter(name='administrators').exists():
         subjects = Subject.objects.all().order_by("code")
     elif Subject.objects.filter(code=request.user.get_username()):
         subjects = [Subject.objects.filter(code=request.user.get_username()).first()]
