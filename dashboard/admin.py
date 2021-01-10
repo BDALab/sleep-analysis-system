@@ -8,11 +8,13 @@ from .models import Subject, CsvData, PsData, SleepDiaryDay, WakeInterval, RBDSQ
 
 
 class PsDataInline(admin.TabularInline):
+    inlines = ''
     model = PsData
     extra = 1
 
 
 class CsvDataInline(admin.TabularInline):
+    inlines = ''
     model = CsvData
     extra = 1
 
@@ -24,6 +26,7 @@ class WakeIntervalInline(NestedTabularInline):
 
 
 class RBDSQInline(admin.StackedInline):
+    inlines = ''
     model = RBDSQ
     extra = 1
 
