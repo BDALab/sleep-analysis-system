@@ -297,7 +297,7 @@ ul.style1 {
 #wrapper3 {
     overflow: hidden;
     padding: 8em 0em;
-    background: #FFF;
+    background: #EEE;
 }
 
 #wrapper4 {
@@ -355,7 +355,8 @@ ul.style1 {
 #copyright {
     overflow: hidden;
     padding: 1% 1%;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 1);
+    background: #FFFFFF;
 }
 
 #copyright p {
@@ -363,12 +364,12 @@ ul.style1 {
     text-align: center;
     text-transform: uppercase;
     font-size: 0.80em;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(0, 0, 0, 0.3);
 }
 
 #copyright a {
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(0, 0, 0, 0.6);
 }
 
 /*********************************************************************************/
