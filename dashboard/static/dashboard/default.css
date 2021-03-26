@@ -201,7 +201,7 @@ ul.style1 {
 #header-wrapper {
     overflow: hidden;
     padding: 4% 2%;
-    background: #8DCB89;
+    background: #FFFFFF;
 }
 
 #header {
@@ -222,18 +222,18 @@ ul.style1 {
 
 #logo a {
     text-decoration: none;
-    color: #FFF;
+    color: #0c498b;
 }
 
 #logo span {
     letter-spacing: 0.10em;
     text-transform: uppercase;
     font-size: 0.90em;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(12, 73, 139, 0.5);
 }
 
 #logo span a {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(12, 73, 139, 0.8);
 }
 
 
@@ -262,16 +262,18 @@ ul.style1 {
     font-weight: 600;
     text-transform: uppercase;
     outline: 0;
-    color: #FFF;
+    color: #0c498b;
+    background: rgba(253, 198, 1, 0.5);
+    border-radius: 8px;
 }
 
 #menu li:hover a, #menu li.active a, #menu li.active span {
 }
 
 #menu .current_page_item a {
-    background: #6FC06A;
+    background: #fdc601;
     border-radius: 8px;
-    color: #FFF;
+    color: #0c498b;
 }
 
 
