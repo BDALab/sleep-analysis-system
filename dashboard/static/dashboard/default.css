@@ -5,7 +5,7 @@ html, body {
 body {
     margin: 0px;
     padding: 0px;
-    background: #333333;
+    background: #FFFFFF;
     font-family: 'Source Sans Pro', sans-serif;
     font-size: 1vw;
     font-weight: 400;
@@ -23,6 +23,12 @@ body {
     body {
         font-size: 2vw;
     }
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 @media screen and (max-width: 640px) {
@@ -131,7 +137,7 @@ ul.style1 {
     display: inline-block;
     margin: 3% 0%;
     padding: 1em 2em 1em 2em;
-    background: #8DCB89;
+    background: #fdc601;
     border-radius: 8px;
     letter-spacing: 0.20em;
     line-height: 1.8em;
@@ -139,24 +145,24 @@ ul.style1 {
     text-transform: uppercase;
     font-weight: 400;
     font-size: 1.2em;
-    color: #FFF;
+    color: #0c498b;;
 }
 
 .button:before {
     display: inline-block;
-    background: #8DCB89;
+    background: #fdc601;
     margin-right: 1em;
     min-width: 40px;
     min-height: 40px;
     line-height: 40px;
     border-radius: 20px;
     text-align: center;
-    color: #272925;
+    color: #0c498b;
 }
 
 .button-small {
     padding: 0.9em 2em;
-    background: #8DCB89;
+    background: #fdc601;
     border-radius: 5px;
     line-height: 1.8em;
     font-size: 1em;
@@ -195,7 +201,7 @@ ul.style1 {
 #header-wrapper {
     overflow: hidden;
     padding: 4% 2%;
-    background: #8DCB89;
+    background: #FFFFFF;
 }
 
 #header {
@@ -216,18 +222,18 @@ ul.style1 {
 
 #logo a {
     text-decoration: none;
-    color: #FFF;
+    color: #0c498b;
 }
 
 #logo span {
     letter-spacing: 0.10em;
     text-transform: uppercase;
     font-size: 0.90em;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(12, 73, 139, 0.5);
 }
 
 #logo span a {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(12, 73, 139, 0.8);
 }
 
 
@@ -256,16 +262,18 @@ ul.style1 {
     font-weight: 600;
     text-transform: uppercase;
     outline: 0;
-    color: #FFF;
+    color: #0c498b;
+    background: rgba(253, 198, 1, 0.5);
+    border-radius: 8px;
 }
 
 #menu li:hover a, #menu li.active a, #menu li.active span {
 }
 
 #menu .current_page_item a {
-    background: #6FC06A;
+    background: #fdc601;
     border-radius: 8px;
-    color: #FFF;
+    color: #0c498b;
 }
 
 
@@ -291,7 +299,7 @@ ul.style1 {
 #wrapper3 {
     overflow: hidden;
     padding: 8em 0em;
-    background: #FFF;
+    background: #EEE;
 }
 
 #wrapper4 {
@@ -348,8 +356,9 @@ ul.style1 {
 
 #copyright {
     overflow: hidden;
-    padding: 2% 5%;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1% 1%;
+    border-top: 1px solid rgba(255, 255, 255, 1);
+    background: #FFFFFF;
 }
 
 #copyright p {
@@ -357,12 +366,12 @@ ul.style1 {
     text-align: center;
     text-transform: uppercase;
     font-size: 0.80em;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(0, 0, 0, 0.3);
 }
 
 #copyright a {
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(0, 0, 0, 0.6);
 }
 
 /*********************************************************************************/
@@ -447,4 +456,30 @@ ul.style1 {
     float: left;
     margin: 2% 2%;
 
+}
+
+.plain-column {
+    width: 21%;
+}
+
+@media screen and (max-width: 1280px) {
+    .plain-column {
+        width: 29%;
+    }
+}
+
+@media screen and (max-width: 960px) {
+    .plain-column {
+        width: 46%;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .plain-column {
+        width: 96%;
+    }
+}
+
+.plain-column {
+    float: left;
 }

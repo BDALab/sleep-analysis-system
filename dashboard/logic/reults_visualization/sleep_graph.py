@@ -13,12 +13,12 @@ def create_graph(d):
         sleep_predicted = _sleep_data_from_data_frame(df,
                                                       prediction_name,
                                                       'Predicted data',
-                                                      '#8dcb89')
+                                                      '#FEDD67')
         if d.training_data:
             sleep_ps = _sleep_data_from_data_frame(df,
                                                    scale_name,
                                                    'Polysomnography data',
-                                                   '#6ec06a')
+                                                   '#fdc601')
             fig = go.Figure(
                 data=[
                     sleep_ps,
@@ -37,7 +37,7 @@ def create_graph(d):
                 f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
                 f'Description: {d.description}'
     elif isinstance(d, SleepNight):
-        sleep_predicted = _sleep_data_from_sleep_night(d, hilev_prediction, 'Sleep prediction', '#8dcb89')
+        sleep_predicted = _sleep_data_from_sleep_night(d, hilev_prediction, 'Sleep prediction', '#fdc601')
         fig = go.Figure(
             data=[
                 sleep_predicted
@@ -53,7 +53,8 @@ def create_graph(d):
 
     fig.update_layout(
         title_text=title,
-        plot_bgcolor='rgba(240,240,240,240)',
+        plot_bgcolor='#FFFFFF',
+        paper_bgcolor='#EDEDED',
         barmode='group',
         yaxis={'categoryorder': 'category descending'}
     )
