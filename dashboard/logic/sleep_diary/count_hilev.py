@@ -19,6 +19,7 @@ def hilev():
     res = True
     for subject, data, day in structure:
         if not isinstance(data, CsvData) and path.exists(data.cached_prediction_path):
+            logger.warning(f'Cached prediction data not found for {data.filename}')
             res = False
             continue
         if not isinstance(day, SleepDiaryDay):
