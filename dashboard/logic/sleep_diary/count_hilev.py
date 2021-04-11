@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from os import path
+from statistics import mean, median
 
 import numpy
 import pytz
@@ -17,6 +18,31 @@ logger = logging.getLogger(__name__)
 def hilev():
     structure = create_structure()
     res = True
+    IDs = []
+    TSTs = []
+    WASOs = []
+    SEs = []
+    SFs = []
+    SOLs = []
+    aIDs = []
+    sTSTs = []
+    sWASOs = []
+    sSEs = []
+    sSFs = []
+    sSOLs = []
+    aTSTs = []
+    aWASOs = []
+    aSEs = []
+    aSFs = []
+    aSOLs = []
+    mIDs = []
+    mTSTs = []
+    mWASOs = []
+    mSEs = []
+    mSFs = []
+    mSOLs = []
+    ls = structure[0][0]
+    i = 0
     for subject, data, day in structure:
         if not isinstance(data, CsvData) and path.exists(data.cached_prediction_path):
             res = False
@@ -67,4 +93,93 @@ def hilev():
         night.sol = onset_latency.seconds
         logger.info(night)
         night.save()
+
+        IDs.append(f'{subject.code}_{day.date}')
+        TSTs.append(night.tst)
+        WASOs.append(night.waso)
+        SEs.append(night.se)
+        SFs.append(night.sf)
+        SOLs.append(night.sol)
+
+        if ls != subject:
+            aIDs.append(i)
+            aTSTs.append(mean(sTSTs))
+            aWASOs.append(mean(sWASOs))
+            aSEs.append(mean(sSEs))
+            aSFs.append(mean(sSFs))
+            aSOLs.append(mean(sSOLs))
+            mIDs.append(i)
+            mTSTs.append(median(sTSTs))
+            mWASOs.append(median(sWASOs))
+            mSEs.append(median(sSEs))
+            mSFs.append(median(sSFs))
+            mSOLs.append(median(sSOLs))
+            i += 1
+            ls = subject
+            sTSTs.clear()
+            sWASOs.clear()
+            sSEs.clear()
+            sSFs.clear()
+            sSOLs.clear()
+
+        sTSTs.append(night.tst)
+        sWASOs.append(night.waso)
+        sSEs.append(night.se)
+        sSFs.append(night.sf)
+        sSOLs.append(night.sol)
+
+    aIDs.append(i)
+    aTSTs.append(mean(sTSTs))
+    aWASOs.append(mean(sWASOs))
+    aSEs.append(mean(sSEs))
+    aSFs.append(mean(sSFs))
+    aSOLs.append(mean(sSOLs))
+    mIDs.append(i)
+    mTSTs.append(median(sTSTs))
+    mWASOs.append(median(sWASOs))
+    mSEs.append(median(sSEs))
+    mSFs.append(median(sSFs))
+    mSOLs.append(median(sSOLs))
+    i += 1
+    ls = subject
+    sTSTs.clear()
+    sWASOs.clear()
+    sSEs.clear()
+    sSFs.clear()
+    sSOLs.clear()
+
+    cols = ['ID', 'TST', 'WASO', 'SE', 'SF', 'SOL']
+    data = {
+        'ID': IDs,
+        'TST': TSTs,
+        'WASO': WASOs,
+        'SE': SEs,
+        'SF': SFs,
+        'SOL': SOLs
+    }
+    exp_df = DataFrame(data, columns=cols)
+    exp_df.to_excel("hilevs.xlsx")
+
+    adata = {
+        'ID': aIDs,
+        'TST': aTSTs,
+        'WASO': aWASOs,
+        'SE': aSEs,
+        'SF': aSFs,
+        'SOL': aSOLs
+    }
+    aexp_df = DataFrame(adata, columns=cols)
+    aexp_df.to_excel("average_hilevs.xlsx")
+
+    mdata = {
+        'ID': mIDs,
+        'TST': mTSTs,
+        'WASO': mWASOs,
+        'SE': mSEs,
+        'SF': mSFs,
+        'SOL': mSOLs
+    }
+    mexp_df = DataFrame(mdata, columns=cols)
+    mexp_df.to_excel("median_hilevs.xlsx")
+
     return res
