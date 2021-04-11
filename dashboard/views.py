@@ -11,6 +11,7 @@ from dashboard.logic.features_extraction.extract_features import extract_feature
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
+from .logic.preprocessing.split_data import split_data
 from .logic.reults_visualization.sleep_graph import create_graph
 from .logic.sleep_diary.count_hilev import hilev
 from .logic.sleep_diary.parse_metadata import parse_metadata
@@ -323,6 +324,18 @@ def utils(request, action=None):
             logger.error('Count high level features end up with exception.')
             context = {
                 'fail': 'Count HiLev failed!'}
+    elif action == 'split':
+        logger.info('Split sleep data by nights')
+        if split_data():
+            logger.info('Data splitting done')
+            context = {
+                'ok': 'Data splitting successful'
+            }
+        else:
+            logger.error('Data splitting end up with exception.')
+            context = {
+                'fail': 'Data splitting failed!'}
+
     else:
         context = {}
 
