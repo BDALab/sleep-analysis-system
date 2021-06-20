@@ -288,6 +288,7 @@ class SleepNight(models.Model):
     se = models.FloatField('sleep efficiency')
     sf = models.FloatField('sleep fragmentation')
     sol = models.PositiveIntegerField('sleep onset latency')
+    awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')
 
     @property
     def name(self):
