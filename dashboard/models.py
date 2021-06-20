@@ -7,8 +7,6 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from dashboard.logic import cache
-
-
 # HOW TO CHANGE MODEL:
 # Change your models (in models.py).
 # Run python manage.py makemigrations to create migrations for those changes
@@ -16,6 +14,7 @@ from dashboard.logic import cache
 # Run python manage.py migrate to apply those changes to the database.
 # --> python manage.py sqlmigrate dashboard 0001
 # --> python manage.py migrate
+from dashboard.logic.highlevel_features.norms import sol, awk5plus, waso, se
 
 
 class Subject(models.Model):
@@ -307,6 +306,22 @@ class SleepNight(models.Model):
     def name_url(self):
         return self.data.data.storage.url(self.name)
 
+    @property
+    def sol_norm(self):
+        return sol(self.subject.age, self.sol)
+
+    @property
+    def awk5plus_norm(self):
+        return awk5plus(self.subject.age, self.awk5plus)
+
+    @property
+    def waso_norm(self):
+        return waso(self.subject.age, self.waso)
+
+    @property
+    def se_norm(self):
+        return se(self.subject.age, self.se)
+
     def __str__(self):
         return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} | {self.info}'
 
@@ -318,4 +333,9 @@ class SleepNight(models.Model):
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
                f'| Sleep efficiency: {self.se:.1f}% ' \
                f'| Sleep fragmentation: {self.sf:.2f} ' \
-               f'| Sleep onset latency: {self.convert(self.sol)}'
+               f'| Sleep onset latency: {self.convert(self.sol)}' \
+               f'| Awakenings > 5 minutes: {self.awk5plus}' \
+               f'| Sleep onset latency norm: {self.sol_norm}' \
+               f'| Awakenings > 5 minutes norm: {self.awk5plus_norm}' \
+               f'| Wake after sleep onset norm: {self.waso_norm}' \
+               f'| Sleep efficiency norm: {self.se_norm}'
