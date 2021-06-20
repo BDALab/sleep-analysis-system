@@ -26,7 +26,7 @@ def hilev():
     ls = structure[0][0]
     i = 0
     for subject, data, day in structure:
-        if not isinstance(data, CsvData) and path.exists(data.cached_prediction_path):
+        if not isinstance(data, CsvData) or not path.exists(data.cached_prediction_path):
             res = False
             continue
         if not isinstance(day, SleepDiaryDay):
@@ -62,14 +62,7 @@ def hilev():
         pred.to_excel(night.name)
         wake = pred.index[pred[hilev_prediction] == 'W'].tolist()
 
-        night.tst = (night.sleep_end - night.sleep_onset).seconds
-        night.waso = len(wake) * 30
-        night.se = ((night.tst - night.waso) / night.tst) * 100
-        pred["number_prediction"] = numpy.where(pred[hilev_prediction] == 'S', 1, 0)
-        wakes_counts = (pred["number_prediction"].diff() == -1).sum()
-        night.sf = wakes_counts / (night.convert(night.tst).seconds / 3600)
-        onset_latency = sleep[0] - day.t1 if sleep[0] > day.t1 else timedelta(seconds=0)
-        night.sol = onset_latency.seconds
+        count_hilevs(day, night, pred, sleep, wake)
         logger.info(night)
         night.save()
 
@@ -93,6 +86,17 @@ def hilev():
     median_hilev.to_data_frame().to_excel("median_hilevs.xlsx")
 
     return res
+
+
+def count_hilevs(day, night, pred, sleep, wake):
+    night.tst = (night.sleep_end - night.sleep_onset).seconds
+    night.waso = len(wake) * 30
+    night.se = ((night.tst - night.waso) / night.tst) * 100
+    pred["number_prediction"] = numpy.where(pred[hilev_prediction] == 'S', 1, 0)
+    wakes_counts = (pred["number_prediction"].diff() == -1).sum()
+    night.sf = wakes_counts / (night.convert(night.tst).seconds / 3600)
+    onset_latency = sleep[0] - day.t1 if sleep[0] > day.t1 else timedelta(seconds=0)
+    night.sol = onset_latency.seconds
 
 
 def assign_hilev(night, subject_hilev):
