@@ -8,6 +8,7 @@ import pytz
 from pandas import DataFrame
 
 from dashboard.logic import cache
+from dashboard.logic.highlevel_features.highlevel_features_lists import HilevLists
 from dashboard.logic.machine_learning.settings import prediction_name, hilev_prediction
 from dashboard.logic.sleep_diary.structure import create_structure
 from dashboard.models import CsvData, SleepDiaryDay, SleepNight
@@ -18,29 +19,10 @@ logger = logging.getLogger(__name__)
 def hilev():
     structure = create_structure()
     res = True
-    IDs = []
-    TSTs = []
-    WASOs = []
-    SEs = []
-    SFs = []
-    SOLs = []
-    aIDs = []
-    sTSTs = []
-    sWASOs = []
-    sSEs = []
-    sSFs = []
-    sSOLs = []
-    aTSTs = []
-    aWASOs = []
-    aSEs = []
-    aSFs = []
-    aSOLs = []
-    mIDs = []
-    mTSTs = []
-    mWASOs = []
-    mSEs = []
-    mSFs = []
-    mSOLs = []
+    all_hilev = HilevLists()
+    average_hilev = HilevLists()
+    median_hilev = HilevLists()
+    subject_hilev = HilevLists()
     ls = structure[0][0]
     i = 0
     for subject, data, day in structure:
@@ -57,10 +39,7 @@ def hilev():
             continue
         nights = SleepNight.objects.filter(diary_day=day).filter(data=data).filter(subject=subject)
         if not nights.exists():
-            night = SleepNight()
-            night.diary_day = day
-            night.data = data
-            night.subject = subject
+            night = create_night(data, day, subject)
         else:
             night = nights.first()
         s = day.t1 - timedelta(minutes=30)
@@ -94,92 +73,57 @@ def hilev():
         logger.info(night)
         night.save()
 
-        IDs.append(f'{subject.code}_{day.date}')
-        TSTs.append(night.tst)
-        WASOs.append(night.waso)
-        SEs.append(night.se)
-        SFs.append(night.sf)
-        SOLs.append(night.sol)
+        all_hilev.IDs.append(f'{subject.code}_{day.date}')
+        assign_hilev(night, all_hilev)
 
         if ls != subject:
-            aIDs.append(i)
-            aTSTs.append(mean(sTSTs))
-            aWASOs.append(mean(sWASOs))
-            aSEs.append(mean(sSEs))
-            aSFs.append(mean(sSFs))
-            aSOLs.append(mean(sSOLs))
-            mIDs.append(i)
-            mTSTs.append(median(sTSTs))
-            mWASOs.append(median(sWASOs))
-            mSEs.append(median(sSEs))
-            mSFs.append(median(sSFs))
-            mSOLs.append(median(sSOLs))
+            assign_average(average_hilev, i, subject_hilev)
+            assign_median(median_hilev, i, subject_hilev)
             i += 1
             ls = subject
-            sTSTs.clear()
-            sWASOs.clear()
-            sSEs.clear()
-            sSFs.clear()
-            sSOLs.clear()
+            subject_hilev.clear()
 
-        sTSTs.append(night.tst)
-        sWASOs.append(night.waso)
-        sSEs.append(night.se)
-        sSFs.append(night.sf)
-        sSOLs.append(night.sol)
+        assign_hilev(night, subject_hilev)
 
-    aIDs.append(i)
-    aTSTs.append(mean(sTSTs))
-    aWASOs.append(mean(sWASOs))
-    aSEs.append(mean(sSEs))
-    aSFs.append(mean(sSFs))
-    aSOLs.append(mean(sSOLs))
-    mIDs.append(i)
-    mTSTs.append(median(sTSTs))
-    mWASOs.append(median(sWASOs))
-    mSEs.append(median(sSEs))
-    mSFs.append(median(sSFs))
-    mSOLs.append(median(sSOLs))
-    i += 1
-    ls = subject
-    sTSTs.clear()
-    sWASOs.clear()
-    sSEs.clear()
-    sSFs.clear()
-    sSOLs.clear()
+    assign_average(average_hilev, i, subject_hilev)
+    assign_median(median_hilev, i, subject_hilev)
 
-    cols = ['ID', 'TST', 'WASO', 'SE', 'SF', 'SOL']
-    data = {
-        'ID': IDs,
-        'TST': TSTs,
-        'WASO': WASOs,
-        'SE': SEs,
-        'SF': SFs,
-        'SOL': SOLs
-    }
-    exp_df = DataFrame(data, columns=cols)
-    exp_df.to_excel("hilevs.xlsx")
-
-    adata = {
-        'ID': aIDs,
-        'TST': aTSTs,
-        'WASO': aWASOs,
-        'SE': aSEs,
-        'SF': aSFs,
-        'SOL': aSOLs
-    }
-    aexp_df = DataFrame(adata, columns=cols)
-    aexp_df.to_excel("average_hilevs.xlsx")
-
-    mdata = {
-        'ID': mIDs,
-        'TST': mTSTs,
-        'WASO': mWASOs,
-        'SE': mSEs,
-        'SF': mSFs,
-        'SOL': mSOLs
-    }
-    mexp_df = DataFrame(mdata, columns=cols)
-    mexp_df.to_excel("median_hilevs.xlsx")
+    all_hilev.to_data_frame().to_excel("hilevs.xlsx")
+    average_hilev.to_data_frame().to_excel("average_hilevs.xlsx")
+    median_hilev.to_data_frame().to_excel("median_hilevs.xlsx")
 
     return res
+
+
+def assign_hilev(night, subject_hilev):
+    subject_hilev.TSTs.append(night.tst)
+    subject_hilev.WASOs.append(night.waso)
+    subject_hilev.SEs.append(night.se)
+    subject_hilev.SFs.append(night.sf)
+    subject_hilev.SOLs.append(night.sol)
+
+
+def assign_average(average_hilev, i, subject_hilev):
+    average_hilev.IDs.append(i)
+    average_hilev.TSTs.append(mean(subject_hilev.TSTs))
+    average_hilev.WASOs.append(mean(subject_hilev.WASOs))
+    average_hilev.SEs.append(mean(subject_hilev.SEs))
+    average_hilev.SFs.append(mean(subject_hilev.SFs))
+    average_hilev.SOLs.append(mean(subject_hilev.SOLs))
+
+
+def assign_median(median_hilev, i, subject_hilev):
+    median_hilev.IDs.append(i)
+    median_hilev.TSTs.append(median(subject_hilev.TSTs))
+    median_hilev.WASOs.append(median(subject_hilev.WASOs))
+    median_hilev.SEs.append(median(subject_hilev.SEs))
+    median_hilev.SFs.append(median(subject_hilev.SFs))
+    median_hilev.SOLs.append(median(subject_hilev.SOLs))
+
+
+def create_night(data, day, subject):
+    night = SleepNight()
+    night.diary_day = day
+    night.data = data
+    night.subject = subject
+    return night
