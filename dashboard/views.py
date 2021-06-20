@@ -9,11 +9,11 @@ from django.template import loader
 
 from dashboard.logic.features_extraction.extract_features import extract_features_all
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
+from .logic.highlevel_features.count_hilev import hilev
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
 from .logic.preprocessing.split_data import split_data
 from .logic.reults_visualization.sleep_graph import create_graph
-from .logic.sleep_diary.count_hilev import hilev
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .logic.utils_check import check_all_data, check_extracted_features, check_cached_data, check_model, \
