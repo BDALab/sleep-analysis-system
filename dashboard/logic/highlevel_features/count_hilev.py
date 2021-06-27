@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 from dashboard.logic import cache
 from dashboard.logic.highlevel_features.highlevel_features_lists import HilevLists
+from dashboard.logic.highlevel_features.highlevel_features_norms_lists import HilevNormLists
 from dashboard.logic.machine_learning.settings import prediction_name, hilev_prediction
 from dashboard.logic.sleep_diary.structure import create_structure
 from dashboard.models import CsvData, SleepDiaryDay, SleepNight
@@ -23,6 +24,10 @@ def hilev():
     average_hilev = HilevLists()
     median_hilev = HilevLists()
     subject_hilev = HilevLists()
+    all_norm_hilev = HilevNormLists()
+    average_norm_hilev = HilevNormLists()
+    median_norm_hilev = HilevNormLists()
+    subject_norm_hilev = HilevNormLists()
     ls = structure[0][0]
     for subject, data, day in structure:
         if not isinstance(data, CsvData) or not path.exists(data.cached_prediction_path):
@@ -68,20 +73,33 @@ def hilev():
         all_hilev.IDs.append(f'{subject.code}_{day.date}')
         assign_hilev(night, all_hilev)
 
+        all_norm_hilev.IDs.append(f'{subject.code}_{day.date}')
+        assign_norm_hilev(night, all_norm_hilev)
+
         if ls != subject:
             assign_average(average_hilev, subject, subject_hilev)
             assign_median(median_hilev, subject, subject_hilev)
+            assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
+            assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
             ls = subject
             subject_hilev.clear()
+            subject_norm_hilev.clear()
 
         assign_hilev(night, subject_hilev)
+        assign_norm_hilev(night, subject_norm_hilev)
 
     assign_average(average_hilev, subject, subject_hilev)
     assign_median(median_hilev, subject, subject_hilev)
+    assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
+    assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
 
     all_hilev.to_data_frame().to_excel("hilevs.xlsx")
     average_hilev.to_data_frame().to_excel("average_hilevs.xlsx")
     median_hilev.to_data_frame().to_excel("median_hilevs.xlsx")
+
+    all_norm_hilev.to_data_frame().to_excel("hilevs_norm.xlsx")
+    average_norm_hilev.to_data_frame().to_excel("average_hilevs_norm.xlsx")
+    median_norm_hilev.to_data_frame().to_excel("median_hilevs_norm.xlsx")
 
     return res
 
@@ -129,6 +147,13 @@ def assign_hilev(night, subject_hilev):
     subject_hilev.WKS5.append(night.awk5plus)
 
 
+def assign_norm_hilev(night, subject_hilev):
+    subject_hilev.SOLs.append(night.sol_norm.value)
+    subject_hilev.WKS5.append(night.awk5plus_norm.value)
+    subject_hilev.WASOs.append(night.waso_norm.value)
+    subject_hilev.SEs.append(night.se_norm.value)
+
+
 def assign_average(average_hilev, subject, subject_hilev):
     average_hilev.IDs.append(subject.code)
     average_hilev.TSTs.append(mean(subject_hilev.TSTs))
@@ -139,6 +164,14 @@ def assign_average(average_hilev, subject, subject_hilev):
     average_hilev.WKS5.append(mean(subject_hilev.WKS5))
 
 
+def assign_norm_average(average_hilev, subject, subject_hilev):
+    average_hilev.IDs.append(subject.code)
+    average_hilev.SOLs.append(mean(subject_hilev.SOLs))
+    average_hilev.WKS5.append(mean(subject_hilev.WKS5))
+    average_hilev.WASOs.append(mean(subject_hilev.WASOs))
+    average_hilev.SEs.append(mean(subject_hilev.SEs))
+
+
 def assign_median(median_hilev, subject, subject_hilev):
     median_hilev.IDs.append(subject.code)
     median_hilev.TSTs.append(median(subject_hilev.TSTs))
@@ -147,6 +180,14 @@ def assign_median(median_hilev, subject, subject_hilev):
     median_hilev.SFs.append(median(subject_hilev.SFs))
     median_hilev.SOLs.append(median(subject_hilev.SOLs))
     median_hilev.WKS5.append(median(subject_hilev.WKS5))
+
+
+def assign_norm_median(median_hilev, subject, subject_hilev):
+    median_hilev.IDs.append(subject.code)
+    median_hilev.SOLs.append(median(subject_hilev.SOLs))
+    median_hilev.WKS5.append(median(subject_hilev.WKS5))
+    median_hilev.WASOs.append(median(subject_hilev.WASOs))
+    median_hilev.SEs.append(median(subject_hilev.SEs))
 
 
 def create_night(data, day, subject):
