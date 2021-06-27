@@ -257,7 +257,7 @@ def utils(request, action=None):
 
     # All
     elif action == 'all':
-        if preprocess_all_data() and extract_features_all() and prepare_model() and predict_all():
+        if preprocess_all_data() and extract_features_all() and predict_all() and split_data() and hilev():
             logger.info('All operations OK')
             context = {
                 'ok': 'All operations performed successfully'
