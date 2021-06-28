@@ -28,6 +28,7 @@ def hilev():
     average_norm_hilev = HilevNormLists()
     median_norm_hilev = HilevNormLists()
     subject_norm_hilev = HilevNormLists()
+    diary_tst = []
     ls = structure[0][0]
     for subject, data, day in structure:
         if not isinstance(data, CsvData) or not path.exists(data.cached_prediction_path):
@@ -71,7 +72,7 @@ def hilev():
         night.save()
 
         all_hilev.IDs.append(f'{subject.code}_{day.date}')
-        assign_hilev(night, all_hilev)
+        assign_hilev(night, day, all_hilev)
 
         all_norm_hilev.IDs.append(f'{subject.code}_{day.date}')
         assign_norm_hilev(night, all_norm_hilev)
@@ -85,7 +86,7 @@ def hilev():
             subject_hilev.clear()
             subject_norm_hilev.clear()
 
-        assign_hilev(night, subject_hilev)
+        assign_hilev(night, day, subject_hilev)
         assign_norm_hilev(night, subject_norm_hilev)
 
     assign_average(average_hilev, subject, subject_hilev)
@@ -138,13 +139,14 @@ def count_awk5plus(pred):
     return awk5p
 
 
-def assign_hilev(night, subject_hilev):
+def assign_hilev(night, day, subject_hilev):
     subject_hilev.TSTs.append(night.tst)
     subject_hilev.WASOs.append(night.waso)
     subject_hilev.SEs.append(night.se)
     subject_hilev.SFs.append(night.sf)
     subject_hilev.SOLs.append(night.sol)
     subject_hilev.WKS5.append(night.awk5plus)
+    subject_hilev.DTSTs.append((day.t3 - day.t2).seconds)
 
 
 def assign_norm_hilev(night, subject_hilev):
@@ -162,6 +164,7 @@ def assign_average(average_hilev, subject, subject_hilev):
     average_hilev.SFs.append(mean(subject_hilev.SFs))
     average_hilev.SOLs.append(mean(subject_hilev.SOLs))
     average_hilev.WKS5.append(mean(subject_hilev.WKS5))
+    average_hilev.DTSTs.append(mean(subject_hilev.DTSTs))
 
 
 def assign_norm_average(average_hilev, subject, subject_hilev):
@@ -180,6 +183,7 @@ def assign_median(median_hilev, subject, subject_hilev):
     median_hilev.SFs.append(median(subject_hilev.SFs))
     median_hilev.SOLs.append(median(subject_hilev.SOLs))
     median_hilev.WKS5.append(median(subject_hilev.WKS5))
+    median_hilev.DTSTs.append(median(subject_hilev.DTSTs))
 
 
 def assign_norm_median(median_hilev, subject, subject_hilev):
