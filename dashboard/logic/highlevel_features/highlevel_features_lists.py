@@ -11,6 +11,7 @@ class HilevLists:
         self.SFs = []
         self.SOLs = []
         self.WKS5 = []
+        self.DTSTs = []
 
     def clear(self):
         self.IDs.clear()
@@ -20,9 +21,10 @@ class HilevLists:
         self.SFs.clear()
         self.SOLs.clear()
         self.WKS5.clear()
+        self.DTSTs.clear()
 
     def to_data_frame(self):
-        cols = ['ID', 'TST', 'WASO', 'SE', 'SF', 'SOL', 'WKS5']
+        cols = ['ID', 'TST', 'WASO', 'SE', 'SF', 'SOL', 'WKS5', 'DTST']
         data = {
             'ID': self.IDs,
             'TST': self.TSTs,
@@ -30,6 +32,7 @@ class HilevLists:
             'SE': self.SEs,
             'SF': self.SFs,
             'SOL': self.SOLs,
-            'WKS5': self.WKS5
+            'WKS5': self.WKS5,
+            'DTST': self.DTSTs
         }
         return DataFrame(data, columns=cols)
