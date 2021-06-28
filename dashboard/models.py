@@ -75,6 +75,15 @@ class CsvData(models.Model):
         return f'{folder}/{name}'
 
     @property
+    def z_data_path(self):
+        split = path.split(self.data.path)
+        folder = f'{split[0]}/../z_prediction'
+        name = f'{split[1]}.xlsx'
+        if not path.exists(folder):
+            os.mkdir(folder)
+        return f'{folder}/{name}'
+
+    @property
     def features_data_path(self):
         split = path.split(self.data.path)
         folder = f'{split[0]}/../features'
