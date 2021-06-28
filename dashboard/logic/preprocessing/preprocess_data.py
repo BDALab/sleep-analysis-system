@@ -8,7 +8,9 @@ from dashboard.logic.features_extraction.data_entry import DataEntry
 from dashboard.models import PsData, CsvData
 from .preprocess_csv_data import fix_csv_data, get_csv_start, convert_csv_time
 from .preprocess_ps_data import get_ps_start, convert_ps_timestamp, convert_sleep
+from ..machine_learning.settings import algorithm, Algorithm
 from ..multithread import parallel_for
+from ..zangle.predict import preprocess_prediction_data_z, preprocess_training_data_z
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +30,16 @@ def preprocess_all_data():
 
 def preprocess_data(csv_object):
     if isinstance(csv_object, CsvData):
-        if csv_object.data_cached:
+        if csv_object.data_cached and algorithm == Algorithm.XGBoost:
             return True
         elif csv_object.training_data:
-            return _preprocess_training_data(csv_object)
-        return _preprocess_prediction_data(csv_object)
+            return _preprocess_training_data(csv_object) \
+                if algorithm == Algorithm.XGBoost \
+                else preprocess_training_data_z(csv_object)
+        return _preprocess_prediction_data(csv_object) \
+            if algorithm == Algorithm.XGBoost \
+            else preprocess_prediction_data_z(csv_object)
+
     else:
         logger.warning(f'Wrong data type {type(csv_object)} was passed into preprocessing method.')
         return False
