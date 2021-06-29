@@ -1,7 +1,11 @@
 import logging
 import math
+from os.path import exists, split
+
+import pandas as pd
 
 from dashboard.logic.machine_learning import settings
+from dashboard.models import Subject, SleepDiaryDay
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +101,55 @@ def f_inactiv(first_threshold, time_window, angle, df):
             # Write S to state
             df.loc[index, settings.prediction_name] = "S"
             first_sleep = True
+
+
+def load_df_from_csv(csv_object):
+    df = pd.read_csv(csv_object.data.path,
+                     names=['time stamp', 'x axis [g]', 'y axis [g]', 'z axis [g]',
+                            'light level [lux]', 'button [1/0]', 'temperature [°C]'],
+                     skiprows=100,
+                     # might be slightly faster:
+                     infer_datetime_format=True, memory_map=True)
+    df['time stamp'] = pd.to_datetime(df['time stamp'], format='%Y-%m-%d %H:%M:%S:%f')
+    # drop not used columns from ACG
+    df.drop(columns=['light level [lux]', 'button [1/0]', 'temperature [°C]'], inplace=True, axis=1)
+    return df
+
+
+def load_df_from_ps_data(ps_object):
+    # 1st PSG read -> get recording date
+    df_PSG = pd.read_csv(ps_object.data.path,
+                         infer_datetime_format=True, memory_map=True)
+    PSG_date = df_PSG["RemLogic Event Export"][2].split("\t")[1]
+    # 2nd PSG read -> parse to datetime
+    df_PSG = pd.read_csv(ps_object.data.path, sep='\t', skiprows=17,
+                         infer_datetime_format=True, memory_map=True)
+    df_PSG['Time [hh:mm:ss]'] = PSG_date + " " + df_PSG['Time [hh:mm:ss]']
+    df_PSG['Time [hh:mm:ss]'] = pd.to_datetime(df_PSG['Time [hh:mm:ss]'], format='%d/%m/%Y %H:%M:%S')
+    PSG_date = pd.to_datetime(PSG_date, format='%d/%m/%Y')
+    # add a day if PSG crosses 00:00
+    midnight = df_PSG[(df_PSG['Time [hh:mm:ss]'].dt.hour == 0) &
+                      (df_PSG['Time [hh:mm:ss]'].dt.minute == 0)]
+    mid_idx = midnight.index[0]
+    if ~midnight.empty & mid_idx != 0:
+        for index, value in df_PSG['Time [hh:mm:ss]'].items():
+            if index >= mid_idx:
+                df_PSG['Time [hh:mm:ss]'][index] += pd.to_timedelta(1, unit='d')
+    return df_PSG
+
+
+def is_not_cached(csv_object):
+    subject = csv_object.subject
+    if isinstance(subject, Subject):
+        days = SleepDiaryDay.objects.filter(subject=subject)
+        for day in days:
+            if isinstance(day, SleepDiaryDay):
+                export_path = get_split_path(csv_object, day, subject)
+                if not exists(export_path):
+                    return True
+    return False
+
+
+def get_split_path(csv_object, day, subject):
+    export_path = f"{split(csv_object.data.path)[0]}//..//split_z//{subject.code}_{day.date}.xlsx"
+    return export_path

@@ -1,6 +1,7 @@
 import csv
 import logging
 import math
+import os
 from datetime import timedelta, datetime
 
 from dashboard.logic.cache import save_obj
@@ -9,8 +10,7 @@ from dashboard.models import PsData, CsvData
 from .preprocess_csv_data import fix_csv_data, get_csv_start, convert_csv_time
 from .preprocess_ps_data import get_ps_start, convert_ps_timestamp, convert_sleep
 from ..machine_learning.settings import algorithm, Algorithm
-from ..multithread import parallel_for
-from ..zangle.predict import preprocess_prediction_data_z, preprocess_training_data_z
+from ..zangle.core import prediction_data_z, training_data_z
 
 logger = logging.getLogger(__name__)
 
@@ -19,26 +19,25 @@ def preprocess_all_data():
     total_start = datetime.now()
 
     data = CsvData.objects.all()
-    results = parallel_for(data, preprocess_data)
-
+    for d in data:
+        preprocess_data(d)
     logger.info(f'{len(data)} training csv data objects preprocessed in {datetime.now() - total_start}')
-    for r in results:
-        if not r.result():
-            return False
     return True
 
 
 def preprocess_data(csv_object):
     if isinstance(csv_object, CsvData):
-        if csv_object.data_cached and algorithm == Algorithm.XGBoost:
+        if csv_object.data_cached and algorithm == Algorithm.XGBoost \
+                or algorithm == Algorithm.ZAngle and csv_object.training_data and os.path.exists(
+            csv_object.z_data_path):
             return True
         elif csv_object.training_data:
             return _preprocess_training_data(csv_object) \
                 if algorithm == Algorithm.XGBoost \
-                else preprocess_training_data_z(csv_object)
+                else training_data_z(csv_object)
         return _preprocess_prediction_data(csv_object) \
             if algorithm == Algorithm.XGBoost \
-            else preprocess_prediction_data_z(csv_object)
+            else prediction_data_z(csv_object)
 
     else:
         logger.warning(f'Wrong data type {type(csv_object)} was passed into preprocessing method.')
