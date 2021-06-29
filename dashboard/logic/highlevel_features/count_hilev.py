@@ -12,7 +12,7 @@ from dashboard.logic.highlevel_features.highlevel_features_lists import HilevLis
 from dashboard.logic.highlevel_features.highlevel_features_norms_lists import HilevNormLists
 from dashboard.logic.machine_learning.settings import prediction_name, hilev_prediction
 from dashboard.logic.sleep_diary.structure import create_structure
-from dashboard.models import CsvData, SleepDiaryDay, SleepNight
+from dashboard.models import CsvData, SleepDiaryDay, SleepNight, WakeInterval
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ def hilev():
     average_norm_hilev = HilevNormLists()
     median_norm_hilev = HilevNormLists()
     subject_norm_hilev = HilevNormLists()
-    diary_tst = []
     ls = structure[0][0]
     for subject, data, day in structure:
         if not isinstance(data, CsvData) or not path.exists(data.cached_prediction_path):
@@ -139,6 +138,14 @@ def count_awk5plus(pred):
     return awk5p
 
 
+def count_dtst(day):
+    wake = 0
+    for interval in day.wake_intervals:
+        if isinstance(interval, WakeInterval):
+            wake += (interval.end_with_date - interval.start_with_date).seconds
+    return (day.t3 - day.t2).seconds - wake
+
+
 def assign_hilev(night, day, subject_hilev):
     subject_hilev.TSTs.append(night.tst)
     subject_hilev.WASOs.append(night.waso)
@@ -146,7 +153,7 @@ def assign_hilev(night, day, subject_hilev):
     subject_hilev.SFs.append(night.sf)
     subject_hilev.SOLs.append(night.sol)
     subject_hilev.WKS5.append(night.awk5plus)
-    subject_hilev.DTSTs.append((day.t3 - day.t2).seconds)
+    subject_hilev.DTSTs.append(count_dtst(day))
 
 
 def assign_norm_hilev(night, subject_hilev):
