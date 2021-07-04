@@ -6,7 +6,7 @@ import pandas as pd
 
 from dashboard.logic import cache
 from dashboard.logic.features_extraction.extract_features import extract_features
-from dashboard.logic.machine_learning.settings import scale_name, prediction_name
+from dashboard.logic.machine_learning.settings import scale_name, prediction_name, algorithm, Algorithm
 from dashboard.logic.multithread import parallel_for
 from dashboard.logic.preprocessing.preprocess_data import preprocess_data
 from dashboard.models import CsvData
@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 def predict_all():
+    if algorithm == Algorithm.ZAngle:
+        return True
     start = datetime.now()
     data = CsvData.objects.all()
     logger.info(f'{len(data)} csv data objects will be used for prediction')

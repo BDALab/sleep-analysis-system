@@ -7,11 +7,14 @@ from dashboard.logic.cache import load_obj
 from dashboard.logic.multithread import parallel_for
 from dashboard.models import CsvData
 from .data_entry import DataEntry
+from ..machine_learning.settings import algorithm, Algorithm
 
 logger = logging.getLogger(__name__)
 
 
 def extract_features_all():
+    if algorithm == Algorithm.ZAngle:
+        return True
     total_start = datetime.now()
 
     cached = CsvData.objects.filter(data_cached=True).filter(features_extracted=False)

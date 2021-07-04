@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from os.path import exists
 
 import numpy as np
 import pandas as pd
@@ -8,7 +7,7 @@ import pandas as pd
 from dashboard.logic.machine_learning import settings
 from dashboard.logic.preprocessing.preprocess_csv_data import fix_csv_data
 from dashboard.logic.zangle.helper_functions import f_cut_start, f_cut_end, load_df_from_csv, \
-    load_df_from_ps_data, is_not_cached, get_split_path, f_comp_angle, f_inactiv
+    load_df_from_ps_data, is_not_cached, get_split_path, f_comp_angle, f_inactiv, is_cached
 from dashboard.models import PsData, Subject, SleepDiaryDay
 
 logger = logging.getLogger(__name__)
@@ -62,8 +61,7 @@ def prediction_data_z(csv_object):
             for day in days:
                 if isinstance(day, SleepDiaryDay):
                     start_time = datetime.now()
-                    export_path = get_split_path(csv_object, day, subject)
-                    if exists(export_path):
+                    if is_cached(csv_object, day, subject):
                         continue
                     s = day.t1 - timedelta(minutes=30)
                     e = day.t4 + timedelta(minutes=30)
@@ -72,7 +70,7 @@ def prediction_data_z(csv_object):
                     df_night = df_night[df_night['time stamp'] < e]
                     if not df_night.empty:
                         df_night = zangle_core(df_night)
-                        df_night.to_excel(export_path)
+                        df_night.to_excel(get_split_path(csv_object, day, subject))
                         end_time = datetime.now()
                         logger.info(f'Data subject:{subject.code} day:{day.date} data:{csv_object.filename} '
                                     f'preprocessed in {end_time - start_time}')

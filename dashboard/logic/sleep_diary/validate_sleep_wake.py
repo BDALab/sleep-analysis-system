@@ -1,9 +1,11 @@
 import logging
 
+import pandas
 import pandas as pd
 
 from dashboard.logic.features_extraction.data_entry import safe_div
-from dashboard.logic.machine_learning.settings import hilev_prediction
+from dashboard.logic.machine_learning.settings import hilev_prediction, Algorithm, algorithm, prediction_name
+from dashboard.logic.zangle.helper_functions import is_cached, get_split_path
 from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ def validate_sleep_wake():
     total_FN = 0
     for night in nights:
         assert isinstance(night, SleepNight)
-        df = pd.read_excel(night.name, index_col=0)
+        df = _get_df(night)
         day = night.diary_day
         assert isinstance(day, SleepDiaryDay)
         s = day.t1
@@ -63,7 +65,6 @@ def validate_sleep_wake():
             f'ACC: {safe_div(TN + TP, TP + TN + FP + FN) * 100}% | '
             f'SEN: {safe_div(TP, TP + FN) * 100}% | '
             f'SPE: {safe_div(TN, TN + FP) * 100}%')
-        assert len(remaining_values) == 0
         total_TP += TP
         total_FN += FN
         total_FP += FP
@@ -76,8 +77,22 @@ def validate_sleep_wake():
         f'SPE: {safe_div(total_TN, total_TN + total_FP) * 100}%')
 
 
+def _get_df(night):
+    if algorithm == Algorithm.XGBoost:
+        return pd.read_excel(night.name, index_col=0)
+    elif algorithm == Algorithm.ZAngle and night.data.training_data:
+        df = pandas.read_excel(night.data.z_data_path, index_col='time stamp')
+    elif algorithm == Algorithm.ZAngle and not night.data.training_data:
+        if is_cached(night.data, night.diary_day, night.subject):
+            df = pandas.read_excel(get_split_path(night.data, night.diary_day, night.subject), index_col='time stamp')
+        else:
+            return None
+    return df
+
+
 def _select_interval(prediction, start, end):
     sleep_time_duration = prediction[start:end]
     remaining_values = pd.concat([prediction[:start], prediction[end:]])
-    sleep = sleep_time_duration[hilev_prediction].values.tolist()
+    sleep = sleep_time_duration[hilev_prediction].values.tolist() if algorithm == Algorithm.XGBoost \
+        else sleep_time_duration[prediction_name].values.tolist()
     return sleep, remaining_values

@@ -17,7 +17,7 @@ algorithm = Algorithm.ZAngle
 # time_window = 3 minutes,
 # angle = 10 (divided by 5 ... 5 s resampling)
 first_threshold = (10 * 60) / 5
-time_window = (3 * 60) / 5
+time_window = (5 * 60) / 5
 angle = 10
 
 # ---------------------
