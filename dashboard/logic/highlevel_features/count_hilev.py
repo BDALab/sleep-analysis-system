@@ -4,20 +4,22 @@ from os import path
 from statistics import mean, median
 
 import numpy
+import pandas
 import pytz
 from pandas import DataFrame
 
 from dashboard.logic import cache
 from dashboard.logic.highlevel_features.highlevel_features_lists import HilevLists
 from dashboard.logic.highlevel_features.highlevel_features_norms_lists import HilevNormLists
-from dashboard.logic.machine_learning.settings import prediction_name, hilev_prediction
+from dashboard.logic.machine_learning.settings import prediction_name, hilev_prediction, Algorithm, algorithm
 from dashboard.logic.sleep_diary.structure import create_structure
+from dashboard.logic.zangle.helper_functions import is_cached, get_split_path
 from dashboard.models import CsvData, SleepDiaryDay, SleepNight, WakeInterval
 
 logger = logging.getLogger(__name__)
 
 
-def hilev():
+def hilev(algrithm=None):
     structure = create_structure()
     res = True
     all_hilev = HilevLists()
@@ -30,20 +32,26 @@ def hilev():
     subject_norm_hilev = HilevNormLists()
     ls = structure[0][0]
     for subject, data, day in structure:
-        if not isinstance(data, CsvData) or not path.exists(data.cached_prediction_path):
+        if not isinstance(data, CsvData):
+            res = False
+            continue
+        if algrithm == Algorithm.XGBoost and not path.exists(data.cached_prediction_path):
+            res = False
+            continue
+        if algrithm == Algorithm.ZAngle and (not is_cached(data, day, subject) or not path.exists(data.z_data_path)):
             res = False
             continue
         if not isinstance(day, SleepDiaryDay):
             res = False
             continue
 
-        df = cache.load_obj(data.cached_prediction_path)
+        df = _get_dataframe(data, day, subject)
         if not isinstance(df, DataFrame):
             res = False
             continue
         nights = SleepNight.objects.filter(diary_day=day).filter(data=data).filter(subject=subject)
         if not nights.exists():
-            night = create_night(data, day, subject)
+            night = _create_night(data, day, subject)
         else:
             night = nights.first()
         s = day.t1 - timedelta(minutes=30)
@@ -66,32 +74,32 @@ def hilev():
         pred.to_excel(night.name)
         wake = pred.index[pred[hilev_prediction] == 'W'].tolist()
 
-        count_hilevs(day, night, pred, sleep, wake)
+        _count_hilevs(day, night, pred, sleep, wake)
         logger.info(night)
         night.save()
 
         all_hilev.IDs.append(f'{subject.code}_{day.date}')
-        assign_hilev(night, day, all_hilev)
+        _assign_hilev(night, day, all_hilev)
 
         all_norm_hilev.IDs.append(f'{subject.code}_{day.date}')
-        assign_norm_hilev(night, all_norm_hilev)
+        _assign_norm_hilev(night, all_norm_hilev)
 
         if ls != subject:
-            assign_average(average_hilev, subject, subject_hilev)
-            assign_median(median_hilev, subject, subject_hilev)
-            assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
-            assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
+            _assign_average(average_hilev, subject, subject_hilev)
+            _assign_median(median_hilev, subject, subject_hilev)
+            _assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
+            _assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
             ls = subject
             subject_hilev.clear()
             subject_norm_hilev.clear()
 
-        assign_hilev(night, day, subject_hilev)
-        assign_norm_hilev(night, subject_norm_hilev)
+        _assign_hilev(night, day, subject_hilev)
+        _assign_norm_hilev(night, subject_norm_hilev)
 
-    assign_average(average_hilev, subject, subject_hilev)
-    assign_median(median_hilev, subject, subject_hilev)
-    assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
-    assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
+    _assign_average(average_hilev, subject, subject_hilev)
+    _assign_median(median_hilev, subject, subject_hilev)
+    _assign_norm_average(average_norm_hilev, subject, subject_norm_hilev)
+    _assign_norm_median(median_norm_hilev, subject, subject_norm_hilev)
 
     all_hilev.to_data_frame().to_excel("hilevs.xlsx")
     average_hilev.to_data_frame().to_excel("average_hilevs.xlsx")
@@ -104,28 +112,42 @@ def hilev():
     return res
 
 
-def count_hilevs(day, night, pred, sleep, wake):
+def _get_dataframe(data, day, subject):
+    if algorithm == Algorithm.XGBoost:
+        return cache.load_obj(data.cached_prediction_path)
+    elif algorithm == Algorithm.ZAngle and data.training_data:
+        df = pandas.read_excel(data.z_data_path, index_col='time stamp')
+    elif algorithm == Algorithm.ZAngle and not data.training_data:
+        if is_cached(data, day, subject):
+            df = pandas.read_excel(get_split_path(data, day, subject), index_col='time stamp')
+        else:
+            return None
+    df[prediction_name] = numpy.where(df[prediction_name] == 'S', 1, 0)
+    return df
+
+
+def _count_hilevs(day, night, pred, sleep, wake):
     night.tst = (night.sleep_end - night.sleep_onset).seconds
     night.waso = len(wake) * 30
     night.se = ((night.tst - night.waso) / night.tst) * 100
-    night.sf = count_sf(night, pred)
-    night.sol = count_sol(day, sleep)
-    night.awk5plus = count_awk5plus(pred)
+    night.sf = _count_sf(night, pred)
+    night.sol = _count_sol(day, sleep)
+    night.awk5plus = _count_awk5plus(pred)
 
 
-def count_sol(day, sleep):
+def _count_sol(day, sleep):
     onset_latency = sleep[0] - day.t1 if sleep[0] > day.t1 else timedelta(seconds=0)
     return onset_latency.seconds
 
 
-def count_sf(night, pred):
+def _count_sf(night, pred):
     pred["number_prediction"] = numpy.where(pred[hilev_prediction] == 'S', 1, 0)
     wakes_counts = (pred["number_prediction"].diff() == -1).sum()
     sf = wakes_counts / (night.convert(night.tst).seconds / 3600)
     return sf
 
 
-def count_awk5plus(pred):
+def _count_awk5plus(pred):
     awk5p = 0
     sleep_counter = 0
     for v in pred[hilev_prediction]:
@@ -138,7 +160,7 @@ def count_awk5plus(pred):
     return awk5p
 
 
-def count_dtst(day):
+def _count_dtst(day):
     wake = 0
     for interval in day.wake_intervals:
         if isinstance(interval, WakeInterval):
@@ -146,24 +168,24 @@ def count_dtst(day):
     return (day.t3 - day.t2).seconds - wake
 
 
-def assign_hilev(night, day, subject_hilev):
+def _assign_hilev(night, day, subject_hilev):
     subject_hilev.TSTs.append(night.tst)
     subject_hilev.WASOs.append(night.waso)
     subject_hilev.SEs.append(night.se)
     subject_hilev.SFs.append(night.sf)
     subject_hilev.SOLs.append(night.sol)
     subject_hilev.WKS5.append(night.awk5plus)
-    subject_hilev.DTSTs.append(count_dtst(day))
+    subject_hilev.DTSTs.append(_count_dtst(day))
 
 
-def assign_norm_hilev(night, subject_hilev):
+def _assign_norm_hilev(night, subject_hilev):
     subject_hilev.SOLs.append(night.sol_norm.value)
     subject_hilev.WKS5.append(night.awk5plus_norm.value)
     subject_hilev.WASOs.append(night.waso_norm.value)
     subject_hilev.SEs.append(night.se_norm.value)
 
 
-def assign_average(average_hilev, subject, subject_hilev):
+def _assign_average(average_hilev, subject, subject_hilev):
     average_hilev.IDs.append(subject.code)
     average_hilev.TSTs.append(mean(subject_hilev.TSTs))
     average_hilev.WASOs.append(mean(subject_hilev.WASOs))
@@ -174,7 +196,7 @@ def assign_average(average_hilev, subject, subject_hilev):
     average_hilev.DTSTs.append(mean(subject_hilev.DTSTs))
 
 
-def assign_norm_average(average_hilev, subject, subject_hilev):
+def _assign_norm_average(average_hilev, subject, subject_hilev):
     average_hilev.IDs.append(subject.code)
     average_hilev.SOLs.append(mean(subject_hilev.SOLs))
     average_hilev.WKS5.append(mean(subject_hilev.WKS5))
@@ -182,7 +204,7 @@ def assign_norm_average(average_hilev, subject, subject_hilev):
     average_hilev.SEs.append(mean(subject_hilev.SEs))
 
 
-def assign_median(median_hilev, subject, subject_hilev):
+def _assign_median(median_hilev, subject, subject_hilev):
     median_hilev.IDs.append(subject.code)
     median_hilev.TSTs.append(median(subject_hilev.TSTs))
     median_hilev.WASOs.append(median(subject_hilev.WASOs))
@@ -193,7 +215,7 @@ def assign_median(median_hilev, subject, subject_hilev):
     median_hilev.DTSTs.append(median(subject_hilev.DTSTs))
 
 
-def assign_norm_median(median_hilev, subject, subject_hilev):
+def _assign_norm_median(median_hilev, subject, subject_hilev):
     median_hilev.IDs.append(subject.code)
     median_hilev.SOLs.append(median(subject_hilev.SOLs))
     median_hilev.WKS5.append(median(subject_hilev.WKS5))
@@ -201,7 +223,7 @@ def assign_norm_median(median_hilev, subject, subject_hilev):
     median_hilev.SEs.append(median(subject_hilev.SEs))
 
 
-def create_night(data, day, subject):
+def _create_night(data, day, subject):
     night = SleepNight()
     night.diary_day = day
     night.data = data

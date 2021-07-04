@@ -28,8 +28,8 @@ def preprocess_all_data():
 def preprocess_data(csv_object):
     if isinstance(csv_object, CsvData):
         if csv_object.data_cached and algorithm == Algorithm.XGBoost \
-                or algorithm == Algorithm.ZAngle and csv_object.training_data and os.path.exists(
-            csv_object.z_data_path):
+                or algorithm == Algorithm.ZAngle and csv_object.training_data \
+                and os.path.exists(csv_object.z_data_path):
             return True
         elif csv_object.training_data:
             return _preprocess_training_data(csv_object) \

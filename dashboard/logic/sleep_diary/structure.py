@@ -18,7 +18,6 @@ def create_structure():
                     logger.warning(
                         f'Missing csv data for subject {subject} with {len(sleep_days)} sleep diary days')
                 else:
-                    maching_data = None
                     if len(data) == 1:  # single CSV data file
                         matching_data = data.first()
                     else:  # data need to be found

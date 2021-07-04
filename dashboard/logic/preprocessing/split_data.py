@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from os import path
 
+from dashboard.logic.machine_learning.settings import algorithm, Algorithm
 from dashboard.logic.preprocessing.preprocess_csv_data import fix_csv_data, convert_csv_time
 from dashboard.logic.sleep_diary.structure import create_structure
 from dashboard.models import CsvData, SleepDiaryDay
@@ -11,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def split_data():
+    if algorithm == Algorithm.ZAngle:
+        return True
     structure = create_structure()
     res = True
     for subject, data, day in structure:

@@ -144,8 +144,7 @@ def is_not_cached(csv_object):
         days = SleepDiaryDay.objects.filter(subject=subject)
         for day in days:
             if isinstance(day, SleepDiaryDay):
-                export_path = get_split_path(csv_object, day, subject)
-                if not exists(export_path):
+                if not is_cached(csv_object, day, subject):
                     return True
     return False
 
@@ -153,3 +152,7 @@ def is_not_cached(csv_object):
 def get_split_path(csv_object, day, subject):
     export_path = f"{split(csv_object.data.path)[0]}//..//split_z//{subject.code}_{day.date}.xlsx"
     return export_path
+
+
+def is_cached(csv_object, day, subject):
+    return exists(get_split_path(csv_object, day, subject))
