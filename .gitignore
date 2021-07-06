@@ -1,7 +1,6 @@
 
 
 *.pyc
-*.pkl
 *.xml
 *.iml
 *.pem
@@ -10,7 +9,6 @@
 *.srl
 *.old
 *.cnf
-*.png
 *.uml
 *.jpg
 *.pdf
@@ -19,22 +17,13 @@
 *.bin
 *.sqlite3
 *.log
-*.otf
-*.eot
-*.svg
-*.ttf
-*.woff
 
 
 venv/*
 .idea/
 __pycache__/
-fonts/
-images/
 
 /cert/
 /doc/
 /media/
-/ml/
 /secrets.json
-/static/
