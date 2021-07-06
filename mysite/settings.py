@@ -45,7 +45,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', DEBUG_KEY)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '') != 'False'
 
-ALLOWED_HOSTS = ['192.168.174.130', '192.168.0.122', '10.0.2.15', '192.168.0.59', '192.168.0.227', 'localhost']
+ALLOWED_HOSTS = ['192.168.174.130', '192.168.0.122', '10.0.2.15', '192.168.0.59', '192.168.0.227', 'localhost', '127.0.0.1']
 RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'localhost:8080'
 
 # Application definition
