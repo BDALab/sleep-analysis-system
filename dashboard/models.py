@@ -1,3 +1,11 @@
+# HOW TO CHANGE MODEL:
+# Change your models (in models.py).
+# Run python manage.py makemigrations to create migrations for those changes
+# --> python manage.py makemigrations dashboard
+# Run python manage.py migrate to apply those changes to the database.
+# --> python manage.py sqlmigrate dashboard 0001
+# --> python manage.py migrate
+
 import os
 from datetime import timedelta, datetime
 from os import path
@@ -7,13 +15,6 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from dashboard.logic import cache
-# HOW TO CHANGE MODEL:
-# Change your models (in models.py).
-# Run python manage.py makemigrations to create migrations for those changes
-# --> python manage.py makemigrations dashboard
-# Run python manage.py migrate to apply those changes to the database.
-# --> python manage.py sqlmigrate dashboard 0001
-# --> python manage.py migrate
 from dashboard.logic.highlevel_features.norms import sol, awk5plus, waso, se
 
 
@@ -291,12 +292,24 @@ class SleepNight(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     sleep_onset = models.DateTimeField('sleep onset')
     sleep_end = models.DateTimeField('sleep end')
-    tst = models.PositiveIntegerField('total sleep time')
-    waso = models.PositiveIntegerField('wake after sleep onset')
-    se = models.FloatField('sleep efficiency')
-    sf = models.FloatField('sleep fragmentation')
+    tib = models.PositiveIntegerField('time in bed')
     sol = models.PositiveIntegerField('sleep onset latency')
+    waso = models.PositiveIntegerField('wake after sleep onset')
+    wasf = models.PositiveIntegerField('wake after sleep offset')
+    wb = models.PositiveIntegerField('wake bouts')
     awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')
+
+    @property
+    def tst(self):
+        return self.tib - (self.sol + self.waso + self.wasf)
+
+    @property
+    def se(self):
+        return (self.tst / self.tib) * 100
+
+    @property
+    def sf(self):
+        return self.wb / (self.tst / 3600)
 
     @property
     def name(self):
@@ -337,12 +350,15 @@ class SleepNight(models.Model):
     @property
     def info(self):
         return f'Sleep onset: {self.sleep_onset.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
-               f'| Sleep end: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Sleep offset: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Time in bed: {self.convert(self.tib)} ' \
                f'| Total sleep time: {self.convert(self.tst)} ' \
+               f'| Sleep onset latency: {self.convert(self.sol)}' \
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
+               f'| Wake after sleep offset: {self.convert(self.wasf)} ' \
+               f'| Wake bouts: {self.wb} ' \
                f'| Sleep efficiency: {self.se:.1f}% ' \
                f'| Sleep fragmentation: {self.sf:.2f} ' \
-               f'| Sleep onset latency: {self.convert(self.sol)}' \
                f'| Awakenings > 5 minutes: {self.awk5plus}' \
                f'| Sleep onset latency norm: {self.sol_norm}' \
                f'| Awakenings > 5 minutes norm: {self.awk5plus_norm}' \

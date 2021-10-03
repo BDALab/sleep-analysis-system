@@ -3,7 +3,7 @@ from pandas import read_excel
 from plotly.offline import plot
 
 from dashboard.logic.machine_learning.predict import predict
-from dashboard.logic.machine_learning.settings import scale_name, prediction_name, hilev_prediction
+from dashboard.logic.machine_learning.settings import scale_name, prediction_name
 from dashboard.models import SleepNight, CsvData
 
 
@@ -37,7 +37,7 @@ def create_graph(d):
                 f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
                 f'Description: {d.description}'
     elif isinstance(d, SleepNight):
-        sleep_predicted = _sleep_data_from_sleep_night(d, hilev_prediction, 'Sleep prediction', '#fdc601')
+        sleep_predicted = _sleep_data_from_sleep_night(d, prediction_name, 'Sleep prediction', '#fdc601')
         fig = go.Figure(
             data=[
                 sleep_predicted
@@ -85,7 +85,7 @@ def _sleep_data_from_data_frame(df, column, name, color):
 def _sleep_data_from_sleep_night(sleep_night, column, name, color):
     df = read_excel(sleep_night.name, index_col=0)
     x = df.index
-    map_values = {'S': 'Sleep', 'W': 'Wake'}
-    y = df[column].astype(str).map(map_values)
+    map_values = {1: 'Sleep', 0: 'Wake'}
+    y = df[column].astype(int).map(map_values)
     sleep_ps = go.Bar(x=x, y=y, name=name, marker_color=color)
     return sleep_ps
