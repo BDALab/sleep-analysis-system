@@ -27,3 +27,4 @@ __pycache__/
 /doc/
 /media/
 /secrets.json
+/static/
