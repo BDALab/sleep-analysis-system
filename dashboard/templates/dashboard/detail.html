@@ -54,7 +54,11 @@
                 <p>| Age: {{ subject.age }} | Sex: {{ subject.get_sex_display }}
                     | Sleep disorder: {{ subject.sleep_disorder }} | Diagnosis: {{ subject.diagnosis }}
                     | Creation date: {{ subject.creation_date }} | RBD-SQ score: {{ rbdsq }} |</p>
-                <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
+                <p>
+                    <a href="{% url 'dashboard:detail' subject.code 'export' %}" class="button button-small">Export to
+                        PDF report</a>
+                    <a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a>
+                </p>
 
             </div>
             <div class="title">

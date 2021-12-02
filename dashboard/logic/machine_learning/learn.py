@@ -13,7 +13,8 @@ from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, Repeate
 
 from dashboard.logic.cache import save_obj, load_obj
 from dashboard.logic.machine_learning.classification_metrics import scoring
-from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name
+from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name, algorithm, \
+    Algorithm
 from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_sting, \
     plot_logloss_and_error, plot_cross_validation
 from dashboard.models import CsvData
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 def prepare_model():
+    if algorithm == Algorithm.ZAngle:
+        return True
     start = datetime.now()
     learn()
     end = datetime.now()

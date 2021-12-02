@@ -43,7 +43,7 @@
                         </a>
                         <h3>Code: {{ s.code }}</h3>
                         <p>Creation date: {{ s.creation_date }}</p>
-                        <a href="{% url 'dashboard:detail' s.code %}" class="button button-small">Detail</a>
+                        <a href="{% url 'dashboard:detail' s.code 'export' %}" class="button button-small">Export</a>
                     </div>
                 </div>
             {% endfor %}

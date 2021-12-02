@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta, date, datetime, time
 
 import pandas as pd
+from pandas._libs.tslibs.nattype import NaT
 
 from dashboard.models import Subject, SleepDiaryDay, WakeInterval
 from mysite.settings import METADATA_PATH
@@ -32,23 +33,40 @@ def parse_metadata():
     df = pd.read_excel(METADATA_PATH, index_col=0)
     for index, row in df.iterrows():
         personal_id = row['#personalID']
+        if personal_id is None:
+            logger.error(f'Subject without personal ID detected! Skip...')
+            result = False
+            continue
         subject = Subject.objects.filter(code=personal_id).first()
         if subject is None:
-            subject = Subject(
-                code=personal_id,
-                age=datetime.now().year - (row['#dateOfBirth']).year
-            )
-            subject.save()
-
+            try:
+                subject = Subject(
+                    code=personal_id,
+                    age=datetime.now().year - (row['#dateOfBirth']).year
+                )
+                subject.save()
+            except Exception as e:
+                logger.error(f'Failed to parse subject; exception {str(e)}')
+                result = False
+                continue
         for i in range(1, 8):
             day = f'day{i}'
+            if subject is None or day is None or row[f'{day}-date'] is NaT:
+                logger.error(f'Day without subject or date detected! Skip...')
+                result = False
+                continue
             dd = SleepDiaryDay.objects.filter(subject=subject).filter(date=row[f'{day}-date']).first()
             if dd is None:
-                logger.info(f'Create new diary day: subject {personal_id} | day {i}')
-                dd = SleepDiaryDay(
-                    subject=subject,
-                    date=row[f'{day}-date'],
-                )
+                try:
+                    logger.info(f'Create new diary day: subject {personal_id} | day {i}')
+                    dd = SleepDiaryDay(
+                        subject=subject,
+                        date=row[f'{day}-date'],
+                    )
+                except Exception as e:
+                    logger.error(f'Failed to parse day for subject {subject.code}; exception {str(e)}')
+                    result = False
+                    continue
             try:
                 dd.day_sleep_count = row[f'{day}-1a']
                 dd.day_sleep_time = row[f'{day}-1b']

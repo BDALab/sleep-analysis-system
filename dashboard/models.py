@@ -1,3 +1,11 @@
+# HOW TO CHANGE MODEL:
+# Change your models (in models.py).
+# Run python manage.py makemigrations to create migrations for those changes
+# --> python manage.py makemigrations dashboard
+# Run python manage.py migrate to apply those changes to the database.
+# --> python manage.py sqlmigrate dashboard 0001
+# --> python manage.py migrate
+
 import os
 from datetime import timedelta, datetime
 from os import path
@@ -7,15 +15,8 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from dashboard.logic import cache
-
-
-# HOW TO CHANGE MODEL:
-# Change your models (in models.py).
-# Run python manage.py makemigrations to create migrations for those changes
-# --> python manage.py makemigrations dashboard
-# Run python manage.py migrate to apply those changes to the database.
-# --> python manage.py sqlmigrate dashboard 0001
-# --> python manage.py migrate
+from dashboard.logic.highlevel_features.norms import sol, awk5plus, waso, se
+from settings import MEDIA_ROOT
 
 
 class Subject(models.Model):
@@ -35,6 +36,14 @@ class Subject(models.Model):
 
     def is_test(self):
         return CsvData.objects.filter(subject=self).filter(training_data=True).exists()
+
+    @property
+    def export_path(self):
+        return path.join(MEDIA_ROOT, 'export', self.code)
+
+    @property
+    def export_name(self):
+        return path.join(self.export_path, f'{self.code}_report')
 
 
 class CsvData(models.Model):
@@ -71,6 +80,15 @@ class CsvData(models.Model):
         split = path.split(self.data.path)
         folder = f'{split[0]}/../cache'
         name = f'{split[1]}.pkl'
+        if not path.exists(folder):
+            os.mkdir(folder)
+        return f'{folder}/{name}'
+
+    @property
+    def z_data_path(self):
+        split = path.split(self.data.path)
+        folder = f'{split[0]}/../z_prediction'
+        name = f'{split[1]}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)
         return f'{folder}/{name}'
@@ -208,6 +226,69 @@ class SleepDiaryDay(models.Model):
                f'| Sleep end: {self.wake_time} ' \
                f'| Get up time: {self.get_up_time}'
 
+    @staticmethod
+    def convert(n):
+        return timedelta(seconds=n)
+
+    @property
+    def tib(self):
+        return (self.t4 - self.t1).seconds
+
+    @property
+    def sol(self):
+        return (self.t2 - self.t1).seconds
+
+    @property
+    def waso(self):
+        wake = 0
+        for i in self.wake_intervals:
+            wake += i.duration.seconds
+        return wake
+
+    @property
+    def wasf(self):
+        return (self.t4 - self.t3).seconds
+
+    @property
+    def tst(self):
+        return self.tib - (self.sol + self.waso + self.wasf)
+
+    @property
+    def wb(self):
+        return len(self.wake_intervals)
+
+    @property
+    def awk5plus(self):
+        count = 0
+        for i in self.wake_intervals:
+            if i.duration.seconds >= 300:
+                count += 1
+        return count
+
+    @property
+    def se(self):
+        return (self.tst / self.tib) * 100
+
+    @property
+    def sf(self):
+        return self.wb / (self.tst / 3600)
+
+    @property
+    def sol_norm(self):
+        return sol(self.subject.age, self.sol)
+
+    @property
+    def awk5plus_norm(self):
+        return awk5plus(self.subject.age, self.awk5plus)
+
+    @property
+    def waso_norm(self):
+        return waso(self.subject.age, self.waso)
+
+    @property
+    def se_norm(self):
+        return se(self.subject.age, self.se)
+
 
 class WakeInterval(models.Model):
     sleep_diary_day = models.ForeignKey(SleepDiaryDay, on_delete=models.CASCADE)
@@ -283,11 +364,24 @@ class SleepNight(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     sleep_onset = models.DateTimeField('sleep onset')
     sleep_end = models.DateTimeField('sleep end')
-    tst = models.PositiveIntegerField('total sleep time')
-    waso = models.PositiveIntegerField('wake after sleep onset')
-    se = models.FloatField('sleep efficiency')
-    sf = models.FloatField('sleep fragmentation')
+    tib = models.PositiveIntegerField('time in bed')
     sol = models.PositiveIntegerField('sleep onset latency')
+    waso = models.PositiveIntegerField('wake after sleep onset')
+    wasf = models.PositiveIntegerField('wake after sleep offset')
+    wb = models.PositiveIntegerField('wake bouts')
+    awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')
+
+    @property
+    def tst(self):
+        return self.tib - (self.sol + self.waso + self.wasf)
+
+    @property
+    def se(self):
+        return (self.tst / self.tib) * 100
+
+    @property
+    def sf(self):
+        return self.wb / (self.tst / 3600)
 
     @property
     def name(self):
@@ -306,15 +400,39 @@ class SleepNight(models.Model):
     def name_url(self):
         return self.data.data.storage.url(self.name)
 
+    @property
+    def sol_norm(self):
+        return sol(self.subject.age, self.sol)
+
+    @property
+    def awk5plus_norm(self):
+        return awk5plus(self.subject.age, self.awk5plus)
+
+    @property
+    def waso_norm(self):
+        return waso(self.subject.age, self.waso)
+
+    @property
+    def se_norm(self):
+        return se(self.subject.age, self.se)
+
     def __str__(self):
         return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} | {self.info}'
 
     @property
     def info(self):
         return f'Sleep onset: {self.sleep_onset.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
-               f'| Sleep end: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Sleep offset: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Time in bed: {self.convert(self.tib)} ' \
                f'| Total sleep time: {self.convert(self.tst)} ' \
+               f'| Sleep onset latency: {self.convert(self.sol)}' \
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
+               f'| Wake after sleep offset: {self.convert(self.wasf)} ' \
+               f'| Wake bouts: {self.wb} ' \
                f'| Sleep efficiency: {self.se:.1f}% ' \
                f'| Sleep fragmentation: {self.sf:.2f} ' \
-               f'| Sleep onset latency: {self.convert(self.sol)}'
+               f'| Awakenings > 5 minutes: {self.awk5plus}' \
+               f'| Sleep onset latency norm: {self.sol_norm}' \
+               f'| Awakenings > 5 minutes norm: {self.awk5plus_norm}' \
+               f'| Wake after sleep onset norm: {self.waso_norm}' \
+               f'| Sleep efficiency norm: {self.se_norm}'

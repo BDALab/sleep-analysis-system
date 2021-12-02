@@ -3,7 +3,7 @@ from pandas import read_excel
 from plotly.offline import plot
 
 from dashboard.logic.machine_learning.predict import predict
-from dashboard.logic.machine_learning.settings import scale_name, prediction_name, hilev_prediction
+from dashboard.logic.machine_learning.settings import scale_name, prediction_name
 from dashboard.models import SleepNight, CsvData
 
 
@@ -31,30 +31,30 @@ def create_graph(d):
                     sleep_predicted
                 ]
             )
-        title = \
-            f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date}' \
-                if not d.description else \
-                f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
-                f'Description: {d.description}'
+        # title = \
+        #     f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date}' \
+        #         if not d.description else \
+        #         f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
+        #         f'Description: {d.description}'
     elif isinstance(d, SleepNight):
-        sleep_predicted = _sleep_data_from_sleep_night(d, hilev_prediction, 'Sleep prediction', '#fdc601')
+        sleep_predicted = _sleep_data_from_sleep_night(d, prediction_name, 'Sleep prediction', '#fdc601')
         fig = go.Figure(
             data=[
                 sleep_predicted
             ]
         )
-        title = \
-            f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date}' \
-                if not d.data.description else \
-                f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date} | ' \
-                f'Description: {d.data.description}'
+        # title = \
+        #     f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date}' \
+        #         if not d.data.description else \
+        #         f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date} | ' \
+        #         f'Description: {d.data.description}'
     else:
         return
 
     fig.update_layout(
-        title_text=title,
+        # title_text=title,
         plot_bgcolor='#FFFFFF',
-        paper_bgcolor='#EDEDED',
+        # paper_bgcolor='#EDEDED',
         barmode='group',
         yaxis={'categoryorder': 'category descending'}
     )
@@ -71,7 +71,8 @@ def create_graph(d):
                      )
                      )
     plot_div = plot(figure_or_data=fig, output_type='div')
-    return plot_div
+
+    return plot_div, fig
 
 
 def _sleep_data_from_data_frame(df, column, name, color):
@@ -85,7 +86,7 @@ def _sleep_data_from_data_frame(df, column, name, color):
 def _sleep_data_from_sleep_night(sleep_night, column, name, color):
     df = read_excel(sleep_night.name, index_col=0)
     x = df.index
-    map_values = {'S': 'Sleep', 'W': 'Wake'}
-    y = df[column].astype(str).map(map_values)
+    map_values = {1: 'Sleep', 0: 'Wake'}
+    y = df[column].astype(int).map(map_values)
     sleep_ps = go.Bar(x=x, y=y, name=name, marker_color=color)
     return sleep_ps

@@ -1,18 +1,21 @@
 import logging
+import os.path
 
 import pytz
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
 from dashboard.logic.features_extraction.extract_features import extract_features_all
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
+from .export.export_actions import export_all, export_subject
+from .logic.highlevel_features.count_hilev import hilev
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
+from .logic.preprocessing.split_data import split_data
 from .logic.reults_visualization.sleep_graph import create_graph
-from .logic.sleep_diary.count_hilev import hilev
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .logic.utils_check import check_all_data, check_extracted_features, check_cached_data, check_model, \
@@ -65,16 +68,15 @@ def detail(request, code):
         if sleep_nights.exists():
             data = []
             for night in sleep_nights:
-                plot_div = create_graph(night)
+                plot_div, fig = create_graph(night)
                 data.append((plot_div, night.name_url, night.info, night.diary_day.info))
             context['data'] = data
-
         else:
             csv_data = CsvData.objects.filter(subject=subject)
             if csv_data.exists():
                 data = []
                 for d in csv_data:
-                    plot_div = create_graph(d)
+                    plot_div, fig = create_graph(d)
                     data.append((plot_div, d.excel_prediction_url))
                 context['data'] = data
 
@@ -86,11 +88,25 @@ def detail(request, code):
         if rbdsq.exists():
             score = rbdsq.latest('creation_date').score()
             context['rbdsq'] = score
-
         return render(request, 'dashboard/detail.html', context)
     else:
         logger.warning(f'Blocked request to access subject {code} data for user {request.user}')
         return redirect('dashboard:index')
+
+
+@staff_member_required
+def detail_action(request, code, action):
+    subject = get_object_or_404(Subject, code=code)
+    if request.user.get_username() == code or \
+            request.user.is_superuser or \
+            request.user.groups.filter(name='researchers').exists() or \
+            request.user.groups.filter(name='administrators').exists():
+        if action == 'export':
+            export_subject(subject, request.user.get_full_name())
+            if os.path.exists(f'{subject.export_name}.pdf'):
+                return FileResponse(open(f'{subject.export_name}.pdf', 'rb'), as_attachment=True)
+        else:
+            return redirect('dashboard:index')
 
 
 # Change to be async and show progress bar: https://buildwithdjango.com/blog/post/celery-progress-bars/
@@ -102,6 +118,7 @@ def utils(request, action=None):
     template = loader.get_template('dashboard/utils.html')
 
     # Cache
+
     if action == 'cache':
         logger.info(f'Cache data')
         if preprocess_all_data():
@@ -256,7 +273,7 @@ def utils(request, action=None):
 
     # All
     elif action == 'all':
-        if preprocess_all_data() and extract_features_all() and prepare_model() and predict_all():
+        if preprocess_all_data() and extract_features_all() and predict_all() and split_data() and hilev():
             logger.info('All operations OK')
             context = {
                 'ok': 'All operations performed successfully'
@@ -312,6 +329,17 @@ def utils(request, action=None):
             logger.error('Validation failed with an exception.')
             context = {
                 'fail': 'Validation failed!'}
+    elif action == 'split':
+        logger.info('Split sleep data by nights')
+        if split_data():
+            logger.info('Data splitting done')
+            context = {
+                'ok': 'Data splitting successful'
+            }
+        else:
+            logger.error('Data splitting end up with exception.')
+            context = {
+                'fail': 'Data splitting failed!'}
     elif action == 'hilev':
         logger.info('Calculate high level features')
         if hilev():
@@ -323,9 +351,19 @@ def utils(request, action=None):
             logger.error('Count high level features end up with exception.')
             context = {
                 'fail': 'Count HiLev failed!'}
+    elif action == 'export':
+        logger.info('Export subjects to pdf')
+        if export_all(request.user.get_full_name()):
+            logger.info('Export completed')
+            context = {
+                'ok': 'Export completed successfully'
+            }
+        else:
+            logger.error('Failed to export subjects')
+            context = {
+                'fail': 'Export for all subjects failed!'}
     else:
         context = {}
-
     return HttpResponse(template.render(context, request))
 
 
