@@ -1,5 +1,3 @@
-
-
 *.pyc
 *.xml
 *.iml
@@ -27,4 +25,4 @@ __pycache__/
 /doc/
 /media/
 /secrets.json
-/static/
+static/

@@ -7,7 +7,6 @@ class Algorithm(Enum):
 
 
 algorithm = Algorithm.ZAngle
-
 # ---------------------
 # ZAngle
 # ---------------------
