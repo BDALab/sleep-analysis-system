@@ -16,6 +16,7 @@ from django.db import models
 
 from dashboard.logic import cache
 from dashboard.logic.highlevel_features.norms import sol, awk5plus, waso, se
+from settings import MEDIA_ROOT
 
 
 class Subject(models.Model):
@@ -35,6 +36,14 @@ class Subject(models.Model):
 
     def is_test(self):
         return CsvData.objects.filter(subject=self).filter(training_data=True).exists()
+
+    @property
+    def export_path(self):
+        return path.join(MEDIA_ROOT, 'export', self.code)
+
+    @property
+    def export_name(self):
+        return path.join(self.export_path, f'{self.code}_report')
 
 
 class CsvData(models.Model):
@@ -216,6 +225,69 @@ class SleepDiaryDay(models.Model):
                f'| Wake ups: {self.wake_intervals_str}' \
                f'| Sleep end: {self.wake_time} ' \
                f'| Get up time: {self.get_up_time}'
+
+    @staticmethod
+    def convert(n):
+        return timedelta(seconds=n)
+
+    @property
+    def tib(self):
+        return (self.t4 - self.t1).seconds
+
+    @property
+    def sol(self):
+        return (self.t2 - self.t1).seconds
+
+    @property
+    def waso(self):
+        wake = 0
+        for i in self.wake_intervals:
+            wake += i.duration.seconds
+        return wake
+
+    @property
+    def wasf(self):
+        return (self.t4 - self.t3).seconds
+
+    @property
+    def tst(self):
+        return self.tib - (self.sol + self.waso + self.wasf)
+
+    @property
+    def wb(self):
+        return len(self.wake_intervals)
+
+    @property
+    def awk5plus(self):
+        count = 0
+        for i in self.wake_intervals:
+            if i.duration.seconds >= 300:
+                count += 1
+        return count
+
+    @property
+    def se(self):
+        return (self.tst / self.tib) * 100
+
+    @property
+    def sf(self):
+        return self.wb / (self.tst / 3600)
+
+    @property
+    def sol_norm(self):
+        return sol(self.subject.age, self.sol)
+
+    @property
+    def awk5plus_norm(self):
+        return awk5plus(self.subject.age, self.awk5plus)
+
+    @property
+    def waso_norm(self):
+        return waso(self.subject.age, self.waso)
+
+    @property
+    def se_norm(self):
+        return se(self.subject.age, self.se)
 
 
 class WakeInterval(models.Model):

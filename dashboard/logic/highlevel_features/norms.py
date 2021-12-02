@@ -25,6 +25,9 @@ class NORM(Enum):
     UNCERTAIN = 0
     INAPPROPRIATE = -1
 
+    def __int__(self):
+        return self.value
+
 
 def sol(age, value):
     value = value / 60  # TO MINUTES
@@ -42,6 +45,24 @@ def sol(age, value):
         return NORM.INAPPROPRIATE
 
 
+def sol_appropriate():
+    return '0-30 mins'
+
+
+def sol_uncertain(age):
+    if age >= AGE.OLDER_ADULT:
+        return '31-60 mins'
+    else:
+        return '31-45 mins'
+
+
+def sol_inappropriate(age):
+    if age >= AGE.OLDER_ADULT:
+        return '61+ mins'
+    else:
+        return '46+ mins'
+
+
 def awk5plus(age, value):
     if value < 2:
         return NORM.APPROPRIATE
@@ -53,6 +74,29 @@ def awk5plus(age, value):
         return NORM.UNCERTAIN
     else:
         return NORM.INAPPROPRIATE
+
+
+def awk5plus_appropriate(age):
+    if age >= AGE.OLDER_ADULT:
+        return '0-2'
+    else:
+        return '0-1'
+
+
+def awk5plus_uncertain(age):
+    if age >= AGE.OLDER_ADULT:
+        return '3'
+    elif AGE.TEENAGER <= age < AGE.YOUNG_ADULT:
+        return '2'
+    else:
+        return '2-3'
+
+
+def awk5plus_inappropriate(age):
+    if AGE.TEENAGER <= age < AGE.YOUNG_ADULT:
+        return '3+'
+    else:
+        return '4+'
 
 
 def waso(age, value):
@@ -70,6 +114,35 @@ def waso(age, value):
         return NORM.INAPPROPRIATE
 
 
+def waso_appropriate(age):
+    if age >= AGE.OLDER_ADULT:
+        return '0-30 mins'
+    else:
+        return '0-20 mins'
+
+
+def waso_uncertain(age):
+    if age >= AGE.OLDER_ADULT:
+        return '31+ mins'
+    elif age < AGE.SCHOOL_AGE:
+        return '21-50 mins'
+    elif AGE.TEENAGER <= age < AGE.YOUNG_ADULT:
+        return '21-50 mins'
+    else:
+        return '21-40 mins'
+
+
+def waso_inappropriate(age):
+    if age >= AGE.OLDER_ADULT:
+        return '-'
+    elif age < AGE.SCHOOL_AGE:
+        return '51+ mins'
+    elif AGE.TEENAGER <= age < AGE.YOUNG_ADULT:
+        return '51+ mins'
+    else:
+        return '41+ mins'
+
+
 def se(age, value):
     if value >= 85:
         return NORM.APPROPRIATE
@@ -79,3 +152,21 @@ def se(age, value):
         return NORM.UNCERTAIN
     else:
         return NORM.INAPPROPRIATE
+
+
+def se_appropriate():
+    return '100-85%'
+
+
+def se_uncertain(age):
+    if AGE.YOUNG_ADULT <= age < AGE.ADULT:
+        return '84-65%'
+    else:
+        return '84-75%'
+
+
+def se_inappropriate(age):
+    if AGE.YOUNG_ADULT <= age < AGE.ADULT:
+        return '64-0%'
+    else:
+        return '74-0%'

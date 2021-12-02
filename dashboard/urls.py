@@ -11,6 +11,7 @@ urlpatterns = [
     path('utils/', views.utils, name='utils'),
     path('<code>/', views.detail, name='detail'),
     path('utils/<action>', views.utils, name='utils'),
+    path('<code>/<action>', views.detail_action, name='detail'),
     path('admin/', admin.site.urls),
     path('set_timezone', views.set_timezone, name='set_timezone'),
 ]

@@ -31,11 +31,11 @@ def create_graph(d):
                     sleep_predicted
                 ]
             )
-        title = \
-            f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date}' \
-                if not d.description else \
-                f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
-                f'Description: {d.description}'
+        # title = \
+        #     f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date}' \
+        #         if not d.description else \
+        #         f'Body location: {d.get_body_location_display()} | Creation date: {d.creation_date} | ' \
+        #         f'Description: {d.description}'
     elif isinstance(d, SleepNight):
         sleep_predicted = _sleep_data_from_sleep_night(d, prediction_name, 'Sleep prediction', '#fdc601')
         fig = go.Figure(
@@ -43,18 +43,18 @@ def create_graph(d):
                 sleep_predicted
             ]
         )
-        title = \
-            f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date}' \
-                if not d.data.description else \
-                f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date} | ' \
-                f'Description: {d.data.description}'
+        # title = \
+        #     f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date}' \
+        #         if not d.data.description else \
+        #         f'Body location: {d.data.get_body_location_display()} | Creation date: {d.data.creation_date} | ' \
+        #         f'Description: {d.data.description}'
     else:
         return
 
     fig.update_layout(
-        title_text=title,
+        # title_text=title,
         plot_bgcolor='#FFFFFF',
-        paper_bgcolor='#EDEDED',
+        # paper_bgcolor='#EDEDED',
         barmode='group',
         yaxis={'categoryorder': 'category descending'}
     )
@@ -71,7 +71,8 @@ def create_graph(d):
                      )
                      )
     plot_div = plot(figure_or_data=fig, output_type='div')
-    return plot_div
+
+    return plot_div, fig
 
 
 def _sleep_data_from_data_frame(df, column, name, color):

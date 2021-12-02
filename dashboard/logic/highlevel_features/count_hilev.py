@@ -64,8 +64,8 @@ def hilev(algrithm=None):
             continue
         sleep_interval = df.loc[sleep[0]:sleep[-1], [prediction_name]]
         wake = sleep_interval.index[sleep_interval[prediction_name] == 0].tolist()
-        night.sleep_onset = pytz.timezone("Europe/Prague").localize(sleep[0])
-        night.sleep_end = pytz.timezone("Europe/Prague").localize(sleep[-1])
+        night.sleep_onset = pytz.timezone("UTC").localize(sleep[0])
+        night.sleep_end = pytz.timezone("UTC").localize(sleep[-1])
         tst_interval = df.loc[sleep[0]:sleep[-1], [prediction_name]]
         _count_hilevs(day, night, tst_interval, sleep, wake)
         logger.info(night)
@@ -131,14 +131,18 @@ def _count_hilevs(day, night, tst_interval, sleep, wake):
 
 def _count_awk5plus(pred):
     awk5p = 0
+    wake_counter = 0
     sleep_counter = 0
     for v in pred[prediction_name]:
-        if v == 1:
-            sleep_counter += 1
-            if sleep_counter == 10:
+        if v == 0:  # wake
+            wake_counter += 1
+            if wake_counter == 10 and sleep_counter >= 10:
+                # 10 * 30s = 5minutes -> 5 minutes of wake without short disruption of sleep shorter then 5 minutes
                 awk5p += 1
-        else:
-            sleep_counter = 0
+                sleep_counter = 0
+        else:  # sleep
+            sleep_counter += 1
+            wake_counter = 0
     return awk5p
 
 
