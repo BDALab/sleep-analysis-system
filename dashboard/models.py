@@ -15,8 +15,9 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from dashboard.logic import cache
-from dashboard.logic.highlevel_features.norms import sol, awk5plus, waso, se
-from settings import MEDIA_ROOT
+from dashboard.logic.features_extraction.norms import sol, awk5plus, waso, se
+from dashboard.logic.features_extraction.utils import safe_div
+from mysite.settings import MEDIA_ROOT
 
 
 class Subject(models.Model):
@@ -28,8 +29,10 @@ class Subject(models.Model):
     ]
     sex = models.CharField('sex', max_length=1, choices=SEX)
     creation_date = models.DateField('creation date', auto_now_add=True)
-    sleep_disorder = models.BooleanField('sleep disorder', default=False)
-    diagnosis = models.CharField('diagnosis', max_length=255, blank=True)
+    pPD = models.BooleanField('probable parkinson disease', default=False)
+    pMCI = models.BooleanField('probable mild cognitive impairment', default=False)
+    HC = models.BooleanField('hemicrania continua', default=False)
+    SA = models.BooleanField('sleep apnea', default=False)
 
     def __str__(self):
         return self.code
@@ -267,11 +270,11 @@ class SleepDiaryDay(models.Model):
 
     @property
     def se(self):
-        return (self.tst / self.tib) * 100
+        return safe_div(self.tst, self.tib) * 100
 
     @property
     def sf(self):
-        return self.wb / (self.tst / 3600)
+        return safe_div(self.wb, (self.tst / 3600))
 
     @property
     def sol_norm(self):
@@ -372,16 +375,20 @@ class SleepNight(models.Model):
     awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')
 
     @property
+    def date(self):
+        return self.diary_day.date
+
+    @property
     def tst(self):
         return self.tib - (self.sol + self.waso + self.wasf)
 
     @property
     def se(self):
-        return (self.tst / self.tib) * 100
+        return safe_div(self.tst, self.tib) * 100
 
     @property
     def sf(self):
-        return self.wb / (self.tst / 3600)
+        return safe_div(self.wb, (self.tst / 3600))
 
     @property
     def name(self):
