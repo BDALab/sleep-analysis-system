@@ -1,12 +1,9 @@
-from math import nan
 from statistics import variance, stdev, mean, median
 
 from numpy import quantile, percentile
 from scipy.stats import iqr, trim_mean, median_absolute_deviation, kurtosis, skew, mode
 
-
-def safe_div(a, b):
-    return nan if b == 0 else a / b
+from dashboard.logic.features_extraction.utils import safe_div
 
 
 def _get_features_for_vector(vec, prefix):

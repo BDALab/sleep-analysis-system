@@ -43,7 +43,7 @@ class SubjectAdmin(NestedModelAdmin):
     fieldsets = [
         (None, {'fields': ['code']}),
         ('Subject info', {'fields': ['age', 'sex']}),
-        ('Diagnosis', {'fields': ['sleep_disorder', 'diagnosis']})
+        ('Diagnosis', {'fields': ['pPD', 'pMCI', 'HC', 'SA']})
     ]
     inlines = [CsvDataInline, RBDSQInline, SleepDiaryInline]
 

@@ -3,7 +3,7 @@ import logging
 import pandas
 import pandas as pd
 
-from dashboard.logic.features_extraction.data_entry import safe_div
+from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import hilev_prediction, Algorithm, algorithm, prediction_name
 from dashboard.logic.zangle.helper_functions import is_cached, get_split_path
 from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
