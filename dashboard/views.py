@@ -8,10 +8,11 @@ from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
+from dashboard.export.export_hilev import export_all_features
+from dashboard.logic.features_extraction.count_hilev import hilev
 from dashboard.logic.features_extraction.extract_features import extract_features_all
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .export.export_actions import export_all, export_subject
-from .logic.highlevel_features.count_hilev import hilev
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
 from .logic.preprocessing.split_data import split_data
@@ -362,6 +363,17 @@ def utils(request, action=None):
             logger.error('Failed to export subjects')
             context = {
                 'fail': 'Export for all subjects failed!'}
+    elif action == 'export_dataset':
+        logger.info('Export dataset to excel')
+        if export_all_features():
+            logger.info('Export completed')
+            context = {
+                'ok': 'Export completed successfully'
+            }
+        else:
+            logger.error('Failed to export dataset')
+            context = {
+                'fail': 'Export of features to dataset failed!'}
     else:
         context = {}
     return HttpResponse(template.render(context, request))

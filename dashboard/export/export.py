@@ -5,11 +5,11 @@ from pylatex import Document, Section, Subsection, Figure, Tabular, Table, TextC
     Command, PageStyle, Head, Foot, Enumerate, Marker, Label, Ref, NewLine, StandAloneGraphic
 from pylatex.utils import bold, NoEscape, escape_latex, italic
 
-from dashboard.logic.highlevel_features.norms import NORM, sol_appropriate, sol_uncertain, sol_inappropriate, \
+from dashboard.logic.features_extraction.norms import NORM, sol_appropriate, sol_uncertain, sol_inappropriate, \
     awk5plus_appropriate, awk5plus_uncertain, awk5plus_inappropriate, waso_appropriate, waso_uncertain, \
     waso_inappropriate, se_appropriate, se_uncertain, se_inappropriate
 from dashboard.models import Subject, SleepNight, SleepDiaryDay
-from settings import STATIC_ROOT
+from mysite.settings import STATIC_ROOT
 
 
 class Export:
