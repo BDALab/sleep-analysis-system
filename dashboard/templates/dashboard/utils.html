@@ -109,6 +109,18 @@
             <a href="{% url 'dashboard:utils' 'export_dataset' %}"
                class="button button-small button-fix-width">Export</a>
         </div>
+        <div class="small-column">
+            <h3>Export avg dataset</h3>
+            <p>Export average data of all subjects into excel dataset.</p>
+            <a href="{% url 'dashboard:utils' 'export_dataset_avg' %}"
+               class="button button-small button-fix-width">Export</a>
+        </div>
+         <div class="small-column">
+            <h3>Parkinson classifier</h3>
+            <p>Train parkinson classifier for FNUSA.</p>
+            <a href="{% url 'dashboard:utils' 'parkinson_fnusa' %}"
+               class="button button-small button-fix-width">Export</a>
+        </div>
     </div>
 </div>
 

@@ -18,6 +18,7 @@ from os import path
 # -------------- PROJECT SETTINGS ---------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ML_DIR = f'{BASE_DIR}/ml'
+HILEV_DIR = f'{BASE_DIR}/hilev/imbalanced'
 if not path.exists(ML_DIR):
     os.mkdir(ML_DIR)
 HYPER_PARAMS_PATH = f"{ML_DIR}/best_hyper_params.pkl"
@@ -28,6 +29,9 @@ TRAINED_MODEL_EXPORT_PATH = f"{BASE_DIR}/trained_model_export.json"
 BEST_ESTIMATOR_PATH = f"{ML_DIR}/bst.pkl"
 CV_RESULTS_PATH = f"{ML_DIR}/cv_results.pkl"
 METADATA_PATH = f'{BASE_DIR}/metadata.xlsx'
+HILEV_FNUSA = f'{BASE_DIR}/dataset_hilev_FNUSA.xlsx'
+HILEV_CV_RESULTS_PATH = f"{HILEV_DIR}/cv_results.pkl"
+HILEV_TRAINED_MODEL_PATH = f"{HILEV_DIR}/trained_model.pkl"
 
 # -------------- DJANGO SETTINGS ----------------------
 # Quick-start development settings - unsuitable for production

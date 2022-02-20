@@ -6,13 +6,15 @@ import pandas as pd
 from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import hilev_prediction, Algorithm, algorithm, prediction_name
 from dashboard.logic.zangle.helper_functions import is_cached, get_split_path
-from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
+from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight, Subject
 
 logger = logging.getLogger(__name__)
 
 
 def validate_sleep_wake():
-    nights = SleepNight.objects.all()
+    me = Subject.objects.filter(code='CB-1').first()
+    nights = SleepNight.objects.filter(subject=me).all()
+    days = SleepDiaryDay.objects.filter(subject=me).all()
     total_TP = 0
     total_FP = 0
     total_TN = 0
@@ -20,7 +22,7 @@ def validate_sleep_wake():
     for night in nights:
         assert isinstance(night, SleepNight)
         df = _get_df(night)
-        day = night.diary_day
+        day = days.filter(date=night.diary_day.date).exclude(creation_date=night.diary_day.creation_date).first()
         assert isinstance(day, SleepDiaryDay)
         s = day.t1
         e = day.t4
