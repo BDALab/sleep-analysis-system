@@ -39,6 +39,7 @@ class Export:
     def export_figure(self, fig, name, obj):
         path = os.path.join(f'{self.subject.export_path}', f'{name}.pdf')
         fig.write_image(path)
+        fig.write_image(os.path.join(f'{self.subject.export_path}', f'{name}.png'))
         self.figures[obj] = path
 
     def export_sleep_nights(self, sleep_nights):

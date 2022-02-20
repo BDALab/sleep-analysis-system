@@ -13,8 +13,10 @@ from dashboard.logic.features_extraction.count_hilev import hilev
 from dashboard.logic.features_extraction.extract_features import extract_features_all
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .export.export_actions import export_all, export_subject
+from .export.export_hilev_avg import export_all_features_avg
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
+from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
 from .logic.preprocessing.split_data import split_data
 from .logic.reults_visualization.sleep_graph import create_graph
 from .logic.sleep_diary.parse_metadata import parse_metadata
@@ -374,6 +376,30 @@ def utils(request, action=None):
             logger.error('Failed to export dataset')
             context = {
                 'fail': 'Export of features to dataset failed!'}
+    elif action == 'export_dataset_avg':
+        logger.info('Export dataset with average for each subject to excel')
+        if export_all_features_avg():
+            logger.info('Export completed')
+            context = {
+                'ok': 'Export completed successfully'
+            }
+        else:
+            logger.error('Failed to export dataset')
+            context = {
+                'fail': 'Export of features to dataset failed!'}
+
+    elif action == 'parkinson_fnusa':
+        logger.info('Train parkinson classifier')
+        if train_parkinson_classifier():
+            logger.info('Training completed')
+            context = {
+                'ok': 'Classifier trained successfully'
+            }
+        else:
+            logger.error('Failed to train classifier')
+            context = {
+                'fail': 'Training of classifier failed!'}
+
     else:
         context = {}
     return HttpResponse(template.render(context, request))

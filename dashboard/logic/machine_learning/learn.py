@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from imblearn.over_sampling import SMOTE
-from sklearn.impute import KNNImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, RepeatedStratifiedKFold, cross_validate, \
     train_test_split
@@ -39,18 +38,14 @@ def learn():
     x, y, names = load_data()
     y = y.reshape((len(y),))
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.4, random_state=17)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.4, random_state=42)
     y_train = y_train.reshape((len(y_train),))
 
     logger.info('Original train data:}')
     log_data_info(y_train)
 
-    # Add NaN according to K-nearest neighbours
-    imputer = KNNImputer(n_neighbors=4, weights="uniform")
-    x_train = imputer.fit_transform(x_train)
-
     # Add synthetic values to balance dataset
-    sm = SMOTE(random_state=27)
+    sm = SMOTE(random_state=42)
     x_train, y_train = sm.fit_sample(x_train, y_train)
 
     logger.info('Data after SMOTE synthesis:}')

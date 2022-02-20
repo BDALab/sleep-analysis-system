@@ -10,6 +10,8 @@ from dashboard.models import SleepNight, CsvData
 def create_graph(d):
     if isinstance(d, CsvData):
         df = predict(d)
+        if df is None:
+            return
         sleep_predicted = _sleep_data_from_data_frame(df,
                                                       prediction_name,
                                                       'Predicted data',
