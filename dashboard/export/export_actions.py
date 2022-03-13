@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from dashboard.export.export import Export
-from dashboard.logic.multithread import parallel_for
+from dashboard.logic.multithread import parallel_for_with_param
 from dashboard.logic.reults_visualization.sleep_graph import create_graph
 from dashboard.models import Subject, SleepNight, SleepDiaryDay
 
@@ -15,7 +15,7 @@ def export_all(export_user):
     total_start = datetime.now()
     subjects = Subject.objects.all()
     logger.info(f'{len(subjects)} subjects will be exported')
-    results = parallel_for(subjects, export_subject, export_user)
+    results = parallel_for_with_param(subjects, export_subject, export_user)
 
     total_end = datetime.now()
     logger.info(f'For {len(subjects)} subjects export took {total_end - total_start}')

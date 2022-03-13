@@ -45,6 +45,7 @@ def preprocess_data(csv_object):
 
 
 def _preprocess_training_data(csv_object):
+    logger.info(f'Data will be preprocessed for {csv_object.filename}')
     ps_object = PsData.objects.filter(csv_data=csv_object).first()
     if not isinstance(ps_object, PsData) or not fix_csv_data(csv_object):
         return False

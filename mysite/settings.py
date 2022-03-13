@@ -18,7 +18,7 @@ from os import path
 # -------------- PROJECT SETTINGS ---------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ML_DIR = f'{BASE_DIR}/ml'
-HILEV_DIR = f'{BASE_DIR}/hilev/imbalanced'
+HILEV_DIR = f'{BASE_DIR}/hilev/merged'
 if not path.exists(ML_DIR):
     os.mkdir(ML_DIR)
 HYPER_PARAMS_PATH = f"{ML_DIR}/best_hyper_params.pkl"

@@ -6,7 +6,7 @@ class Algorithm(Enum):
     ZAngle = 1
 
 
-algorithm = Algorithm.ZAngle
+algorithm = Algorithm.XGBoost
 # ---------------------
 # ZAngle
 # ---------------------
@@ -37,9 +37,8 @@ model_params = {
 
     # Learning task parameters
     "objective": "binary:logistic",  # https://xgboost.readthedocs.io/en/latest/parameter.html
-    "eval_metric": ["error", "logloss", "auc"],
+    "eval_metric": ["rmsle", "error", "logloss", "auc"],
     "seed": seed,
-
     # Tree Booster parameters
     "n_estimators": 1000,
     "learning_rate": 0.20,
@@ -83,4 +82,4 @@ prediction_name = "SLEEP_PREDICTION"
 
 hilev_prediction = 'PREDICTION'
 
-model_name = "Model D"
+model_name = "Model F"
