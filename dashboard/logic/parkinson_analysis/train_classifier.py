@@ -11,7 +11,7 @@ from sklearn.impute import KNNImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
 
-from dashboard.logic.cache import save_obj, load_obj
+from dashboard.logic.cache import save_obj
 from dashboard.logic.machine_learning.learn import evaluate_cross_validation, results_to_print, _train_model
 from dashboard.logic.machine_learning.settings import model_params, search_settings
 from dashboard.logic.machine_learning.visualisation import plot_cross_validation, plot_fi, plot_logloss_and_error, \
@@ -53,7 +53,8 @@ def train_parkinson_classifier():
              'Sleep fragmentation (D)',
              ]
 
-    x = df[[c for c in df.columns if (c in names)]].values
+    na = df.columns
+    x = df[names].values
     y = df['Probable Parkinson Disease'].values
     y = y.reshape((len(y),))
 
@@ -83,6 +84,8 @@ def train_parkinson_classifier():
 
 def learn_model(x, y, names):
     start = datetime.now()
+    logger.info('Whole dataset:}')
+    log_data_info(y)
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.4, random_state=13)
     y_train = y_train.reshape((len(y_train),))
@@ -94,8 +97,8 @@ def learn_model(x, y, names):
     x_train = imputer.fit_transform(x_train)
 
     # Add synthetic values to balance dataset
-    # sm = SMOTE(random_state=27)
-    # x_train, y_train = sm.fit_sample(x_train, y_train)
+    sm = SMOTE(random_state=27)
+    x_train, y_train = sm.fit_sample(x_train, y_train)
 
     logger.info('Data after SMOTE synthesis:}')
     log_data_info(y_train)

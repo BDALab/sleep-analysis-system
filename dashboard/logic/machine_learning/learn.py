@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from imblearn.over_sampling import SMOTE
+from sklearn.impute import KNNImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, RepeatedStratifiedKFold, cross_validate, \
     train_test_split
@@ -43,6 +44,10 @@ def learn():
 
     logger.info('Original train data:}')
     log_data_info(y_train)
+
+    # Add NaN according to K-nearest neighbours
+    imputer = KNNImputer(n_neighbors=4, weights="uniform")
+    x_train = imputer.fit_transform(x_train)
 
     # Add synthetic values to balance dataset
     sm = SMOTE(random_state=42)
@@ -103,7 +108,7 @@ def log_data_info(y_train):
     wake = [e for e in y_tmp if e == 0]
     logger.info('Percentage of sleep/wake:')
     logger.info(f'Sleep: {len(sleep)} entries, {(len(sleep) / len(y_tmp)) * 100:.2f}%')
-    logger.info(f'Sleep: {len(wake)} entries, {(len(wake) / len(y_tmp)) * 100:.2f}%')
+    logger.info(f'Wake: {len(wake)} entries, {(len(wake) / len(y_tmp)) * 100:.2f}%')
 
 
 def train_model(model, x, y, eval_metrics=["error", "logloss", "auc"]):
