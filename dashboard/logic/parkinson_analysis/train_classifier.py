@@ -1,11 +1,10 @@
 import logging
-import os.path
-from datetime import datetime
-
 import matplotlib.pyplot as plt
+import os.path
 import pandas as pd
 import shap
 import xgboost
+from datetime import datetime
 from imblearn.over_sampling import SMOTE
 from sklearn.impute import KNNImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
@@ -55,7 +54,7 @@ def train_parkinson_classifier():
 
     na = df.columns
     x = df[names].values
-    y = df['Probable Parkinson Disease'].values
+    y = (df['Probable Parkinson Disease'] | df['Probable Mild Cognitive Impairment']).values
     y = y.reshape((len(y),))
 
     if not os.path.exists(HILEV_DIR):
@@ -97,8 +96,8 @@ def learn_model(x, y, names):
     x_train = imputer.fit_transform(x_train)
 
     # Add synthetic values to balance dataset
-    sm = SMOTE(random_state=27)
-    x_train, y_train = sm.fit_sample(x_train, y_train)
+    # sm = SMOTE(random_state=27)
+    # x_train, y_train = sm.fit_sample(x_train, y_train)
 
     logger.info('Data after SMOTE synthesis:}')
     log_data_info(y_train)
