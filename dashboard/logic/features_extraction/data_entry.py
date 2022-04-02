@@ -43,7 +43,7 @@ def _get_features_for_vector(vec, prefix):
         f'{prefix} | MEAN EXCLUDING OUTLIERS (20)': trim_mean(vec, 0.2),
         f'{prefix} | MEAN EXCLUDING OUTLIERS (30)': trim_mean(vec, 0.3),
         f'{prefix} | MEAN EXCLUDING OUTLIERS (40)': trim_mean(vec, 0.4),
-        f'{prefix} | MEAN EXCLUDING OUTLIERS (50)': trim_mean(vec, 0.5),
+        # f'{prefix} | MEAN EXCLUDING OUTLIERS (50)': trim_mean(vec, 0.5),
         f'{prefix} | MEDIAN': _median,
         f'{prefix} | MODE': _mode,
         f'{prefix} | VARIANCE': _var,
@@ -82,19 +82,19 @@ def _get_features_for_vector(vec, prefix):
 
 
 class DataEntry(object):
-    def __init__(self, time, accelerometer, temperature, sleep):
+    def __init__(self, time, acc, acc_z, sleep):
         self.time = time
-        self.accelerometer = accelerometer
-        self.temperature = temperature
+        self.acc = acc
+        self.acc_z = acc_z
         self.sleep = sleep
 
     def __str__(self):
         return f'DataEntry[Date: {self.time} | ' \
                f'Sleep: {bool(self.sleep)} | ' \
-               f'Accelerometer entries: {len(self.accelerometer)} | ' \
-               f'Temperature entries: {len(self.temperature)}]'
+               f'Accelerometer magnitude entries: {len(self.acc)} | ' \
+               f'Accelerometer z-angle entries: {len(self.acc_z)}]'
 
     def get_features(self):
-        features = _get_features_for_vector(self.accelerometer, 'ACCELEROMETER')
-        features.update(_get_features_for_vector(self.temperature, 'TEMPERATURE'))
+        features = _get_features_for_vector(self.acc, 'MAGNITUDE')
+        features.update(_get_features_for_vector(self.acc_z, 'Z_ANGLE'))
         return features

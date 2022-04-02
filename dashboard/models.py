@@ -31,7 +31,7 @@ class Subject(models.Model):
     creation_date = models.DateField('creation date', auto_now_add=True)
     pPD = models.BooleanField('probable parkinson disease', default=False)
     pMCI = models.BooleanField('probable mild cognitive impairment', default=False)
-    HC = models.BooleanField('hemicrania continua', default=False)
+    HC = models.BooleanField('healthy control', default=False)
     SA = models.BooleanField('sleep apnea', default=False)
 
     def __str__(self):
@@ -60,10 +60,7 @@ class CsvData(models.Model):
     data = models.FileField('data', upload_to='data/', validators=[FileExtensionValidator(["csv"])])
     description = models.CharField('description', max_length=255, blank=True)
     creation_date = models.DateField('date of upload', auto_now_add=True)
-    prediction_cached = models.BooleanField('graph image created', editable=False, default=0)
-    data_cached = models.BooleanField('data cached', editable=False, default=0)
     training_data = models.BooleanField('training data', default=False)
-    features_extracted = models.BooleanField('features extracted', editable=False, default=0)
 
     @property
     def filename(self):
@@ -79,7 +76,7 @@ class CsvData(models.Model):
         return f'{folder}/{name}'
 
     @property
-    def cached_data_path(self):
+    def x_data_path(self):
         split = path.split(self.data.path)
         folder = f'{split[0]}/../cache'
         name = f'{split[1]}.pkl'
@@ -91,15 +88,6 @@ class CsvData(models.Model):
     def z_data_path(self):
         split = path.split(self.data.path)
         folder = f'{split[0]}/../z_prediction'
-        name = f'{split[1]}.xlsx'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return f'{folder}/{name}'
-
-    @property
-    def features_data_path(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../features'
         name = f'{split[1]}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)

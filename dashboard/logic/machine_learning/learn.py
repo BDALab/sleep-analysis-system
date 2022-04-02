@@ -133,7 +133,7 @@ def load_data():
         frames = []
         for d in data:
             # Load the feature matrix and the label(s)
-            df = pd.read_excel(d.features_data_path, index_col=0)
+            df = pd.read_excel(d.x_data_path, index_col=0)
             frames.append(df)
 
         super_df = pd.concat(frames)
