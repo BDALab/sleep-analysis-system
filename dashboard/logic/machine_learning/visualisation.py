@@ -193,21 +193,11 @@ def plot_cross_validation(results, name, save_dir=ML_DIR):
     ax.plot(x_axis, results['test_acc'], label='Accuracy')
     ax.plot(x_axis, results['test_sen'], label='Sensitivity')
     ax.plot(x_axis, results['test_spe'], label='Specificity')
+    ax.plot(x_axis, results['test_f1'], label='F1 score')
     ax.plot(x_axis, results['test_mcc'], label='Matthews correlation coefficient')
     ax.legend(loc='best')
     pyplot.xlabel('Iteration')
     pyplot.ylabel('Evaluation metrics')
     pyplot.title(f'{name} - Cross Validation Results')
-    pyplot.savefig(f'{save_dir}/csres.png', dpi=300)
-    pyplot.show()
-
-    # plot ROC
-    x_axis = results['test_sen']
-    y_axis = results['test_spe']
-    fig, ax = pyplot.subplots()
-    ax.scatter(x_axis, y_axis)
-    pyplot.xlabel('Sensitivity')
-    pyplot.ylabel('Specificity')
-    pyplot.title(f'{name} - Sensitivity & Specificity')
-    pyplot.savefig(f'{save_dir}/ss.png', dpi=300)
+    pyplot.savefig(f'{save_dir}/cross_validation_results.png', dpi=300)
     pyplot.show()

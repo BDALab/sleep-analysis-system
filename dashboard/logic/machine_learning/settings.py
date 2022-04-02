@@ -37,7 +37,7 @@ model_params = {
 
     # Learning task parameters
     "objective": "binary:logistic",  # https://xgboost.readthedocs.io/en/latest/parameter.html
-    "eval_metric": ["rmsle", "error", "logloss", "auc"],
+    "eval_metric": ["rmse", "error", "logloss", "auc"],
     "seed": seed,
     # Tree Booster parameters
     "n_estimators": 1000,
