@@ -115,12 +115,18 @@
             <a href="{% url 'dashboard:utils' 'export_dataset_avg' %}"
                class="button button-small button-fix-width">Export</a>
         </div>
-         <div class="small-column">
+        <div class="small-column">
+            <h3>Export clinic dataset</h3>
+            <p>Export average & clinic data of all subjects into excel.</p>
+            <a href="{% url 'dashboard:utils' 'export_dataset_clinic' %}"
+               class="button button-small button-fix-width">Export</a>
+        </div>
+        <div class="small-column">
             <h3>Parkinson classifier</h3>
             <p>Train parkinson classifier for FNUSA.</p>
             <a href="{% url 'dashboard:utils' 'parkinson_fnusa' %}"
                class="button button-small button-fix-width">Train</a>
-         </div>
+        </div>
     </div>
 </div>
 
