@@ -1,17 +1,18 @@
 import logging
-import matplotlib.pyplot as plt
 import os.path
+from datetime import datetime
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import shap
 import xgboost
-from datetime import datetime
-from imblearn.over_sampling import SMOTE
 from sklearn.impute import KNNImputer
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
 
 from dashboard.logic.cache import save_obj
-from dashboard.logic.machine_learning.learn import evaluate_cross_validation, results_to_print, _train_model
+from dashboard.logic.machine_learning.learn import evaluate_cross_validation, results_to_print, \
+    train_model_test_train_data, results_to_print_cv
 from dashboard.logic.machine_learning.settings import model_params, search_settings
 from dashboard.logic.machine_learning.visualisation import plot_cross_validation, plot_fi, plot_logloss_and_error, \
     set_visual_styles
@@ -114,11 +115,11 @@ def learn_model(x, y, names):
         y_train=y_train,
         save_path=HILEV_CV_RESULTS_PATH)
 
-    logger.info(results_to_print(cv_results))
+    logger.info(results_to_print_cv(cv_results))
     plot_cross_validation(cv_results, 'Model binary:logistic', HILEV_DIR)
 
     # final training of model
-    _train_model(model, x_test, x_train, y_test, y_train)
+    train_model_test_train_data(model, x_test, x_train, y_test, y_train)
     save_obj(model, HILEV_TRAINED_MODEL_PATH)
 
     # Plot the feature importances
@@ -128,14 +129,14 @@ def learn_model(x, y, names):
     # predict on test data
     predict = model.predict(x_test)
     logger.info('After training results on test data: ')
-    logger.info(f'ACC: {accuracy_score(y_test, predict):.2f} | F1: {f1_score(y_test, predict):.2f}')
+    logger.info(results_to_print(y_test, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y_test, predict))
 
     # predict on whole dataset
     predict = model.predict(x)
     logger.info('After training results on whole dataset: ')
-    logger.info(f'ACC: {accuracy_score(y, predict):.2f} | F1: {f1_score(y, predict):.2f}')
+    logger.info(results_to_print(y_test, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y, predict))
 

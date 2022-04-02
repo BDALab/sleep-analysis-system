@@ -1,4 +1,4 @@
-from sklearn.metrics import recall_score, confusion_matrix, make_scorer, accuracy_score, matthews_corrcoef
+from sklearn.metrics import recall_score, confusion_matrix, make_scorer, accuracy_score, matthews_corrcoef, f1_score
 
 
 def sensitivity_score(y_true, y_pred):
@@ -12,8 +12,9 @@ def specificity_score(y_true, y_pred):
 
 # Prepare the scoring
 scoring = {
-    "acc": make_scorer(accuracy_score, greater_is_better=True),
-    "sen": make_scorer(sensitivity_score, greater_is_better=True),
-    "spe": make_scorer(specificity_score, greater_is_better=True),
-    "mcc": make_scorer(matthews_corrcoef, greater_is_better=True)
+    "acc": make_scorer(accuracy_score),
+    "sen": make_scorer(sensitivity_score),
+    "spe": make_scorer(specificity_score),
+    "mcc": make_scorer(matthews_corrcoef),
+    "f1": make_scorer(f1_score)
 }

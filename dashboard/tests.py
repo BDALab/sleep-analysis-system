@@ -7,7 +7,7 @@ from parameterized import parameterized
 from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef, confusion_matrix, classification_report
 
 from dashboard.logic import cache
-from dashboard.logic.machine_learning.learn import load_data, results_to_print
+from dashboard.logic.machine_learning.learn import load_data, results_to_print_cv
 from dashboard.logic.machine_learning.settings import scale_name
 from dashboard.logic.machine_learning.visualisation import plot_logloss_and_error, plot_fi, plot_cross_validation
 from mysite.settings import BASE_DIR, TRAINED_MODEL_PATH, TRAINED_MODEL_EXPORT_PATH
@@ -79,7 +79,7 @@ class ModelTuningsTest(unittest.TestCase):
         results = cache.load_obj(f'{model_dir}/cv_results.pkl')
         plot_fi(model, names, scale_name, sort=True, save_dir=model_dir)
         plot_cross_validation(results, name=name, save_dir=model_dir)
-        print(results_to_print(results))
+        print(results_to_print_cv(results))
 
         _test_prediction(model, x, y)
 

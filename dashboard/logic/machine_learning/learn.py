@@ -7,12 +7,12 @@ import pandas as pd
 import xgboost as xgb
 from imblearn.over_sampling import SMOTE
 from sklearn.impute import KNNImputer
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, matthews_corrcoef
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, RepeatedStratifiedKFold, cross_validate, \
     train_test_split
 
 from dashboard.logic.cache import save_obj, load_obj
-from dashboard.logic.machine_learning.classification_metrics import scoring
+from dashboard.logic.machine_learning.classification_metrics import scoring, sensitivity_score, specificity_score
 from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name, algorithm, \
     Algorithm
 from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_sting, \
@@ -74,11 +74,11 @@ def learn():
             x_train=x_train,
             y_train=y_train,
             save_path=CV_RESULTS_PATH)
-        logger.info(results_to_print(cv_results))
+        logger.info(results_to_print_cv(cv_results))
 
         plot_cross_validation(cv_results, 'Model binary:logistic')
 
-    _train_model(model, x_test, x_train, y_test, y_train)
+    train_model_test_train_data(model, x_test, x_train, y_test, y_train)
 
     save_obj(model, TRAINED_MODEL_PATH)
 
@@ -88,13 +88,13 @@ def learn():
 
     predict = model.predict(x_test)
     logger.info('After training results on test data: ')
-    logger.info(f'ACC: {accuracy_score(y_test, predict):.2f} | F1: {f1_score(y_test, predict):.2f}')
+    logger.info(results_to_print(y_test, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y_test, predict))
 
     predict = model.predict(x)
     logger.info('After training results on whole dataset: ')
-    logger.info(f'ACC: {accuracy_score(y, predict):.2f} | F1: {f1_score(y, predict):.2f}')
+    logger.info(results_to_print(y_test, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y, predict))
 
@@ -113,10 +113,10 @@ def log_data_info(y_train):
 
 def train_model(model, x, y, eval_metrics=["error", "logloss", "auc"]):
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=35)
-    _train_model(eval_metrics, model, x_test, x_train, y_test, y_train)
+    train_model_test_train_data(eval_metrics, model, x_test, x_train, y_test, y_train)
 
 
-def _train_model(model, x_test, x_train, y_test, y_train, eval_metrics=["error", "logloss", "auc"]):
+def train_model_test_train_data(model, x_test, x_train, y_test, y_train, eval_metrics=["error", "logloss", "auc"]):
     eval_set = [(x_train, y_train), (x_test, y_test)]
     model.fit(x_train, y_train, early_stopping_rounds=10, eval_metric=eval_metrics, eval_set=eval_set,
               verbose=True)
@@ -169,7 +169,7 @@ def _search_best_hyper_parameters(x, y):
     return params
 
 
-def results_to_print(cv_results):
+def results_to_print_cv(cv_results):
     # Compute the mean and std of the metrics
     cls_report = {
         "acc_avg": round(float(np.mean(cv_results["test_acc"])), 4),
@@ -178,14 +178,26 @@ def results_to_print(cv_results):
         "sen_std": round(float(np.std(cv_results["test_sen"])), 4),
         "spe_avg": round(float(np.mean(cv_results["test_spe"])), 4),
         "spe_std": round(float(np.std(cv_results["test_spe"])), 4),
+        "f1_avg": round(float(np.mean(cv_results["test_f1"])), 4),
+        "f1_std": round(float(np.std(cv_results["test_f1"])), 4),
         "mcc_avg": round(float(np.mean(cv_results["test_mcc"])), 4),
         "mcc_std": round(float(np.std(cv_results["test_mcc"])), 4)
     }
     acc = f"{cls_report['acc_avg']:.2f} ± {cls_report['acc_std']:.2f}"
     sen = f"{cls_report['sen_avg']:.2f} ± {cls_report['sen_std']:.2f}"
     spe = f"{cls_report['spe_avg']:.2f} ± {cls_report['spe_std']:.2f}"
+    f1 = f"{cls_report['f1_avg']:.2f} ± {cls_report['f1_std']:.2f}"
     mcc = f"{cls_report['mcc_avg']:.2f} ± {cls_report['mcc_std']:.2f}"
-    return f" ACC = {acc} | SEN = {sen} | SPE = {spe} | MCC = {mcc}\n"
+    return f" ACC = {acc} | SEN = {sen} | SPE = {spe} | F1 = {f1} | MCC = {mcc}\n"
+
+
+def results_to_print(y_test, predict):
+    acc = f"{accuracy_score(y_test, predict):.2f}"
+    sen = f"{sensitivity_score(y_test, predict):.2f}"
+    spe = f"{specificity_score(y_test, predict):.2f}"
+    f1 = f"{f1_score(y_test, predict):.2f}"
+    mcc = f"{matthews_corrcoef(y_test, predict):.2f}"
+    return f" ACC = {acc} | SEN = {sen} | SPE = {spe} | F1 = {f1} | MCC = {mcc}\n"
 
 
 def evaluate_cross_validation(model, x_train, y_train, save_path):
