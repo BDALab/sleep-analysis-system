@@ -5,7 +5,6 @@ from datetime import datetime
 import pandas as pd
 
 from dashboard.logic import cache
-from dashboard.logic.features_extraction.extract_features import extract_features
 from dashboard.logic.machine_learning.settings import scale_name, prediction_name, algorithm, Algorithm
 from dashboard.logic.multithread import parallel_for
 from dashboard.logic.preprocessing.preprocess_data import preprocess_data
@@ -46,19 +45,12 @@ def predict(csv_data, force=False):
                 logger.warning(f'Data {csv_data.filename} cannot be preprocessed')
                 return None
 
-            logger.info(f'Features for {csv_data.filename} need to be extracted')
-            result = extract_features(csv_data)
-            if not result:
-                logger.warning(f'Features cannot be extracted for {csv_data.filename}')
-                return None
-
-            df = pd.read_excel(csv_data.features_data_path, index_col=0)
+            df = pd.read_excel(csv_data.x_data_path, index_col=0)
             logger.info(f'Prediction need to be done for {csv_data.filename}')
             predictions = _predict(df)
             df[prediction_name] = predictions
             cache.save_obj(df, csv_data.cached_prediction_path)
             df.to_excel(csv_data.excel_prediction_path)
-            csv_data.prediction_cached = True
             csv_data.save()
 
             end = datetime.now()

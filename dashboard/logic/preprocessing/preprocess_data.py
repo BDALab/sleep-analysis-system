@@ -27,9 +27,8 @@ def preprocess_all_data():
 
 def preprocess_data(csv_object):
     if isinstance(csv_object, CsvData):
-        if csv_object.data_cached and algorithm == Algorithm.XGBoost \
-                or algorithm == Algorithm.ZAngle and csv_object.training_data \
-                and os.path.exists(csv_object.z_data_path):
+        if (algorithm == Algorithm.XGBoost and not os.path.exists(csv_object.x_data_path)) or \
+                (algorithm == Algorithm.ZAngle and csv_object.training_data and os.path.exists(csv_object.z_data_path)):
             return True
         elif csv_object.training_data:
             return _preprocess_training_data(csv_object) \
@@ -56,7 +55,7 @@ def _preprocess_training_data(csv_object):
         with open(ps_object.data.path, 'r') as ps_file:
             ps_reader = csv.reader(ps_file, delimiter='\t', quotechar='|')
 
-            frequency_modulo = 3
+            frequency_modulo = 0
             modulo_reminder = 0
 
             with open(csv_object.data.path, 'r') as csv_file:
@@ -66,6 +65,8 @@ def _preprocess_training_data(csv_object):
                 after_midnight = False
 
                 for csv_row in csv_reader:
+                    if frequency_modulo == 0:
+                        frequency_modulo = _assign_frequency_modulo(csv_row)
                     # now I care just about data, which starts with timestamp starting with 20 --> begin of year
                     if len(csv_row) > 0 and csv_row[0].startswith('20'):
                         if modulo_reminder == 0:
@@ -80,46 +81,61 @@ def _preprocess_training_data(csv_object):
                         if convert_ps_timestamp(date, ps_row[2], after_midnight) >= start - timedelta(seconds=15):
                             time = convert_ps_timestamp(date, ps_row[2], after_midnight)
                             end = time + timedelta(seconds=15)
-                            accelerometer_data = []
-                            temperature_data = []
-                            for csv_row in csv_reader:
-                                if len(csv_row) > 0 and csv_row[0].startswith('Measurement Frequency'):
-                                    frequency = csv_row[1]
-                                    if '25.0 Hz' in frequency:
-                                        frequency_modulo = 1
-                                    elif '85.7 Hz' in frequency:
-                                        frequency_modulo = 3
-                                elif len(csv_row) > 0 and csv_row[0].startswith('20'):
-                                    if modulo_reminder == 0:
-                                        csv_date = convert_csv_time(csv_row)
-                                        acc_magnitude = math.sqrt(
-                                            float(csv_row[1]) ** 2 + float(csv_row[2]) ** 2 + float(csv_row[3]) ** 2)
-                                        accelerometer_data.append(acc_magnitude)
-                                        temperature_data.append(float(csv_row[6]))  # Temperature
-                                    modulo_reminder = (modulo_reminder + 1) % frequency_modulo
-                                    if csv_date >= end:
-                                        break
-                            if not accelerometer_data:
+                            magnitude_data, z_angle_data = _process_csv_data_core(csv_reader,
+                                                                                  end,
+                                                                                  frequency_modulo,
+                                                                                  modulo_reminder)
+                            if not magnitude_data:
                                 break
                             data_list.append(
                                 DataEntry(
                                     time=time,
                                     sleep=convert_sleep(ps_row[0]),
-                                    accelerometer=accelerometer_data,
-                                    temperature=temperature_data
+                                    acc=magnitude_data,
+                                    acc_z=z_angle_data
                                 )
                             )
-
                     if ps_row == ['Sleep Stage', 'Position', 'Time [hh:mm:ss]', 'Event', 'Duration[s]']:
                         header_end = True
                     if next(iter(ps_row or []), None) == 'Recording Date:':
                         date = ps_row[1].split()[0]
-        save_obj(data_list, csv_object.cached_data_path)
-        csv_object.data_cached = True
+        save_obj(data_list, csv_object.x_data_path)
         csv_object.save()
         end_time = datetime.now()
         logger.info(f'Data {csv_object.filename} preprocessed in {end_time - start_time}')
     return True
+
+
+def _assign_frequency_modulo(csv_row):
+    if len(csv_row) > 0 and csv_row[0].startswith('Measurement Frequency'):
+        frequency = csv_row[1]
+        if '25.0 Hz' in frequency:
+            frequency_modulo = 1
+        elif '85.7 Hz' in frequency:
+            frequency_modulo = 3
+        else:
+            frequency_modulo = 0
+    return frequency_modulo
+
+
+def _process_csv_data_core(csv_reader, end, frequency_modulo, modulo_reminder):
+    magnitude_data = []
+    z_angle_data = []
+    for csv_row in csv_reader:
+        if len(csv_row) > 0 and csv_row[0].startswith('20'):
+            if modulo_reminder == 0:
+                csv_date = convert_csv_time(csv_row)
+                acc_magnitude = math.sqrt(
+                    float(csv_row[1]) ** 2 + float(csv_row[2]) ** 2 + float(csv_row[3]) ** 2)
+                acc_z_angle = math.degrees(
+                    math.atan(float(csv_row[3]) / (
+                            (float(csv_row[1]) ** 2 + float(csv_row[2]) ** 2) ** 0.5)))
+                magnitude_data.append(acc_magnitude)
+                z_angle_data.append(acc_z_angle)
+            modulo_reminder = (modulo_reminder + 1) % frequency_modulo
+            if csv_date >= end:
+                break
+    return magnitude_data, z_angle_data
 
 
 def _find_start(csv_object, ps_object):
@@ -140,31 +156,30 @@ def _preprocess_prediction_data(csv_object):
     with open(csv_object.data.path, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='|')
 
-        frequency_modulo = 3
+        frequency_modulo = 0
         modulo_reminder = 0
-        accelerometer_data = []
-        temperature_data = []
-        timestamp = 0
         for csv_row in csv_reader:
+            if frequency_modulo == 0:
+                _assign_frequency_modulo(csv_row)
             # now I care just about data, which starts with timestamp starting with 20 --> begin of year
             if len(csv_row) > 0 and csv_row[0].startswith('20'):
-                if modulo_reminder == 0:
-                    csv_date = convert_csv_time(csv_row)
-                    if timestamp == 0:  # first time
-                        timestamp = csv_date + timedelta(seconds=15)
-                    elif csv_date >= timestamp + timedelta(seconds=15):  # end of 30s window
-                        data_list.append(
-                            DataEntry(timestamp, accelerometer_data, temperature_data, None))
-                        accelerometer_data = []
-                        temperature_data = []
-                        timestamp = csv_date + timedelta(seconds=15)
-                    accelerometer_data.append(float(csv_row[1]))  # X_axis
-                    accelerometer_data.append(float(csv_row[2]))  # Y_axis
-                    accelerometer_data.append(float(csv_row[3]))  # Z_axis
-                    temperature_data.append(float(csv_row[6]))  # Temperature
-                modulo_reminder = (modulo_reminder + 1) % frequency_modulo
-        save_obj(data_list, csv_object.cached_data_path)
-        csv_object.data_cached = True
+                csv_date = convert_csv_time(csv_row)
+                time = csv_date + timedelta(seconds=15)
+                end = csv_date + timedelta(seconds=30)
+                magnitude_data, z_angle_data = _process_csv_data_core(csv_reader,
+                                                                      end,
+                                                                      frequency_modulo,
+                                                                      modulo_reminder)
+                if not magnitude_data:
+                    break
+                data_list.append(
+                    DataEntry(
+                        time=time,
+                        acc=magnitude_data,
+                        acc_z=z_angle_data
+                    )
+                )
+        save_obj(data_list, csv_object.x_data_path)
         csv_object.save()
         end_time = datetime.now()
         logger.info(f'Data {csv_object.filename} preprocessed in {end_time - start_time}')
