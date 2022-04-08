@@ -1,24 +1,3 @@
-from enum import Enum
-
-
-class Algorithm(Enum):
-    XGBoost = 0
-    ZAngle = 1
-
-
-algorithm = Algorithm.XGBoost
-# ---------------------
-# ZAngle
-# ---------------------
-
-# good accuracy parameters:
-# first_threshold = 10 minutes,
-# time_window = 3 minutes,
-# angle = 10 (divided by 5 ... 5 s resampling)
-first_threshold = (10 * 60) / 5
-time_window = (5 * 60) / 5
-angle = 10
-
 # ---------------------
 # XGBoost
 # ---------------------
@@ -82,4 +61,4 @@ prediction_name = "SLEEP_PREDICTION"
 
 hilev_prediction = 'PREDICTION'
 
-model_name = "Model F"
+model_name = "Model Z"

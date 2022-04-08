@@ -2,6 +2,7 @@ import io
 
 import pandas as pd
 import seaborn as sns
+import shap
 from matplotlib import pyplot as plt, pyplot
 
 from mysite.settings import ML_DIR
@@ -201,3 +202,19 @@ def plot_cross_validation(results, name, save_dir=ML_DIR):
     pyplot.title(f'{name} - Cross Validation Results')
     pyplot.savefig(f'{save_dir}/cross_validation_results.png', dpi=300)
     pyplot.show()
+
+
+def shap_beeswarm_plot(explainer, names, x, dir):
+    f = plt.figure()
+    shap_obj = explainer(x)
+    shap_obj.feature_names = names
+    shap.plots.beeswarm(shap_obj, max_display=len(names))
+    f.savefig(f'{dir}/beeswarm.png', bbox_inches='tight', dpi=600)
+
+
+def shap_summary_plot(names, shap_values, x, dir):
+    set_visual_styles()
+    f = plt.figure()
+    shap.summary_plot(shap_values, x, plot_type="bar", feature_names=names)
+    f.savefig(f'{dir}/summary_plot.png', bbox_inches='tight', dpi=600)
+    f.clf()

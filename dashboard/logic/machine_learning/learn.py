@@ -4,8 +4,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import shap
 import xgboost as xgb
-from imblearn.over_sampling import SMOTE
 from sklearn.impute import KNNImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, matthews_corrcoef
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, RepeatedStratifiedKFold, cross_validate, \
@@ -13,20 +13,17 @@ from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, Repeate
 
 from dashboard.logic.cache import save_obj, load_obj
 from dashboard.logic.machine_learning.classification_metrics import scoring, sensitivity_score, specificity_score
-from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name, algorithm, \
-    Algorithm
+from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name
 from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_sting, \
-    plot_logloss_and_error, plot_cross_validation
+    plot_logloss_and_error, plot_cross_validation, shap_summary_plot, shap_beeswarm_plot
 from dashboard.models import CsvData
-from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, MODEL_PATH, DATASET_PATH, TRAINED_MODEL_PATH, \
+from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, DATASET_PATH, TRAINED_MODEL_PATH, \
     BEST_ESTIMATOR_PATH, CV_RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
 
 def prepare_model():
-    if algorithm == Algorithm.ZAngle:
-        return True
     start = datetime.now()
     learn()
     end = datetime.now()
@@ -50,15 +47,14 @@ def learn():
     x_train = imputer.fit_transform(x_train)
 
     # Add synthetic values to balance dataset
-    sm = SMOTE(random_state=42)
-    x_train, y_train = sm.fit_sample(x_train, y_train)
+    # sm = SMOTE(random_state=42)
+    # x_train, y_train = sm.fit_sample(x_train, y_train)
+    # logger.info('Data after SMOTE synthesis:}')
+    # log_data_info(y_train)
 
-    logger.info('Data after SMOTE synthesis:}')
-    log_data_info(y_train)
-
-    if os.path.exists(MODEL_PATH):
+    if os.path.exists(TRAINED_MODEL_PATH):
         logger.info('Load model')
-        model = load_obj(MODEL_PATH)
+        model = load_obj(TRAINED_MODEL_PATH)
     else:
         if os.path.exists(HYPER_PARAMS_PATH):
             params = load_obj(HYPER_PARAMS_PATH)
@@ -78,9 +74,8 @@ def learn():
 
         plot_cross_validation(cv_results, 'Model binary:logistic')
 
-    train_model_test_train_data(model, x_test, x_train, y_test, y_train)
-
-    save_obj(model, TRAINED_MODEL_PATH)
+        train_model_test_train_data(model, x_test, x_train, y_test, y_train)
+        save_obj(model, TRAINED_MODEL_PATH)
 
     # Plot the feature importances
     plot_fi(model, names, scale_name, sort=True, save_dir=ML_DIR)
@@ -94,9 +89,15 @@ def learn():
 
     predict = model.predict(x)
     logger.info('After training results on whole dataset: ')
-    logger.info(results_to_print(y_test, predict))
+    logger.info(results_to_print(y, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y, predict))
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(x)
+
+    shap_summary_plot(names, shap_values, x, ML_DIR)
+    shap_beeswarm_plot(explainer, names, x, ML_DIR)
 
     return model
 
@@ -127,14 +128,14 @@ def load_data():
         logger.info(f'Load cached dataset')
         super_df = pd.read_excel(DATASET_PATH, index_col=0)
     else:
-        data = CsvData.objects.filter(features_extracted=True)
-        logger.info(f'{len(data)} csv data object will be used to create superset')
+        data = CsvData.objects.all()
         start = datetime.now()
         frames = []
         for d in data:
-            # Load the feature matrix and the label(s)
-            df = pd.read_excel(d.x_data_path, index_col=0)
-            frames.append(df)
+            if d.training_data and os.path.exists(d.x_data_path):
+                # Load the feature matrix and the label(s)
+                df = pd.read_excel(d.x_data_path, index_col=0)
+                frames.append(df)
 
         super_df = pd.concat(frames)
         end = datetime.now()
