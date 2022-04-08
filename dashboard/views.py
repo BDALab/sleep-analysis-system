@@ -17,7 +17,6 @@ from .export.export_hilev_clinic_data import export_all_features_avg_clinic
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all
 from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
-from .logic.preprocessing.split_data import split_data
 from .logic.reults_visualization.sleep_graph import create_graph
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
@@ -116,17 +115,17 @@ def utils(request, action=None):
         return redirect('dashboard:index')
     template = loader.get_template('dashboard/utils.html')
 
-    if action == 'cache':
-        logger.info(f'Cache data')
+    if action == 'preprocess':
+        logger.info(f'Preprocess data')
         if preprocess_all_data():
-            logger.info('Cache OK')
+            logger.info('Preprocess OK')
             context = {
-                'ok': 'Cache the data operation was successful'
+                'ok': 'Preprocess the data operation was successful'
             }
         else:
-            logger.error('Cache failed')
+            logger.error('Preprocess failed')
             context = {
-                'fail': 'Cache the data failed! Try to check all data.'
+                'fail': 'Preprocess the data failed! Try to check all data.'
             }
 
     elif action == 'learn':
@@ -156,7 +155,7 @@ def utils(request, action=None):
             }
 
     elif action == 'all':
-        if preprocess_all_data() and predict_all() and split_data() and hilev():
+        if preprocess_all_data() and predict_all() and hilev():
             logger.info('All operations OK')
             context = {
                 'ok': 'All operations performed successfully'
@@ -189,17 +188,6 @@ def utils(request, action=None):
             logger.error('Validation failed with an exception.')
             context = {
                 'fail': 'Validation failed!'}
-    elif action == 'split':
-        logger.info('Split sleep data by nights')
-        if split_data():
-            logger.info('Data splitting done')
-            context = {
-                'ok': 'Data splitting successful'
-            }
-        else:
-            logger.error('Data splitting end up with exception.')
-            context = {
-                'fail': 'Data splitting failed!'}
     elif action == 'hilev':
         logger.info('Calculate high level features')
         if hilev():

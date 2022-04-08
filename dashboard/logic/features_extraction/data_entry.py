@@ -4,6 +4,7 @@ from numpy import quantile, percentile
 from scipy.stats import iqr, trim_mean, median_absolute_deviation, kurtosis, skew, mode
 
 from dashboard.logic.features_extraction.utils import safe_div
+from dashboard.logic.machine_learning.settings import scale_name
 
 
 def _get_features_for_vector(vec, prefix):
@@ -82,7 +83,7 @@ def _get_features_for_vector(vec, prefix):
 
 
 class DataEntry(object):
-    def __init__(self, time, acc, acc_z, sleep):
+    def __init__(self, time, acc, acc_z, sleep=-1):
         self.time = time
         self.acc = acc
         self.acc_z = acc_z
@@ -90,7 +91,7 @@ class DataEntry(object):
 
     def __str__(self):
         return f'DataEntry[Date: {self.time} | ' \
-               f'Sleep: {bool(self.sleep)} | ' \
+               f'Sleep: {self.sleep} | ' \
                f'Accelerometer magnitude entries: {len(self.acc)} | ' \
                f'Accelerometer z-angle entries: {len(self.acc_z)}]'
 
@@ -98,3 +99,11 @@ class DataEntry(object):
         features = _get_features_for_vector(self.acc, 'MAGNITUDE')
         features.update(_get_features_for_vector(self.acc_z, 'Z_ANGLE'))
         return features
+
+    def to_dic(self):
+        data = {
+            'Date': self.time,
+            scale_name: self.sleep
+        }
+        data.update(self.get_features())
+        return data

@@ -79,15 +79,6 @@ class CsvData(models.Model):
     def x_data_path(self):
         split = path.split(self.data.path)
         folder = f'{split[0]}/../cache'
-        name = f'{split[1]}.pkl'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return f'{folder}/{name}'
-
-    @property
-    def z_data_path(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../z_prediction'
         name = f'{split[1]}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)
@@ -100,14 +91,15 @@ class CsvData(models.Model):
         name = f'{split[1]}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)
-        return f'{folder}/{name}'
+        ex_path = f'{folder}/{name}'
+        if not path.exists(ex_path) and path.exists(self.cached_prediction_path):
+            df = cache.load_obj(self.cached_prediction_path)
+            df.to_excel(self.excel_prediction_path)
+        return ex_path
 
     @property
     def excel_prediction_url(self):
-        if not path.exists(self.excel_prediction_path) and path.exists(self.cached_prediction_path):
-            df = cache.load_obj(self.cached_prediction_path)
-            df.to_excel(self.excel_prediction_path)
-        elif path.exists(self.excel_prediction_path):
+        if path.exists(self.excel_prediction_path):
             return self.data.storage.url(self.excel_prediction_path)
         else:
             return ''

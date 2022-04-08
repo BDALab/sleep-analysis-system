@@ -2,7 +2,6 @@ import logging
 import os.path
 from datetime import datetime
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import shap
 import xgboost
@@ -15,7 +14,7 @@ from dashboard.logic.machine_learning.learn import evaluate_cross_validation, re
     train_model_test_train_data, results_to_print_cv
 from dashboard.logic.machine_learning.settings import model_params, search_settings
 from dashboard.logic.machine_learning.visualisation import plot_cross_validation, plot_fi, plot_logloss_and_error, \
-    set_visual_styles
+    shap_beeswarm_plot, shap_summary_plot
 from mysite.settings import HILEV_FNUSA, HILEV_CV_RESULTS_PATH, HILEV_DIR, HILEV_TRAINED_MODEL_PATH
 
 logger = logging.getLogger(__name__)
@@ -53,9 +52,9 @@ def train_parkinson_classifier():
              'Sleep fragmentation (D)',
              ]
 
-    na = df.columns
     x = df[names].values
-    y = (df['Probable Parkinson Disease'] | df['Probable Mild Cognitive Impairment']).values
+    # y = (df['Probable Parkinson Disease'] | df['Probable Mild Cognitive Impairment']).values
+    y = (df['Probable Parkinson Disease']).values
     y = y.reshape((len(y),))
 
     if not os.path.exists(HILEV_DIR):
@@ -66,18 +65,8 @@ def train_parkinson_classifier():
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(x)
 
-    set_visual_styles()
-    f = plt.figure()
-    shap.summary_plot(shap_values, x, plot_type="bar", feature_names=names)
-    f.savefig(f'{HILEV_DIR}/summary_plot.png', bbox_inches='tight', dpi=600)
-    f.clf()
-
-    # summarize the effects of all the features
-    f = plt.figure()
-    shap_obj = explainer(x)
-    shap_obj.feature_names = names
-    shap.plots.beeswarm(shap_obj, max_display=len(names))
-    f.savefig(f'{HILEV_DIR}/beeswarm.png', bbox_inches='tight', dpi=600)
+    shap_summary_plot(names, shap_values, x, HILEV_DIR)
+    shap_beeswarm_plot(explainer, names, x, HILEV_DIR)
 
     return True
 
@@ -136,7 +125,7 @@ def learn_model(x, y, names):
     # predict on whole dataset
     predict = model.predict(x)
     logger.info('After training results on whole dataset: ')
-    logger.info(results_to_print(y_test, predict))
+    logger.info(results_to_print(y, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y, predict))
 

@@ -1,11 +1,10 @@
 import logging
+import os.path
 
-import pandas
 import pandas as pd
 
 from dashboard.logic.features_extraction.utils import safe_div
-from dashboard.logic.machine_learning.settings import Algorithm, algorithm, prediction_name
-from dashboard.logic.zangle.helper_functions import is_cached, get_split_path
+from dashboard.logic.machine_learning.settings import prediction_name
 from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
 
 logger = logging.getLogger(__name__)
@@ -21,14 +20,16 @@ def validate_sleep_wake():
     for night in nights:
         assert isinstance(night, SleepNight)
         df = _get_df(night)
+        if df is None:
+            logger.warning(f"Prediction data cannot be found for {night.date} of subject {night.subject.code}")
+            continue
         day = days.filter(date=night.diary_day.date).first()
         assert isinstance(day, SleepDiaryDay)
         s = day.t1
         e = day.t4
         prediction = df[s:e]
-        if algorithm == Algorithm.XGBoost:
-            map_values = {1: 'S', 0: 'W'}
-            prediction[prediction_name] = prediction[prediction_name].astype(int).map(map_values)
+        map_values = {1: 'S', 0: 'W'}
+        prediction[prediction_name] = prediction[prediction_name].astype(int).map(map_values)
         TP = 0
         TN = 0
         FP = 0
@@ -82,16 +83,11 @@ def validate_sleep_wake():
 
 
 def _get_df(night):
-    if algorithm == Algorithm.XGBoost:
+    if os.path.exists(night.name):
         return pd.read_excel(night.name, index_col=0)
-    elif algorithm == Algorithm.ZAngle and night.data.training_data:
-        df = pandas.read_excel(night.data.z_data_path, index_col='time stamp')
-    elif algorithm == Algorithm.ZAngle and not night.data.training_data:
-        if is_cached(night.data, night.diary_day, night.subject):
-            df = pandas.read_excel(get_split_path(night.data, night.diary_day, night.subject), index_col='time stamp')
-        else:
-            return None
-    return df
+    if not os.path.exists(night.data.excel_prediction_path):
+        return None
+    return pd.read_excel(night.data.excel_prediction_path, index_col=0, usecols='A,CM')
 
 
 def _select_interval(prediction, start, end):

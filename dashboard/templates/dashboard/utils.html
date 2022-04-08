@@ -40,17 +40,16 @@
             {% endif %}
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
-
         <div class="small-column">
-            <h3>Cache data</h3>
-            <p>Cache the data for machine learning.</p>
-            <a href="{% url 'dashboard:utils' 'cache' %}" class="button button-small button-fix-width">Cache</a>
+            <h3>Read metadata</h3>
+            <p>Read metadata from metadata.xml file.</p>
+            <a href="{% url 'dashboard:utils' 'metadata' %}" class="button button-small button-fix-width">Read</a>
         </div>
 
         <div class="small-column">
             <h3>Extract features</h3>
-            <p>Extract features from cached data.</p>
-            <a href="{% url 'dashboard:utils' 'features' %}" class="button button-small button-fix-width">Extract</a>
+            <p>Preprocess data and extract features from data.</p>
+            <a href="{% url 'dashboard:utils' 'preprocess' %}" class="button button-small button-fix-width">Extract</a>
         </div>
 
         <div class="small-column">
@@ -66,25 +65,21 @@
         </div>
 
         <div class="small-column">
+            <h3>High level features</h3>
+            <p>Count high level features, currently only with diary.</p>
+            <a href="{% url 'dashboard:utils' 'hilev' %}" class="button button-small button-fix-width">HiLev</a>
+        </div>
+
+        <div class="small-column">
             <h3>All operations</h3>
             <p>Perform data cache, features extract and model training.</p>
             <a href="{% url 'dashboard:utils' 'all' %}" class="button button-small button-fix-width">All</a>
-            <a href="{% url 'dashboard:utils' 'all_check' %}" class="button button-small button-fix-width">Check</a>
-            <a href="{% url 'dashboard:utils' 'all_clean' %}" class="button button-small button-fix-width">Clean</a>
         </div>
 
         <div class="small-column">
             <h3>Sleep diaries</h3>
             <p>Works with sleep diary data - load, validate sleep/wake.</p>
-            <a href="{% url 'dashboard:utils' 'metadata' %}" class="button button-small button-fix-width">Read</a>
             <a href="{% url 'dashboard:utils' 'validate_sleep_wake' %}" class="button button-small button-fix-width">Validate</a>
-            <a href="{% url 'dashboard:utils' 'split' %}" class="button button-small button-fix-width">Split</a>
-        </div>
-
-        <div class="small-column">
-            <h3>High level features</h3>
-            <p>Count high level features, currently only with diary.</p>
-            <a href="{% url 'dashboard:utils' 'hilev' %}" class="button button-small button-fix-width">HiLev</a>
         </div>
 
         <div class="small-column">

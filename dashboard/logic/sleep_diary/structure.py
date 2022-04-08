@@ -1,4 +1,5 @@
 import logging
+import os.path
 
 from dashboard.logic import cache
 from dashboard.models import SleepDiaryDay, CsvData, Subject
@@ -25,6 +26,8 @@ def create_structure():
                         e = sleep_day.t4
                         for d in data:
                             assert isinstance(d, CsvData)
+                            if not os.path.exists(d.cached_prediction_path):
+                                continue
                             pred = cache.load_obj(d.cached_prediction_path)
                             interval = pred[s:e]
                             if len(interval) > 0:  # matchin data found
