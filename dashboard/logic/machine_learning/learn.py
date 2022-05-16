@@ -207,7 +207,8 @@ def evaluate_cross_validation(model, x_train, y_train, save_path):
     kfolds = RepeatedStratifiedKFold(n_splits=10, n_repeats=20)
 
     # Cross-validate the classifier
-    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds)
+    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds,
+                                fit_params={"eval_metric": ["rmse", "error", "logloss", "auc"]})
     if save_path:
         save_obj(cv_results, save_path)
     end = datetime.now()
