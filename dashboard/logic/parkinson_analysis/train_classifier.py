@@ -2,6 +2,7 @@ import logging
 import os.path
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import shap
 import xgboost
@@ -9,12 +10,13 @@ from sklearn.impute import KNNImputer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
 
-from dashboard.logic.cache import save_obj
+from dashboard.logic.cache import save_obj, load_obj
 from dashboard.logic.machine_learning.learn import evaluate_cross_validation, results_to_print, \
     train_model_test_train_data, results_to_print_cv
 from dashboard.logic.machine_learning.settings import model_params, search_settings
 from dashboard.logic.machine_learning.visualisation import plot_cross_validation, plot_fi, plot_logloss_and_error, \
     shap_beeswarm_plot, shap_summary_plot
+from dashboard.models import Subject
 from mysite.settings import HILEV_FNUSA, HILEV_CV_RESULTS_PATH, HILEV_DIR, HILEV_TRAINED_MODEL_PATH
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 def train_parkinson_classifier():
     df = pd.read_excel(HILEV_FNUSA)
-
     names = ['Time in bed (A)',
              'Sleep onset latency (A)',
              'Sleep onset latency - norm (A)',
@@ -53,14 +54,15 @@ def train_parkinson_classifier():
              ]
 
     x = df[names].values
-    # y = (df['Probable Parkinson Disease'] | df['Probable Mild Cognitive Impairment']).values
-    y = (df['Probable Parkinson Disease']).values
+    y = (df['Probable Parkinson Disease'] | df['Probable Mild Cognitive Impairment']).values
+    # y = (df['Probable Parkinson Disease']).values
     y = y.reshape((len(y),))
 
     if not os.path.exists(HILEV_DIR):
         os.mkdir(HILEV_DIR)
-    model = learn_model(x, y, names)
-    # model = load_obj(HILEV_TRAINED_MODEL_PATH)
+    # model, predict = learn_model(x, y, names)
+    model = load_obj(HILEV_TRAINED_MODEL_PATH)
+    predict = model.predict(x)
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(x)
@@ -68,7 +70,47 @@ def train_parkinson_classifier():
     shap_summary_plot(names, shap_values, x, HILEV_DIR)
     shap_beeswarm_plot(explainer, names, x, HILEV_DIR)
 
+    subs_with_pred = classification_by_subject(df, predict, y)
+    subjects = Subject.objects.all()
+    logger.info(f"Subjects total: {len(subjects)}")
+    for sub in subjects:
+        if sub.code in subs_with_pred:
+            sub.predPDorMCI = subs_with_pred[sub.code]
+            if sub.predPDorMCI != (sub.pPD or sub.pMCI):
+                logger.warning(f"Subject {sub.code} PD+MCI classification missed, "
+                               f"expected: {sub.pPD or sub.pMCI}, actual: {bool(sub.predPDorMCI)}")
+            sub.save()
+
     return True
+
+
+def classification_by_subject(df, predict, y):
+    # add night by night predictions to original dataset
+    df['Parkinson predict'] = predict
+
+    # group by subject
+    sg = df.groupby('Subject')
+
+    # count sum of positive predictions and size of groups
+    sums = sg['Parkinson predict'].agg(np.sum)
+    sizes = sg.size()
+
+    # create predictions for subjects ->
+    # if more than a half nights of subject were marked as positive -> positive subject (parkinson)
+    # else subject is negative (healthy)
+    new_pred = []
+    subs_with_pred = {}
+    for subj in df['Subject']:
+        pred = 1 if sums[subj] > (sizes[subj] / 2) else 0
+        new_pred.append(pred)
+        if subj not in subs_with_pred:
+            subs_with_pred[subj] = pred
+
+    logger.info("Results for subject classification: ")
+    logger.info(results_to_print(y, new_pred))
+    logger.info('Confusion matrix: ')
+    logger.info(confusion_matrix(y, new_pred))
+    return subs_with_pred
 
 
 def learn_model(x, y, names):
@@ -97,7 +139,7 @@ def learn_model(x, y, names):
 
     logger.info('Cross-validation of params')
     y_train = y_train.ravel()
-    model = xgboost.sklearn.XGBClassifier(**params)
+    model = xgboost.sklearn.XGBClassifier(**params, use_label_encoder=False)
     cv_results = evaluate_cross_validation(
         model=model,
         x_train=x_train,
@@ -124,6 +166,7 @@ def learn_model(x, y, names):
 
     # predict on whole dataset
     predict = model.predict(x)
+
     logger.info('After training results on whole dataset: ')
     logger.info(results_to_print(y, predict))
     logger.info('Confusion matrix: ')
@@ -132,7 +175,7 @@ def learn_model(x, y, names):
     end = datetime.now()
     logger.info(f'Learning process took {end - start}')
 
-    return model
+    return model, predict
 
 
 def log_data_info(y_train):
@@ -148,7 +191,7 @@ def log_data_info(y_train):
 def _search_best_hyper_parameters(x, y):
     start = datetime.now()
     # Create the classifier
-    model = xgboost.sklearn.XGBClassifier(**model_params)
+    model = xgboost.sklearn.XGBClassifier(**model_params, use_label_encoder=False)
 
     # Get the cross-validation indices
     kfolds = StratifiedKFold(n_splits=10, shuffle=True)

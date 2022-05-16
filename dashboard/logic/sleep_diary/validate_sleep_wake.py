@@ -3,6 +3,7 @@ import os.path
 
 import pandas as pd
 
+from dashboard.logic import cache
 from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import prediction_name
 from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
@@ -86,8 +87,12 @@ def _get_df(night):
     if os.path.exists(night.name):
         return pd.read_excel(night.name, index_col=0)
     if not os.path.exists(night.data.excel_prediction_path):
+        if os.path.exists(night.data.cached_prediction_path):
+            df = cache.load_obj(night.data.cached_prediction_path)
+            df.to_excel(night.data.excel_prediction_path)
+            _get_df(night)
         return None
-    return pd.read_excel(night.data.excel_prediction_path, index_col=0, usecols='A,CM')
+    return pd.read_excel(night.data.excel_prediction_path, index_col=0, usecols='A,EE')
 
 
 def _select_interval(prediction, start, end):

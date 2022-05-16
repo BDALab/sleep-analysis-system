@@ -37,12 +37,12 @@ def subjects_page(request):
     if request.user.is_superuser or \
             request.user.groups.filter(name='researchers').exists() or \
             request.user.groups.filter(name='administrators').exists():
-        subjects = Subject.objects.all().order_by("code")
+        subjects = Subject.objects.all().order_by("-creation_date")
     elif Subject.objects.filter(code=request.user.get_username()):
         subjects = [Subject.objects.filter(code=request.user.get_username()).first()]
-        subjects.extend([s for s in Subject.objects.all().order_by("code") if s.is_test()])
+        subjects.extend([s for s in Subject.objects.all().order_by("-creation_date") if s.is_test()])
     else:
-        subjects = [s for s in Subject.objects.all().order_by("code") if s.is_test()]
+        subjects = [s for s in Subject.objects.all().order_by("-creation_date") if s.is_test()]
     template = loader.get_template('dashboard/subjects.html')
     context = {
         'subjects': subjects,

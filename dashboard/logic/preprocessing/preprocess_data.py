@@ -76,17 +76,18 @@ def _preprocess_training_data(csv_object):
                         if convert_ps_timestamp(date, ps_row[2], after_midnight) >= start - timedelta(seconds=15):
                             time = convert_ps_timestamp(date, ps_row[2], after_midnight)
                             end = time + timedelta(seconds=15)
-                            magnitude_data, z_angle_data = _process_csv_data_core(csv_reader,
-                                                                                  end,
-                                                                                  frequency_modulo,
-                                                                                  modulo_reminder)
+                            magnitude_data, z_angle_data, temp = _process_csv_data_core(csv_reader,
+                                                                                        end,
+                                                                                        frequency_modulo,
+                                                                                        modulo_reminder)
                             if not magnitude_data:
                                 break
                             entry = DataEntry(
                                 time=time,
                                 sleep=convert_sleep(ps_row[0]),
                                 acc=magnitude_data,
-                                acc_z=z_angle_data
+                                acc_z=z_angle_data,
+                                temp=temp
                             )
                             data_list.append(entry.to_dic())
                     if ps_row == ['Sleep Stage', 'Position', 'Time [hh:mm:ss]', 'Event', 'Duration[s]']:
@@ -117,6 +118,7 @@ def _assign_frequency_modulo(csv_row):
 def _process_csv_data_core(csv_reader, end, frequency_modulo, modulo_reminder):
     magnitude_data = []
     z_angle_data = []
+    temp = []
     for csv_row in csv_reader:
         if len(csv_row) > 0 and csv_row[0].startswith('20'):
             if modulo_reminder == 0:
@@ -128,10 +130,11 @@ def _process_csv_data_core(csv_reader, end, frequency_modulo, modulo_reminder):
                             (float(csv_row[1]) ** 2 + float(csv_row[2]) ** 2) ** 0.5)))
                 magnitude_data.append(acc_magnitude)
                 z_angle_data.append(acc_z_angle)
+                temp.append(float(csv_row[6]))
             modulo_reminder = (modulo_reminder + 1) % frequency_modulo
             if csv_date >= end:
                 break
-    return magnitude_data, z_angle_data
+    return magnitude_data, z_angle_data, temp
 
 
 def _find_start(csv_object, ps_object):
@@ -171,17 +174,18 @@ def _preprocess_prediction_data(csv_object, predict=True):
                         continue
                 time = csv_date + timedelta(seconds=15)
                 end = csv_date + timedelta(seconds=30)
-                magnitude_data, z_angle_data = _process_csv_data_core(csv_reader,
-                                                                      end,
-                                                                      frequency_modulo,
-                                                                      modulo_reminder)
+                magnitude_data, z_angle_data, temp = _process_csv_data_core(csv_reader,
+                                                                            end,
+                                                                            frequency_modulo,
+                                                                            modulo_reminder)
                 if not magnitude_data:
                     break
                 data_list.append(
                     DataEntry(
                         time=time,
                         acc=magnitude_data,
-                        acc_z=z_angle_data
+                        acc_z=z_angle_data,
+                        temp=temp
                     ).to_dic()
                 )
         if not data_list:

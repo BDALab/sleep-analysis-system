@@ -14,7 +14,6 @@ import pytz
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from dashboard.logic import cache
 from dashboard.logic.features_extraction.norms import sol, awk5plus, waso, se
 from dashboard.logic.features_extraction.utils import safe_div
 from mysite.settings import MEDIA_ROOT
@@ -33,6 +32,7 @@ class Subject(models.Model):
     pMCI = models.BooleanField('probable mild cognitive impairment', default=False)
     HC = models.BooleanField('healthy control', default=False)
     SA = models.BooleanField('sleep apnea', default=False)
+    predPDorMCI = models.BooleanField('probable parkinson disease', default=False)
 
     def __str__(self):
         return self.code
@@ -91,11 +91,7 @@ class CsvData(models.Model):
         name = f'{split[1]}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)
-        ex_path = f'{folder}/{name}'
-        if not path.exists(ex_path) and path.exists(self.cached_prediction_path):
-            df = cache.load_obj(self.cached_prediction_path)
-            df.to_excel(self.excel_prediction_path)
-        return ex_path
+        return f'{folder}/{name}'
 
     @property
     def excel_prediction_url(self):

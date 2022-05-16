@@ -34,9 +34,15 @@
                 <div class="small-column">
                     <div class="box">
                         <a href="{% url 'dashboard:detail' s.code %}">
-                            {% if s.sex == 'M' %}
+                            {% if s.sex == 'M' and s.predPDorMCI %}
+                                <img src="{% static 'dashboard/images/man_red.png' %}" alt=""
+                                     class="image image-smaller"/>
+                            {% elif s.sex == 'F' and s.predPDorMCI %}
+                                <img src="{% static 'dashboard/images/woman_red.png' %}" alt=""
+                                     class="image image-smaller"/>
+                            {% elif s.sex == 'M' and not s.predPDorMCI %}
                                 <img src="{% static 'dashboard/images/man.png' %}" alt="" class="image image-smaller"/>
-                            {% elif s.sex == 'F' %}
+                            {% elif s.sex == 'F' and not s.predPDorMCI %}
                                 <img src="{% static 'dashboard/images/woman.png' %}" alt=""
                                      class="image image-smaller"/>
                             {% endif %}

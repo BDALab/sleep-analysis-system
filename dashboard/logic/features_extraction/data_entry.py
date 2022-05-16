@@ -83,21 +83,24 @@ def _get_features_for_vector(vec, prefix):
 
 
 class DataEntry(object):
-    def __init__(self, time, acc, acc_z, sleep=-1):
+    def __init__(self, time, acc, acc_z, temp, sleep=-1):
         self.time = time
         self.acc = acc
         self.acc_z = acc_z
+        self.temp = temp
         self.sleep = sleep
 
     def __str__(self):
         return f'DataEntry[Date: {self.time} | ' \
                f'Sleep: {self.sleep} | ' \
                f'Accelerometer magnitude entries: {len(self.acc)} | ' \
-               f'Accelerometer z-angle entries: {len(self.acc_z)}]'
+               f'Accelerometer z-angle entries: {len(self.acc_z)}]' \
+               f'Temperature entries: {len(self.temp)}]'
 
     def get_features(self):
         features = _get_features_for_vector(self.acc, 'MAGNITUDE')
         features.update(_get_features_for_vector(self.acc_z, 'Z_ANGLE'))
+        features.update(_get_features_for_vector(self.temp, 'TEMPERATURE'))
         return features
 
     def to_dic(self):

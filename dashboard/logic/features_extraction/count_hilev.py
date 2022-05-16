@@ -66,7 +66,7 @@ def _count_hilevs(day, night, tst_interval, sleep, wake):
     night.sol = (sleep[0] - day.t1).seconds
     night.waso = len(wake) * 30
     night.wasf = (day.t4 - sleep[-1]).seconds
-    night.wb = (tst_interval[prediction_name].diff() == -1).sum()
+    night.wb = ((tst_interval[prediction_name].diff() == -1).sum() - 1)
     night.awk5plus = _count_awk5plus(tst_interval)
 
 
