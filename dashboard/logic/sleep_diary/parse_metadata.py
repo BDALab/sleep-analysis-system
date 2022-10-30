@@ -1,7 +1,6 @@
 import logging
-from datetime import timedelta, date, datetime, time
-
 import pandas as pd
+from datetime import timedelta, date, datetime, time
 from pandas._libs.tslibs.nattype import NaT
 
 from dashboard.models import Subject, SleepDiaryDay, WakeInterval
@@ -25,7 +24,7 @@ SLEEP_QUALITY = {
     'very good': 5
 }
 
-INVALID_TIME = '0:00:13'
+INVALID_TIME = '00:00:13'
 
 
 def parse_metadata():

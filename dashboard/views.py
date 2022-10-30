@@ -1,6 +1,5 @@
 import logging
 import os.path
-
 import pytz
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, FileResponse
@@ -15,10 +14,12 @@ from .export.export_actions import export_all, export_subject
 from .export.export_hilev_avg import export_all_features_avg
 from .export.export_hilev_clinic_data import export_all_features_avg_clinic
 from .logic.machine_learning.learn import prepare_model
-from .logic.machine_learning.predict import predict_all
+from .logic.machine_learning.predict import predict_all, predict
 from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
 from .logic.reults_visualization.sleep_graph import create_graph
+from .logic.sleep_diary.export_metadata import export_metadata_to_xlsx
 from .logic.sleep_diary.parse_metadata import parse_metadata
+from .logic.sleep_diary.structure import create_structure
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
 
@@ -72,11 +73,20 @@ def detail(request, code):
         else:
             csv_data = CsvData.objects.filter(subject=subject)
             if csv_data.exists():
-                data = []
                 for d in csv_data:
-                    plot_div, fig = create_graph(d)
-                    data.append((plot_div, d.excel_prediction_url))
-                context['data'] = data
+                    if not os.path.exists(d.cached_prediction_path):
+                        df = predict(d)
+                        if df is None:
+                            continue
+                        structure = create_structure(subject)
+                        hilev(structure)
+                        sleep_nights = SleepNight.objects.filter(subject=subject)
+                        if sleep_nights.exists():
+                            data = []
+                            for night in sleep_nights:
+                                plot_div, fig = create_graph(night)
+                                data.append((plot_div, night.name_url, night.info, night.diary_day.info))
+                            context['data'] = data
 
         sleep_diary = SleepDiaryDay.objects.filter(subject=subject)
         if sleep_diary.exists():
@@ -177,6 +187,17 @@ def utils(request, action=None):
             logger.error('Metadata parsing failed for some entry.')
             context = {
                 'fail': 'Some metadata were not parsed!'}
+    elif action == 'metadata_export':
+        logger.info('Export metadata')
+        if export_metadata_to_xlsx():
+            logger.info('All metadata exported')
+            context = {
+                'ok': 'All metadata exported correctly'
+            }
+        else:
+            logger.error('Metadata export failed for some entry.')
+            context = {
+                'fail': 'Some metadata were not exported!'}
     elif action == 'validate_sleep_wake':
         logger.info('Validate sleep wake')
         if validate_sleep_wake():

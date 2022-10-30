@@ -1,11 +1,11 @@
 import logging
+import pytz
 from datetime import timedelta
 from os import path
-
-import pytz
 from pandas import DataFrame
 
 from dashboard.logic import cache
+from dashboard.logic.machine_learning.predict import predict
 from dashboard.logic.machine_learning.settings import prediction_name
 from dashboard.logic.sleep_diary.structure import create_structure
 from dashboard.models import CsvData, SleepDiaryDay, SleepNight, WakeInterval
@@ -15,19 +15,22 @@ logger = logging.getLogger(__name__)
 
 def hilev():
     structure = create_structure()
+    hilev(structure)
+
+
+def hilev(structure):
     res = True
     for subject, data, day in structure:
         if not isinstance(data, CsvData):
             res = False
             continue
-        if not path.exists(data.cached_prediction_path):
-            res = False
-            continue
         if not isinstance(day, SleepDiaryDay):
             res = False
             continue
-
-        df = _get_dataframe(data)
+        if not path.exists(data.cached_prediction_path):
+            df = predict(data)
+        else:
+            df = _get_dataframe(data)
         if not isinstance(df, DataFrame):
             res = False
             continue
@@ -51,7 +54,10 @@ def hilev():
         tst_interval = df.loc[sleep[0]:sleep[-1], [prediction_name]]
         _count_hilevs(day, night, tst_interval, sleep, wake)
         logger.info(night)
-        night.save()
+        try:
+            night.save()
+        except:
+            logger.error(f'Could not save {night}')
         tib_interval.to_excel(night.name)
 
     return res

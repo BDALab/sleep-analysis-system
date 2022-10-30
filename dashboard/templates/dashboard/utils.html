@@ -40,11 +40,6 @@
             {% endif %}
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
-        <div class="small-column">
-            <h3>Read metadata</h3>
-            <p>Read metadata from metadata.xml file.</p>
-            <a href="{% url 'dashboard:utils' 'metadata' %}" class="button button-small button-fix-width">Read</a>
-        </div>
 
         <div class="small-column">
             <h3>Extract features</h3>
@@ -77,8 +72,21 @@
         </div>
 
         <div class="small-column">
+            <h3>Read metadata</h3>
+            <p>Read metadata from metadata.xlsx file.</p>
+            <a href="{% url 'dashboard:utils' 'metadata' %}" class="button button-small button-fix-width">Read</a>
+        </div>
+
+        <div class="small-column">
+            <h3>Export metadata</h3>
+            <p>Export metadata to export-(date).xlsx file.</p>
+            <a href="{% url 'dashboard:utils' 'metadata_export' %}"
+               class="button button-small button-fix-width">Export</a>
+        </div>
+
+        <div class="small-column">
             <h3>Sleep diaries</h3>
-            <p>Works with sleep diary data - load, validate sleep/wake.</p>
+            <p>Works with sleep diary data - validate sleep/wake.</p>
             <a href="{% url 'dashboard:utils' 'validate_sleep_wake' %}" class="button button-small button-fix-width">Validate</a>
         </div>
 
