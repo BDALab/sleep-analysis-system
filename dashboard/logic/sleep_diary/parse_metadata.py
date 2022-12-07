@@ -25,7 +25,7 @@ SLEEP_QUALITY = {
     'very good': 5
 }
 
-INVALID_TIME = '0:00:13'
+INVALID_TIME = '00:00:13'
 
 
 def parse_metadata():
