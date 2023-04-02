@@ -1,5 +1,6 @@
 import logging
 import os.path
+
 import pytz
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, FileResponse
@@ -12,7 +13,7 @@ from dashboard.logic.features_extraction.count_hilev import hilev
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .export.export_actions import export_all, export_subject
 from .export.export_hilev_avg import export_all_features_avg
-from .export.export_hilev_clinic_data import export_all_features_avg_clinic
+from .export.export_hilev_clinic_data import export_all_features_clinic
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all, predict
 from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
@@ -254,8 +255,20 @@ def utils(request, action=None):
             context = {
                 'fail': 'Export of features to dataset failed!'}
     elif action == 'export_dataset_clinic':
+        logger.info('Export dataset clinic data for each subject and night to excel')
+        if export_all_features_clinic(False):
+            logger.info('Export completed')
+            context = {
+                'ok': 'Export completed successfully'
+            }
+        else:
+            logger.error('Failed to export dataset')
+            context = {
+                'fail': 'Export of features to dataset failed!'}
+
+    elif action == 'export_avg_dataset_clinic':
         logger.info('Export dataset with average and clinic data for each subject to excel')
-        if export_all_features_avg_clinic():
+        if export_all_features_clinic():
             logger.info('Export completed')
             context = {
                 'ok': 'Export completed successfully'

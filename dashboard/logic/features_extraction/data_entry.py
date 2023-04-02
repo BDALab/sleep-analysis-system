@@ -1,7 +1,7 @@
 from statistics import variance, stdev, mean, median
 
 from numpy import quantile, percentile
-from scipy.stats import iqr, trim_mean, median_absolute_deviation, kurtosis, skew, mode
+from scipy.stats import iqr, trim_mean, median_abs_deviation, kurtosis, skew, mode
 
 from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import scale_name
@@ -49,7 +49,7 @@ def _get_features_for_vector(vec, prefix):
         f'{prefix} | MODE': _mode,
         f'{prefix} | VARIANCE': _var,
         f'{prefix} | STANDARD DEVIATION': _std,
-        f'{prefix} | MEDIAN ABSOLUTE DEVIATION': median_absolute_deviation(vec),
+        f'{prefix} | MEDIAN ABSOLUTE DEVIATION': median_abs_deviation(vec),
         # f'{prefix} | GEOMETRIC STANDARD DEVIATION': gstd(vec), # The geometric standard deviation is defined for
         # strictly positive values only.
         f'{prefix} | RELATIVE STANDARD DEVIATION': safe_div(_std, _mean),

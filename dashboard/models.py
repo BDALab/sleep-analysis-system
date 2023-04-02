@@ -33,6 +33,13 @@ class Subject(models.Model):
     HC = models.BooleanField('healthy control', default=False)
     SA = models.BooleanField('sleep apnea', default=False)
     predPDorMCI = models.BooleanField('probable parkinson disease', default=False)
+    DIAGNOSIS = [
+        ('D', 'preDLB'),
+        ('N', 'NonHC'),
+        ('H', 'HC'),
+        ('U', 'Unknown')
+    ]
+    diagnosis = models.CharField('diagnosis', max_length=1, choices=DIAGNOSIS, default='U')
 
     def __str__(self):
         return self.code
