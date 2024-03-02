@@ -9,7 +9,7 @@ from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
 from dashboard.export.export_hilev import export_all_features
-from dashboard.logic.features_extraction.count_hilev import hilev
+from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .export.export_actions import export_all, export_subject
 from .export.export_hilev_avg import export_all_features_avg
@@ -166,7 +166,7 @@ def utils(request, action=None):
             }
 
     elif action == 'all':
-        if preprocess_all_data() and predict_all() and hilev():
+        if preprocess_all_data() and predict_all() and hilev_all():
             logger.info('All operations OK')
             context = {
                 'ok': 'All operations performed successfully'
@@ -212,7 +212,7 @@ def utils(request, action=None):
                 'fail': 'Validation failed!'}
     elif action == 'hilev':
         logger.info('Calculate high level features')
-        if hilev():
+        if hilev_all():
             logger.info('HiLev counted')
             context = {
                 'ok': 'High level features counted'

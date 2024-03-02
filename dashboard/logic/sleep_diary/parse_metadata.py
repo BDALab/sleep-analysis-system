@@ -1,6 +1,7 @@
 import logging
-import pandas as pd
 from datetime import timedelta, date, datetime, time
+
+import pandas as pd
 from pandas._libs.tslibs.nattype import NaT
 
 from dashboard.models import Subject, SleepDiaryDay, WakeInterval
@@ -39,9 +40,13 @@ def parse_metadata():
         subject = Subject.objects.filter(code=personal_id).first()
         if subject is None:
             try:
+                date_of_birth = row['#dateOfBirth']
+                if date_of_birth is float:
+                    logger.error(f'Convert date of birth: {date_of_birth}, subject code: {subject} to datetime')
+                    date_of_birth = datetime.fromtimestamp(date_of_birth)
                 subject = Subject(
                     code=personal_id,
-                    age=datetime.now().year - (row['#dateOfBirth']).year
+                    age=datetime.now().year - date_of_birth.year
                 )
                 subject.save()
             except Exception as e:

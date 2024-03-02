@@ -1,15 +1,20 @@
-from statistics import variance, stdev, mean, median
+import logging
+from statistics import variance, stdev, mean, median, mode
 
 from numpy import quantile, percentile
-from scipy.stats import iqr, trim_mean, median_abs_deviation, kurtosis, skew, mode
+from scipy.stats import iqr, trim_mean, median_abs_deviation, kurtosis, skew
 
 from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import scale_name
 
+logger = logging.getLogger(__name__)
 
 def _get_features_for_vector(vec, prefix):
     # Prepare frequently used values
     _len = len(vec)
+    if _len <= 1 or _len is None:
+        logger.warning(f'Wrong or empty vector: {vec} - {prefix}')
+        return
     _max = max(vec)
     _pos_max = vec.index(_max)
     _min = min(vec)
@@ -18,7 +23,7 @@ def _get_features_for_vector(vec, prefix):
     _var = variance(vec)
     _std = stdev(vec)
     _mean = mean(vec)
-    _mode = mode(vec, axis=None)[0][0]
+    _mode = mode(vec)
     _median = median(vec)
     features = {
         f'{prefix} | MAX': _max,

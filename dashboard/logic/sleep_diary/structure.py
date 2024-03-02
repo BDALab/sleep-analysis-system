@@ -7,7 +7,7 @@ from dashboard.models import SleepDiaryDay, CsvData, Subject
 logger = logging.getLogger(__name__)
 
 
-def create_structure():
+def create_structure_all():
     structure = []
     for subject in Subject.objects.all():
         _structure_for_subject(structure, subject)

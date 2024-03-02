@@ -1,20 +1,21 @@
 import logging
-import pytz
 from datetime import timedelta
 from os import path
+
+import pytz
 from pandas import DataFrame
 
 from dashboard.logic import cache
 from dashboard.logic.machine_learning.predict import predict
 from dashboard.logic.machine_learning.settings import prediction_name
-from dashboard.logic.sleep_diary.structure import create_structure
+from dashboard.logic.sleep_diary.structure import create_structure_all
 from dashboard.models import CsvData, SleepDiaryDay, SleepNight, WakeInterval
 
 logger = logging.getLogger(__name__)
 
 
-def hilev():
-    structure = create_structure()
+def hilev_all():
+    structure = create_structure_all()
     hilev(structure)
 
 
