@@ -41,9 +41,12 @@ def parse_metadata():
         if subject is None:
             try:
                 date_of_birth = row['#dateOfBirth']
-                if date_of_birth is float:
+                if isinstance(date_of_birth, float):
                     logger.error(f'Convert date of birth: {date_of_birth}, subject code: {subject} to datetime')
                     date_of_birth = datetime.fromtimestamp(date_of_birth)
+                if isinstance(date_of_birth, str):
+                    logger.error(f'Convert date of birth: {date_of_birth}, subject code: {subject} to datetime')
+                    date_of_birth = datetime.strptime(date_of_birth, '%d.%m.%Y')
                 subject = Subject(
                     code=personal_id,
                     age=datetime.now().year - date_of_birth.year
@@ -59,7 +62,10 @@ def parse_metadata():
                 logger.error(f'Day without subject or date detected! Skip...')
                 result = False
                 continue
-            dd = SleepDiaryDay.objects.filter(subject=subject).filter(date=row[f'{day}-date']).first()
+            date_of_day = row[f'{day}-date']
+            if not isinstance(date_of_day, date) or not isinstance(date_of_day, datetime):
+                continue
+            dd = SleepDiaryDay.objects.filter(subject=subject).filter(date=date_of_day).first()
             if dd is None:
                 try:
                     logger.info(f'Create new diary day: subject {personal_id} | day {i}')

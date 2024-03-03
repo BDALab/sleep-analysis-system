@@ -28,6 +28,7 @@ TRAINED_MODEL_EXPORT_PATH = f"{BASE_DIR}/trained_model_export.json"
 BEST_ESTIMATOR_PATH = f"{ML_DIR}/bst.pkl"
 CV_RESULTS_PATH = f"{ML_DIR}/cv_results.pkl"
 METADATA_PATH = f'{BASE_DIR}/metadata.xlsx'
+METADATA_PARTIAL_PATH = f'{BASE_DIR}/metadata-part.xlsx'
 HILEV_FNUSA = f'{BASE_DIR}/dataset_hilev_FNUSA_txz.xlsx'
 HILEV_CV_RESULTS_PATH = f"{HILEV_DIR}/cv_results.pkl"
 HILEV_TRAINED_MODEL_PATH = f"{HILEV_DIR}/trained_model.pkl"
