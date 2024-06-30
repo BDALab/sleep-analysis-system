@@ -112,6 +112,8 @@ def _assign_frequency_modulo(csv_row):
             frequency_modulo = 2
         elif '85.7 Hz' in frequency:
             frequency_modulo = 3
+        elif '100.0 Hz' in frequency:
+            frequency_modulo = 4
     return frequency_modulo
 
 
