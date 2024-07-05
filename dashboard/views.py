@@ -22,6 +22,7 @@ from .logic.sleep_diary.export_metadata import export_metadata_to_xlsx
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.structure import create_structure
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
+from .logic.sleeppy import SleepPy
 from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
 
 logger = logging.getLogger(__name__)
@@ -289,6 +290,19 @@ def utils(request, action=None):
             logger.error('Failed to train classifier')
             context = {
                 'fail': 'Training of classifier failed!'}
+    elif action == 'sleeppy':
+        logger.info('SleepPy playground')
+        sleepy = SleepPy(
+            input_file=r"F:\geneactiv-processing-data\media\data\002_left_wrist_067877_2024-02-04_23-09-48.csv",
+            results_directory=r"F:\geneactiv-processing-data\media\sleeppy-experiment",
+            sampling_frequency=25,
+        )
+        sleepy.run_config = 0
+        sleepy.run()
+        logger.info('SleepPy playground completed')
+        context = {
+            'ok': 'SleepPy playground completed'
+        }
 
     else:
         context = {}
