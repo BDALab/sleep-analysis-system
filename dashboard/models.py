@@ -68,6 +68,7 @@ class CsvData(models.Model):
     description = models.CharField('description', max_length=255, blank=True)
     creation_date = models.DateField('date of upload', auto_now_add=True)
     training_data = models.BooleanField('training data', default=False)
+    end_date = models.DateTimeField('end date to process', null=True, blank=True)
 
     @property
     def filename(self):
@@ -106,6 +107,14 @@ class CsvData(models.Model):
             return self.data.storage.url(self.excel_prediction_path)
         else:
             return ''
+
+    @property
+    def sleeppy_dir(self):
+        split = path.split(self.data.path)
+        folder = f'{split[0]}/../sleeppy'
+        if not path.exists(folder):
+            os.mkdir(folder)
+        return folder
 
     def __str__(self):
         return f'CSV data {self.filename} from subject {self.subject.code}'
@@ -359,7 +368,7 @@ class SleepNight(models.Model):
 
     @property
     def date(self):
-        return self.diary_day.date
+        return self.diary_day.date if self.diary_day else self.sleep_onset.date()
 
     @property
     def tst(self):

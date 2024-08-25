@@ -1,13 +1,15 @@
+import logging
 import os
 
 import matplotlib
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 try:
     matplotlib.use("Agg")
 except Exception as e:
-    print("Error: could not use Agg as backend")
+    logger.error("Error: could not use Agg as backend")
     pass
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -144,13 +146,17 @@ class SleepPy:
 
         """
         try:
+            if os.path.exists(self.sub_dst):
+                logger.info(f"Data already processed. See {self.sub_dst}. Skip...")
+                return
+
             os.mkdir(self.sub_dst)  # set up output directory
         except OSError:
             pass
         if self.run_config <= 0:
             # split the data into 24 hour periods
             if self.verbose:
-                print("Loading data...")
+                logger.info("Loading data...")
             if ".bin" in self.src:
                 self.split_days_geneactiv_bin()
             elif ".csv" in self.src:
@@ -158,43 +164,43 @@ class SleepPy:
         if self.run_config <= 1:
             # extract the activity index feature
             if self.verbose:
-                print("Extracting activity index...")
+                logger.info("Extracting activity index...")
             self.extract_activity_index()
         if self.run_config <= 2:
             # run wear/on-body detection
             if self.verbose:
-                print("Running off-body detection...")
+                logger.info("Running off-body detection...")
             self.wear_detection()
         if self.run_config <= 3:
             # run major rest period detection
             if self.verbose:
-                print("Detecting major rest period...")
+                logger.info("Detecting major rest period...")
             self.major_rest_period()
         if self.run_config <= 4:
             # run sleep wake predictions on the major rest period
             if self.verbose:
-                print("Running sleep/wake predictions...")
+                logger.info("Running sleep/wake predictions...")
             self.sleep_wake_predict()
         if self.run_config <= 5:
             # calculate endpoints based on the above predictions
             if self.verbose:
-                print("Calculating endpoints...")
+                logger.info("Calculating endpoints...")
             self.calculate_endpoints()
         if self.run_config <= 6:
             # generates visual reports
             if self.verbose:
-                print("Generating visual reports...")
+                logger.info("Generating visual reports...")
             self.visualize_results()
 
         # aggregate results
         if self.verbose:
-            print("Aggregating results...")
+            logger.info("Aggregating results...")
         self.aggregate_results()
 
         # clear data
         if self.clear:
             if self.verbose:
-                print("Clearing intermediate data...")
+                logger.info("Clearing intermediate data...")
             self.clear_data()
 
     def split_days_geneactiv_csv(self):
@@ -255,7 +261,7 @@ class SleepPy:
             data = data.loc[: self.stop_time]
 
         # split data into days from noon to noon
-        days = data.groupby(pd.Grouper(level=0, freq="24h", base=12))
+        days = data.groupby(pd.Grouper(level=0, freq="24h", offset="12h"))
 
         # iterate through days keeping track of the day
         count = 0
@@ -430,8 +436,8 @@ class SleepPy:
             df_wear = pd.DataFrame(df_std.copy()) * 0 + 1
             df_wear.columns = ["wear"]
             for i in range(len(df_wear)):
-                if df_range.ix[i] <= 1 or df_std.ix[i] <= 1:
-                    df_wear.ix[i] = 0
+                if df_range.iloc[i] <= 1 or df_std.iloc[i] <= 1:
+                    df_wear.iloc[i] = 0
 
             # save before rescoring
             df_wear.to_hdf(
@@ -754,7 +760,7 @@ class SleepPy:
         # calculate std for all windows
         while idx < len(df) - int(900 * self.fs):  # run until we reach the end
             xyz = (
-                df.ix[idx: idx + int(3600 * self.fs)].std().values
+                df.iloc[idx: idx + int(3600 * self.fs)].std().values
             )  # save std in x y and z
             rstd.append(
                 [df.index[idx], xyz[0], xyz[1], xyz[2]]
@@ -781,8 +787,8 @@ class SleepPy:
         # calculate range for all windows
         while idx < len(df) - int(900 * self.fs):  # run until we reach the end
             xyz = (
-                    df.ix[idx: idx + int(3600 * self.fs)].max().values
-                    - df.ix[idx: idx + int(3600 * self.fs)].min().values
+                    df.iloc[idx: idx + int(3600 * self.fs)].max().values
+                    - df.iloc[idx: idx + int(3600 * self.fs)].min().values
             )  # save range in x y z
             rr.append(
                 [df.index[idx], xyz[0], xyz[1], xyz[2]]
