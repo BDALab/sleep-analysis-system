@@ -130,7 +130,19 @@
             <h3>SleepPy</h3>
             <p>Playground for SleepPy package.</p>
             <a href="{% url 'dashboard:utils' 'sleeppy' %}"
-               class="button button-small button-fix-width">Train</a>
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>SleepPy clean</h3>
+            <p>Cleanup for SleepPy package.</p>
+            <a href="{% url 'dashboard:utils' 'sleeppy-clean' %}"
+               class="button button-small button-fix-width">Clean</a>
+        </div>
+        <div class="small-column">
+            <h3>SleepPy to models</h3>
+            <p>Convert results from SleepPy to models.</p>
+            <a href="{% url 'dashboard:utils' 'sleeppy-to-models' %}"
+               class="button button-small button-fix-width">Convert</a>
         </div>
     </div>
 </div>

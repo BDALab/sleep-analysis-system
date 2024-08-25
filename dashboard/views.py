@@ -22,7 +22,8 @@ from .logic.sleep_diary.export_metadata import export_metadata_to_xlsx
 from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.structure import create_structure
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
-from .logic.sleeppy import SleepPy
+from .logic.sleeppy.sleeppy import sleeppy_all, sleeppy_clean
+from .logic.sleeppy.sleeppy_to_models import sleeppy_to_models
 from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
 
 logger = logging.getLogger(__name__)
@@ -292,16 +293,24 @@ def utils(request, action=None):
                 'fail': 'Training of classifier failed!'}
     elif action == 'sleeppy':
         logger.info('SleepPy playground')
-        sleepy = SleepPy(
-            input_file=r"F:\geneactiv-processing-data\media\data\002_left_wrist_067877_2024-02-04_23-09-48.csv",
-            results_directory=r"F:\geneactiv-processing-data\media\sleeppy-experiment",
-            sampling_frequency=25,
-        )
-        sleepy.run_config = 0
-        sleepy.run()
+        sleeppy_all()
         logger.info('SleepPy playground completed')
         context = {
             'ok': 'SleepPy playground completed'
+        }
+    elif action == 'sleeppy-clean':
+        logger.info('SleepPy clean')
+        sleeppy_clean()
+        logger.info('SleepPy clean completed')
+        context = {
+            'ok': 'SleepPy clean completed'
+        }
+    elif action == 'sleeppy-to-models':
+        logger.info('SleepPy models conversion')
+        sleeppy_to_models()
+        logger.info('SleepPy models conversion completed')
+        context = {
+            'ok': 'SleepPy models conversion completed'
         }
 
     else:
