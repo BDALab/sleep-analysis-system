@@ -386,7 +386,7 @@ class SleepNight(models.Model):
     def name(self):
         split = path.split(self.data.data.path)
         folder = f'{split[0]}/../predictions-fin'
-        name = f'{split[1]}_day_{self.diary_day.date}.xlsx'
+        name = f'{split[1]}_day_{self.date}.xlsx'
         if not path.exists(folder):
             os.mkdir(folder)
         return f'{folder}/{name}'
@@ -416,7 +416,7 @@ class SleepNight(models.Model):
         return se(self.subject.age, self.se)
 
     def __str__(self):
-        return f'Subject: {self.subject.code} | Day:{self.diary_day.date} | Data:{self.data.filename} | {self.info}'
+        return f'Subject: {self.subject.code} | Day:{self.date} | Data:{self.data.filename} | {self.info}'
 
     @property
     def info(self):
@@ -427,6 +427,84 @@ class SleepNight(models.Model):
                f'| Sleep onset latency: {self.convert(self.sol)}' \
                f'| Wake after sleep onset: {self.convert(self.waso)} ' \
                f'| Wake after sleep offset: {self.convert(self.wasf)} ' \
+               f'| Wake bouts: {self.wb} ' \
+               f'| Sleep efficiency: {self.se:.1f}% ' \
+               f'| Sleep fragmentation: {self.sf:.2f} ' \
+               f'| Awakenings > 5 minutes: {self.awk5plus}' \
+               f'| Sleep onset latency norm: {self.sol_norm}' \
+               f'| Awakenings > 5 minutes norm: {self.awk5plus_norm}' \
+               f'| Wake after sleep onset norm: {self.waso_norm}' \
+               f'| Sleep efficiency norm: {self.se_norm}'
+
+
+class SleeppyData(models.Model):
+    sleep_night = models.ForeignKey(SleepNight, on_delete=models.DO_NOTHING, blank=True, null=True)
+    data = models.ForeignKey(CsvData, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    sleep_onset = models.DateTimeField('sleep onset')  # rest-periods
+    sleep_end = models.DateTimeField('sleep end')  # rest-periods
+    # tib = models.PositiveIntegerField('time in bed') # cannot be obtained, we do not have wasf
+    sol = models.PositiveIntegerField('sleep onset latency')  # sleep_onset_latency in minutes
+    waso = models.PositiveIntegerField('wake after sleep onset')  # waso
+    # wasf = models.PositiveIntegerField('wake after sleep offset') unfortunately cannot be obtained
+    wb = models.PositiveIntegerField('wake bouts')  # number_wake_bouts
+    awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')  # number_wake_bouts_5min
+
+    # Modified properties
+    tst = models.PositiveIntegerField('total sleep time')  # total_sleep_time
+    se = models.PositiveIntegerField('sleep efficiency')  # percent_time_asleep
+
+    @property
+    def date(self):
+        return self.sleep_night.date if self.sleep_night else self.sleep_onset.date()
+
+    @property
+    def sf(self):
+        return safe_div(self.wb, (self.tst / 3600))
+
+    @property
+    def name(self):
+        split = path.split(self.data.data.path)
+        folder = f'{split[0]}/../predictions-fin'
+        name = f'{split[1]}_day_{self.date}.xlsx'
+        if not path.exists(folder):
+            os.mkdir(folder)
+        return f'{folder}/{name}'
+
+    @staticmethod
+    def convert(n):
+        return timedelta(seconds=n)
+
+    @property
+    def name_url(self):
+        return self.data.data.storage.url(self.name)
+
+    @property
+    def sol_norm(self):
+        return sol(self.subject.age, self.sol)
+
+    @property
+    def awk5plus_norm(self):
+        return awk5plus(self.subject.age, self.awk5plus)
+
+    @property
+    def waso_norm(self):
+        return waso(self.subject.age, self.waso)
+
+    @property
+    def se_norm(self):
+        return se(self.subject.age, self.se)
+
+    def __str__(self):
+        return f'Subject: {self.subject.code} | Day:{self.date} | Data:{self.data.filename} | {self.info}'
+
+    @property
+    def info(self):
+        return f'Sleep onset: {self.sleep_onset.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Sleep offset: {self.sleep_end.astimezone(pytz.timezone("Europe/Prague")).time()} ' \
+               f'| Total sleep time: {self.convert(self.tst)} ' \
+               f'| Sleep onset latency: {self.convert(self.sol)}' \
+               f'| Wake after sleep onset: {self.convert(self.waso)} ' \
                f'| Wake bouts: {self.wb} ' \
                f'| Sleep efficiency: {self.se:.1f}% ' \
                f'| Sleep fragmentation: {self.sf:.2f} ' \
