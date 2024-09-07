@@ -24,6 +24,7 @@ from .logic.sleep_diary.structure import create_structure
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .logic.sleeppy.sleeppy import sleeppy_all, sleeppy_clean
 from .logic.sleeppy.sleeppy_to_models import sleeppy_to_models
+from .logic.sleeppy.sleeppy_to_models_validation import sleeppy_to_models_validation
 from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
 
 logger = logging.getLogger(__name__)
@@ -311,6 +312,14 @@ def utils(request, action=None):
         logger.info('SleepPy models conversion completed')
         context = {
             'ok': 'SleepPy models conversion completed'
+        }
+
+    elif action == 'sleeppy-to-models-validation':
+        logger.info('SleepPy models validation')
+        sleeppy_to_models_validation()
+        logger.info('SleepPy models validation completed')
+        context = {
+            'ok': 'SleepPy models validation completed'
         }
 
     else:
