@@ -365,6 +365,7 @@ class SleepNight(models.Model):
     wasf = models.PositiveIntegerField('wake after sleep offset')
     wb = models.PositiveIntegerField('wake bouts')
     awk5plus = models.PositiveSmallIntegerField('awakenings > 5 minutes')
+    broken = models.BooleanField('broken according to sleepy', default=False)
 
     @property
     def date(self):
