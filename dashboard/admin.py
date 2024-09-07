@@ -1,7 +1,7 @@
 from django.contrib import admin
 from nested_inline.admin import NestedTabularInline, NestedModelAdmin
 
-from .models import Subject, CsvData, PsData, SleepDiaryDay, WakeInterval, RBDSQ
+from .models import Subject, CsvData, PsData, SleepDiaryDay, WakeInterval, RBDSQ, SleeppyData, SleepNight
 
 
 # Register your models here.
@@ -38,6 +38,12 @@ class SleepDiaryInline(NestedTabularInline):
     inlines = [WakeIntervalInline]
 
 
+class SleeppyDataInline(admin.TabularInline):
+    inlines = ''
+    model = SleeppyData
+    extra = 1
+
+
 @admin.register(Subject)
 class SubjectAdmin(NestedModelAdmin):
     fieldsets = [
@@ -69,8 +75,14 @@ class SleepDiaryAdmin(admin.ModelAdmin):
     inlines = [WakeIntervalInline]
 
 
+@admin.register(SleepNight)
+class CsvAdmin(admin.ModelAdmin):
+    inlines = [SleeppyDataInline]
+
+
 admin.site.register(PsData)
 admin.site.register(RBDSQ)
+admin.site.register(SleeppyData)
 
 admin.sites.AdminSite.site_header = 'GENEActiv data processing administration'
 admin.sites.AdminSite.site_title = 'GENEActiv data processing administration'
