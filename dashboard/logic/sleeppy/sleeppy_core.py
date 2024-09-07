@@ -690,6 +690,7 @@ class SleepPy:
 
             # number of wake bouts
             num_wake_bouts = 0
+            num_wake_bouts_5 = 0
             wake_bout_df = df.copy()
             wake_bout_df["block"] = (
                 wake_bout_df.sleep_predictions.diff().ne(0)
@@ -697,6 +698,8 @@ class SleepPy:
             for group in wake_bout_df.groupby(by="block"):
                 if group[1]["sleep_predictions"].sum() > 0:
                     num_wake_bouts += 1
+                if group[1]["sleep_predictions"].sum() > 5:
+                    num_wake_bouts_5 += 1
             endpoints.append(
                 [
                     int(count),
@@ -705,6 +708,7 @@ class SleepPy:
                     int(waso),
                     int(sleep_onset_lat),
                     int(num_wake_bouts),
+                    int(num_wake_bouts_5),
                 ]
             )
 
@@ -716,6 +720,7 @@ class SleepPy:
             "waso",
             "sleep_onset_latency",
             "number_wake_bouts",
+            "number_wake_bouts_5min",
         ]
         endpoints = pd.DataFrame(endpoints)
         endpoints.columns = hdr
