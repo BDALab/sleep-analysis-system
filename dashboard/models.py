@@ -454,6 +454,7 @@ class SleeppyData(models.Model):
     # Modified properties
     tst = models.PositiveIntegerField('total sleep time')  # total_sleep_time
     se = models.PositiveIntegerField('sleep efficiency')  # percent_time_asleep
+    broken = models.BooleanField('broken according to sleep nights', default=False)
 
     @property
     def date(self):
