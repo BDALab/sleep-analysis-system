@@ -21,17 +21,20 @@ def sleeppy_to_models_validation():
                 logger.info(sleepy_model.info)
             logger.info("###")
 
-    logger.info("=== Sleep nights without sleeppy data objects ===")
+    logger.info(
+        f"=== Sleep nights without sleeppy data objects: {len(nights_with_no_sleep_data)} out of total {len(SleepNight.objects.all())} sleep nights ===")
     for sleep_night in nights_with_no_sleep_data:
         logger.info(
             f'Sleep night: {sleep_night.date}, subject: {sleep_night.subject.code}, data: {sleep_night.data.filename}')
 
-    logger.info("=== Sleeppy data objects without sleeppy night ===")
-    for sleeppy_data in SleeppyData.objects.filter(sleep_night=None):
+    sleeppy_data_without_night = SleeppyData.objects.filter(sleep_night=None).all()
+    logger.info(f"=== Sleeppy data objects without sleeppy night: {len(sleeppy_data_without_night)}===")
+    for sleeppy_data in sleeppy_data_without_night:
         logger.info(
             f'Date: {sleeppy_data.date}, subject: {sleeppy_data.subject.code}, data: {sleeppy_data.data.filename}')
 
-    logger.info("=== Sleeppy data objects with 100% sleep efficiency ===")
-    for sleeppy_data in SleeppyData.objects.filter(se=100):
+    sleeppy_data_with_100_efficiency = SleeppyData.objects.filter(se=100).all()
+    logger.info(f"=== Sleeppy data objects with 100% sleep efficiency: {len(sleeppy_data_with_100_efficiency)}===")
+    for sleeppy_data in sleeppy_data_with_100_efficiency:
         logger.info(
             f'Date: {sleeppy_data.date}, subject: {sleeppy_data.subject.code}, data: {sleeppy_data.data.filename}')
