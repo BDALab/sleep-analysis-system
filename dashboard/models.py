@@ -515,3 +515,59 @@ class SleeppyData(models.Model):
                f'| Awakenings > 5 minutes norm: {self.awk5plus_norm}' \
                f'| Wake after sleep onset norm: {self.waso_norm}' \
                f'| Sleep efficiency norm: {self.se_norm}'
+
+
+class SignalFeatures(models.Model):
+    max = models.FloatField('max')
+    min = models.FloatField('min')
+    relative_position_of_max = models.FloatField('relative position of max')
+    relative_position_of_min = models.FloatField('relative position of min')
+    range = models.FloatField('range')
+    relative_range = models.FloatField('relative range')
+    relative_variation_range = models.FloatField('relative variation range')
+    interquartile_range = models.FloatField('interquartile range')
+    relative_interquartile_range = models.FloatField('relative interquartile range')
+    interdencile_range = models.FloatField('interdencile range')
+    relative_interdencile_range = models.FloatField('relative interdencile range')
+    interpercentile_range = models.FloatField('interpercentile range')
+    relative_interpercentile_range = models.FloatField('relative interpercentile range')
+    studentized_range = models.FloatField('studentized range')
+    mean = models.FloatField('mean')
+    harmonic_mean = models.FloatField('harmonic mean')
+    mean_excluding_outliers_10 = models.FloatField('mean excluding outliers (10)')
+    mean_excluding_outliers_20 = models.FloatField('mean excluding outliers (20)')
+    mean_excluding_outliers_30 = models.FloatField('mean excluding outliers (30)')
+    mean_excluding_outliers_40 = models.FloatField('mean excluding outliers (40)')
+    median = models.FloatField('median')
+    mode = models.FloatField('mode')
+    variance = models.FloatField('variance')
+    standard_deviation = models.FloatField('standard deviation')
+    median_absolute_deviation = models.FloatField('median absolute deviation')
+    relative_standard_deviation = models.FloatField('relative standard deviation')
+    index_of_dispersion = models.FloatField('index of dispersion')
+    kurtosis = models.FloatField('kurtosis')
+    skewness = models.FloatField('skewness')
+    pearson_1st_skewness_coefficient = models.FloatField('pearson 1st skewness coefficient')
+    pearson_2st_skewness_coefficient = models.FloatField('pearson 2st skewness coefficient')
+    percentile_1 = models.FloatField('1st percentile')
+    percentile_5 = models.FloatField('5th percentile')
+    percentile_10 = models.FloatField('10th percentile')
+    percentile_20 = models.FloatField('20th percentile')
+    percentile_80 = models.FloatField('80th percentile')
+    percentile_90 = models.FloatField('90th percentile')
+    percentile_95 = models.FloatField('95th percentile')
+    percentile_99 = models.FloatField('99th percentile')
+    shannon_entropy = models.FloatField('shannon entropy')
+    modulation = models.FloatField('modulation')
+    tkeo_max = models.FloatField('teager kaiser energy operator max')
+    tkeo_min = models.FloatField('teager kaiser energy operator min')
+
+
+class SleepNightActivityIndexFeatures(SignalFeatures):
+    day_index = models.PositiveSmallIntegerField('sleeppy index')
+    sleep_night = models.ForeignKey(SleepNight, on_delete=models.CASCADE)
+
+
+class SleeppyActivityIndexFeatures(SignalFeatures):
+    day_index = models.PositiveSmallIntegerField('sleeppy index')
+    sleeppy_data = models.ForeignKey(SleeppyData, on_delete=models.CASCADE)
