@@ -23,6 +23,7 @@ from .logic.sleep_diary.parse_metadata import parse_metadata
 from .logic.sleep_diary.structure import create_structure
 from .logic.sleep_diary.validate_sleep_wake import validate_sleep_wake
 from .logic.sleeppy.sleeppy import sleeppy_all, sleeppy_clean
+from .logic.sleeppy.sleeppy_new_hilevs import sleeppy_new_hilev_all
 from .logic.sleeppy.sleeppy_to_models import sleeppy_to_models
 from .logic.sleeppy.sleeppy_to_models_validation import sleeppy_to_models_validation
 from .models import Subject, CsvData, SleepDiaryDay, RBDSQ, SleepNight
@@ -320,6 +321,14 @@ def utils(request, action=None):
         logger.info('SleepPy models validation completed')
         context = {
             'ok': 'SleepPy models validation completed'
+        }
+
+    elif action == 'sleeppy-new-hilev':
+        logger.info('SleepPy new high level features extraction')
+        sleeppy_new_hilev_all()
+        logger.info('SleepPy new high level features extraction completed')
+        context = {
+            'ok': 'SleepPy new high level features extraction completed'
         }
 
     else:
