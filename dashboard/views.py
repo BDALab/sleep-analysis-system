@@ -14,6 +14,8 @@ from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .export.export_actions import export_all, export_subject
 from .export.export_hilev_avg import export_all_features_avg
 from .export.export_hilev_clinic_data import export_all_features_clinic
+from .export.export_hilev_clinic_data_activity_index import export_all_features_clinic_activity_index
+from .export.export_hilev_clinic_data_activity_index_sleeppy import export_all_features_clinic_activity_index_sleepy
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all, predict
 from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
@@ -329,6 +331,15 @@ def utils(request, action=None):
         logger.info('SleepPy new high level features extraction completed')
         context = {
             'ok': 'SleepPy new high level features extraction completed'
+        }
+
+    elif action == 'sleeppy-datasets':
+        logger.info('SleepPy new high level features export')
+        export_all_features_clinic_activity_index()
+        export_all_features_clinic_activity_index_sleepy()
+        logger.info('SleepPy new high level features export completed')
+        context = {
+            'ok': 'SleepPy new high level features export completed'
         }
 
     else:
