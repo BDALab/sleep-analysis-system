@@ -49,7 +49,7 @@ param_grid = {
 search_settings = {
     "param_distributions": param_grid,
     "scoring": "f1_micro",  # https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
-    "n_jobs": -1,
+    "n_jobs": 20,
     "n_iter": 100,
     "verbose": 1
 }

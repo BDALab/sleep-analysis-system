@@ -18,7 +18,7 @@ from os import path
 # -------------- PROJECT SETTINGS ---------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ML_DIR = f'{BASE_DIR}/ml'
-HILEV_DIR = f'{BASE_DIR}/hilev/tzx_data'
+HILEV_DIR = f'{BASE_DIR}/hilev/activity'
 if not path.exists(ML_DIR):
     os.mkdir(ML_DIR)
 HYPER_PARAMS_PATH = f"{ML_DIR}/best_hyper_params.pkl"
@@ -29,7 +29,7 @@ BEST_ESTIMATOR_PATH = f"{ML_DIR}/bst.pkl"
 CV_RESULTS_PATH = f"{ML_DIR}/cv_results.pkl"
 METADATA_PATH = f'{BASE_DIR}/metadata.xlsx'
 METADATA_PARTIAL_PATH = f'{BASE_DIR}/metadata-part.xlsx'
-HILEV_FNUSA = f'{BASE_DIR}/dataset_hilev_FNUSA_txz.xlsx'
+HILEV_FNUSA = f'{BASE_DIR}/dataset_hilev_all_acc_sleeppy-first_visit.xlsx'
 HILEV_CV_RESULTS_PATH = f"{HILEV_DIR}/cv_results.pkl"
 HILEV_TRAINED_MODEL_PATH = f"{HILEV_DIR}/trained_model.pkl"
 

@@ -462,7 +462,7 @@ class SleeppyData(models.Model):
 
     @property
     def sf(self):
-        return safe_div(self.wb, (self.tst / 3600))
+        return safe_div(self.wb, (self.tst / 60))
 
     @property
     def name(self):
