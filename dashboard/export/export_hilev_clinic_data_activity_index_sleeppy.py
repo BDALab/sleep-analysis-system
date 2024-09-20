@@ -44,7 +44,7 @@ def export_all_features_clinic_activity_index_sleepy():
                'diary.Sleep efficiency',
                'diary_norm.Sleep efficiency',
                'diary.Sleep fragmentation',
-               'activity.Sleep onset latency',
+               'sleeppy.Sleep onset latency',
                'sleeppy_norm.Sleep onset latency',
                'sleeppy.Wake after sleep onset',
                'sleeppy_norm.Wake after sleep onset',
