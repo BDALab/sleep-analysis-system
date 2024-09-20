@@ -10,7 +10,7 @@ from sklearn.impute import KNNImputer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
 
-from dashboard.logic.cache import save_obj, load_obj
+from dashboard.logic.cache import save_obj
 from dashboard.logic.machine_learning.learn import evaluate_cross_validation, results_to_print, \
     train_model_test_train_data, results_to_print_cv
 from dashboard.logic.machine_learning.settings import model_params, search_settings
@@ -51,6 +51,62 @@ def train_parkinson_classifier():
              'Sleep efficiency (D)',
              'Sleep efficiency - norm (D)',
              'Sleep fragmentation (D)',
+
+             'Sleep onset latency (S)',
+             'Sleep onset latency - norm (S)',
+             'Wake after sleep onset (S)',
+             'Wake after sleep onset - norm (S)',
+             'Total sleep time (S)',
+             'Wake bouts (S)',
+             'Awakening > 5 minutes (S)',
+             'Awakening > 5 minutes - norm (S)',
+             'Sleep efficiency (S)',
+             'Sleep efficiency - norm (S)',
+             'Sleep fragmentation (S)',
+
+             'Max',
+             'Min',
+             'Relative Position of Max',
+             'Relative Position of Min',
+             'Range',
+             'Relative Range',
+             'Relative Variation Range',
+             'Interquartile Range',
+             'Relative Interquartile Range',
+             'Interdencile Range',
+             'Relative Interdencile Range',
+             'Interpercentile Range',
+             'Relative Interpercentile Range',
+             'Studentized Range',
+             'Mean',
+             'Harmonic Mean',
+             'Mean Excluding Outliers (10)',
+             'Mean Excluding Outliers (20)',
+             'Mean Excluding Outliers (30)',
+             'Mean Excluding Outliers (40)',
+             'Median',
+             'Mode',
+             'Variance',
+             'Standard Deviation',
+             'Median Absolute Deviation',
+             'Relative Standard Deviation',
+             'Index of Dispersion',
+             'Kurtosis',
+             'Skewness',
+             'Pearson 1st Skewness Coefficient',
+             'Pearson 2nd Skewness Coefficient',
+             '1st Percentile',
+             '5th Percentile',
+             '10th Percentile',
+             '20th Percentile',
+             '80th Percentile',
+             '90th Percentile',
+             '95th Percentile',
+             '99th Percentile',
+             'Shannon Entropy',
+             'Modulation',
+             'Teager Kaiser Energy Operator Max',
+             'Teager Kaiser Energy Operator Min'
              ]
 
     x = df[names].values
@@ -60,8 +116,8 @@ def train_parkinson_classifier():
 
     if not os.path.exists(HILEV_DIR):
         os.mkdir(HILEV_DIR)
-    # model, predict = learn_model(x, y, names)
-    model = load_obj(HILEV_TRAINED_MODEL_PATH)
+    model, predict = learn_model(x, y, names)
+    # model = load_obj(HILEV_TRAINED_MODEL_PATH)
     predict = model.predict(x)
 
     explainer = shap.TreeExplainer(model)
