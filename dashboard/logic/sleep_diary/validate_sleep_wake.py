@@ -6,7 +6,7 @@ import pandas as pd
 from dashboard.logic import cache
 from dashboard.logic.features_extraction.utils import safe_div
 from dashboard.logic.machine_learning.settings import prediction_name
-from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight
+from dashboard.models import SleepDiaryDay, WakeInterval, SleepNight, Subject, CsvData
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,23 @@ def validate_sleep_wake():
         f'ACC: {safe_div(total_TN + total_TP, total_TN + total_TP + total_FN + total_FP) * 100}% | '
         f'SEN: {safe_div(total_TP, total_TP + total_FN) * 100}% | '
         f'SPE: {safe_div(total_TN, total_TN + total_FP) * 100}%')
+
+    logger.info('==================================')
+    subjects = Subject.objects.filter().all()
+    seven_nigh_subjects = []
+    less_night_subjects = []
+    for subject in subjects:
+        data = CsvData.objects.filter(subject=subject).first()
+        if data is not None and not data.training_data:
+            nights = SleepNight.objects.filter(subject=subject).all()
+            if len(nights) != 7:
+                logger.info(f'Subject {subject.code} has {len(nights)} nights')
+                less_night_subjects.append(subject)
+            else:
+                seven_nigh_subjects.append(subject)
+    logger.info('==================================')
+    logger.info(f'Seven nights subjects: {len(seven_nigh_subjects)}')
+    logger.info(f'Less nights subjects: {len(less_night_subjects)}')
 
 
 def _get_df(night):
