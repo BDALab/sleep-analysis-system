@@ -70,6 +70,7 @@ class CsvData(models.Model):
     creation_date = models.DateField('date of upload', auto_now_add=True)
     training_data = models.BooleanField('training data', default=False)
     end_date = models.DateTimeField('end date to process', null=True, blank=True)
+    dreamt_data = models.BooleanField('dreamt data', default=False)
 
     @property
     def filename(self):
