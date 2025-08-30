@@ -9,6 +9,7 @@ import pandas as pd
 from dashboard.logic.features_extraction.data_entry import DataEntry
 from dashboard.models import PsData, CsvData, SleepDiaryDay
 from .preprocess_csv_data import fix_csv_data, get_csv_start, convert_csv_time
+from .preprocess_dreamt_data import _proprocess_dreamt_training_data
 from .preprocess_ps_data import get_ps_start, convert_ps_timestamp, convert_sleep
 from ..machine_learning.predict_core import predict_core
 
@@ -31,6 +32,8 @@ def preprocess_data(csv_object):
             return True
         elif csv_object.training_data:
             return _preprocess_training_data(csv_object)
+        elif csv_object.dreamt_data:
+            return _proprocess_dreamt_training_data(csv_object)
         return _preprocess_prediction_data(csv_object)
 
     else:
