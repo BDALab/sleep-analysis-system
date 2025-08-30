@@ -11,6 +11,7 @@ from django.template import loader
 from dashboard.export.export_hilev import export_all_features
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
+from .conversion.convert_dreamt import convert_64hz_dreamt
 from .export.export_actions import export_all, export_subject
 from .export.export_hilev_avg import export_all_features_avg
 from .export.export_hilev_clinic_data import export_all_features_clinic
@@ -340,6 +341,13 @@ def utils(request, action=None):
         logger.info('SleepPy new high level features export completed')
         context = {
             'ok': 'SleepPy new high level features export completed'
+        }
+    elif action == 'convert-64hz-dreamt':
+        logger.info('Convert 64Hz Dreamt data to GENEActiv format with PS data')
+        convert_64hz_dreamt()
+        logger.info('Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed')
+        context = {
+            'ok': 'Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed'
         }
 
     else:
