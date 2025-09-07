@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 
 def _get_features_for_vector(vec, prefix):
     # Prepare frequently used values
-    _len = len(vec)
-    if _len <= 1 or _len is None:
+    # Be defensive: if the vector is None or too short, return an empty dict
+    if not vec or len(vec) <= 1:
         logger.warning(f'Wrong or empty vector: {vec} - {prefix}')
-        return
+        return {}
+    _len = len(vec)
     _max = max(vec)
     _pos_max = vec.index(_max)
     _min = min(vec)

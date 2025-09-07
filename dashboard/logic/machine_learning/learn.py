@@ -18,7 +18,7 @@ from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_s
     plot_logloss_and_error, plot_cross_validation, shap_summary_plot, shap_beeswarm_plot
 from dashboard.models import CsvData
 from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, DATASET_PATH, TRAINED_MODEL_PATH, \
-    BEST_ESTIMATOR_PATH, CV_RESULTS_PATH
+    BEST_ESTIMATOR_PATH, CV_RESULTS_PATH, TRAINED_MODEL_EXPORT_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,7 @@ def learn():
 
         train_model_test_train_data(model, x_test, x_train, y_test, y_train)
         save_obj(model, TRAINED_MODEL_PATH)
+        model.save_model(TRAINED_MODEL_EXPORT_PATH)
 
     # Plot the feature importances
     plot_fi(model, names, scale_name, sort=True, save_dir=ML_DIR)
@@ -132,7 +133,7 @@ def load_data():
         start = datetime.now()
         frames = []
         for d in data:
-            if d.training_data and os.path.exists(d.x_data_path):
+            if d.training_data and os.path.exists(d.x_data_path) and not d.dreamt_data:
                 # Load the feature matrix and the label(s)
                 df = pd.read_excel(d.x_data_path, index_col=0)
                 frames.append(df)
@@ -207,8 +208,7 @@ def evaluate_cross_validation(model, x_train, y_train, save_path):
     kfolds = RepeatedStratifiedKFold(n_splits=10, n_repeats=20)
 
     # Cross-validate the classifier
-    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds,
-                                fit_params={"eval_metric": ["rmse", "error", "logloss", "auc"]})
+    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds)
     if save_path:
         save_obj(cv_results, save_path)
     end = datetime.now()

@@ -1,6 +1,8 @@
+import xgboost as xgb
+
 from dashboard.logic import cache
 from dashboard.logic.machine_learning.settings import prediction_name, scale_name
-from mysite.settings import TRAINED_MODEL_PATH
+from mysite.settings import TRAINED_MODEL_EXPORT_PATH
 
 
 def predict_core(csv_data, df):
@@ -12,6 +14,10 @@ def predict_core(csv_data, df):
 
 def _predict(df):
     x = df[[c for c in df.columns if c != scale_name]].values
-    model = cache.load_obj(TRAINED_MODEL_PATH)
-    predictions = model.predict(x)
-    return predictions
+    booster = xgb.Booster()
+    model_path = TRAINED_MODEL_EXPORT_PATH
+    print(f'Loading model from {model_path}')
+    booster.load_model(model_path)
+    dmat = xgb.DMatrix(x)
+    preds = booster.predict(dmat)
+    return preds

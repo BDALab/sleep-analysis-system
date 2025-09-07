@@ -24,7 +24,7 @@ if not path.exists(ML_DIR):
 HYPER_PARAMS_PATH = f"{ML_DIR}/best_hyper_params.pkl"
 DATASET_PATH = f"{ML_DIR}/dataset.xlsx"
 TRAINED_MODEL_PATH = f"{ML_DIR}/trained_model.pkl"
-TRAINED_MODEL_EXPORT_PATH = f"{BASE_DIR}/trained_model_export.json"
+TRAINED_MODEL_EXPORT_PATH = f"{ML_DIR}/trained_model_export.json"
 BEST_ESTIMATOR_PATH = f"{ML_DIR}/bst.pkl"
 CV_RESULTS_PATH = f"{ML_DIR}/cv_results.pkl"
 METADATA_PATH = f'{BASE_DIR}/metadata.xlsx'

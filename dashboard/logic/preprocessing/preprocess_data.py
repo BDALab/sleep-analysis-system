@@ -30,7 +30,7 @@ def preprocess_data(csv_object):
     if isinstance(csv_object, CsvData):
         if os.path.exists(csv_object.x_data_path):
             return True
-        elif csv_object.training_data:
+        elif csv_object.training_data and not csv_object.dreamt_data:
             return _preprocess_training_data(csv_object)
         elif csv_object.dreamt_data:
             return _proprocess_dreamt_training_data(csv_object)
