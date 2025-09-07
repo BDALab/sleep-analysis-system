@@ -209,12 +209,19 @@ def load_data():
         start = datetime.now()
         frames = []
         for d in data:
-            if d.training_data and os.path.exists(d.x_data_path) and not d.dreamt_data:
-                # Load the feature matrix and the label(s)
+            # Include both standard training and DREAMT datasets
+            if d.training_data and os.path.exists(d.x_data_path):
                 df = pd.read_excel(d.x_data_path, index_col=0)
+                # Only use files that contain the required label column
+                if scale_name not in df.columns:
+                    logger.info(f'Skipping {d.x_data_path}: missing label column {scale_name}')
+                    continue
                 # Attach group (subject) to avoid leakage
                 df["GROUP"] = d.subject.code
                 frames.append(df)
+
+        if not frames:
+            raise RuntimeError('No training dataframes with labels found to build dataset')
 
         super_df = pd.concat(frames)
         end = datetime.now()
@@ -233,8 +240,12 @@ def load_data():
         start = datetime.now()
         frames = []
         for d in data:
-            if d.training_data and os.path.exists(d.x_data_path) and not d.dreamt_data:
+            # Include both standard training and DREAMT datasets
+            if d.training_data and os.path.exists(d.x_data_path):
                 df = pd.read_excel(d.x_data_path, index_col=0)
+                if scale_name not in df.columns:
+                    logger.info(f'Skipping {d.x_data_path}: missing label column {scale_name}')
+                    continue
                 df["GROUP"] = d.subject.code
                 frames.append(df)
         if frames:
