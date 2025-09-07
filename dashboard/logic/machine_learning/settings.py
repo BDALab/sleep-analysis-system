@@ -28,9 +28,15 @@ model_params = {
     "colsample_bytree": 1.0,
     "min_child_weight": 5,
 
-    # # GPU setting
-    "gpu_id": 0,
+    # XGBoost 2.x GPU settings
+    # Use histogram algorithm on GPU by setting device to CUDA.
+    # (tree_method "hist" is recommended with device="cuda").
     "tree_method": "hist",
+    "device": "cuda",
+    # Reasonable defaults for speed/VRAM balance
+    "max_bin": 512,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
 }
 
 # ------------------------------------------
@@ -49,7 +55,8 @@ param_grid = {
 search_settings = {
     "param_distributions": param_grid,
     "scoring": "f1_micro",  # https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
-    "n_jobs": 20,
+    # Avoid concurrent GPU fits that contend for VRAM
+    "n_jobs": 1,
     "n_iter": 100,
     "verbose": 1
 }

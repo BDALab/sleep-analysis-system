@@ -23,6 +23,7 @@ if not path.exists(ML_DIR):
     os.mkdir(ML_DIR)
 HYPER_PARAMS_PATH = f"{ML_DIR}/best_hyper_params.pkl"
 DATASET_PATH = f"{ML_DIR}/dataset.xlsx"
+DATASET_PARQUET_PATH = f"{ML_DIR}/dataset.parquet"
 TRAINED_MODEL_PATH = f"{ML_DIR}/trained_model.pkl"
 TRAINED_MODEL_EXPORT_PATH = f"{ML_DIR}/trained_model_export.json"
 BEST_ESTIMATOR_PATH = f"{ML_DIR}/bst.pkl"

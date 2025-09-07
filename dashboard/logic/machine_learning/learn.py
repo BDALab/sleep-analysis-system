@@ -6,10 +6,15 @@ import numpy as np
 import pandas as pd
 import shap
 import xgboost as xgb
-from sklearn.impute import KNNImputer
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, matthews_corrcoef
-from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, RepeatedStratifiedKFold, cross_validate, \
-    train_test_split
+from sklearn.model_selection import (
+    StratifiedKFold,
+    GroupKFold,
+    GroupShuffleSplit,
+    RandomizedSearchCV,
+    cross_validate,
+)
 
 from dashboard.logic.cache import save_obj, load_obj
 from dashboard.logic.machine_learning.classification_metrics import scoring, sensitivity_score, specificity_score
@@ -17,7 +22,7 @@ from dashboard.logic.machine_learning.settings import scale_name, model_params, 
 from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_sting, \
     plot_logloss_and_error, plot_cross_validation, shap_summary_plot, shap_beeswarm_plot
 from dashboard.models import CsvData
-from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, DATASET_PATH, TRAINED_MODEL_PATH, \
+from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, DATASET_PATH, DATASET_PARQUET_PATH, TRAINED_MODEL_PATH, \
     BEST_ESTIMATOR_PATH, CV_RESULTS_PATH, TRAINED_MODEL_EXPORT_PATH
 
 logger = logging.getLogger(__name__)
@@ -33,18 +38,26 @@ def prepare_model():
 
 def learn():
     logger.info('Load the data')
-    x, y, names = load_data()
-    y = y.reshape((len(y),))
+    x, y, names, groups = load_data()
+    # Use compact dtypes for faster GPU transfer and lower memory
+    x = x.astype(np.float32)
+    y = y.astype(np.int32).reshape((len(y),))
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.4, random_state=42)
+    # Group-aware split to avoid subject leakage
+    gss = GroupShuffleSplit(test_size=0.4, random_state=42)
+    train_idx, test_idx = next(gss.split(x, y, groups))
+    x_train, x_test = x[train_idx], x[test_idx]
+    y_train, y_test = y[train_idx], y[test_idx]
+    groups_train = groups[train_idx]
     y_train = y_train.reshape((len(y_train),))
 
     logger.info('Original train data:}')
     log_data_info(y_train)
 
-    # Add NaN according to K-nearest neighbours
-    imputer = KNNImputer(n_neighbors=4, weights="uniform")
+    # Impute missing values efficiently and consistently (fit on train, apply to all)
+    imputer = SimpleImputer(strategy="median")
     x_train = imputer.fit_transform(x_train)
+    x_test = imputer.transform(x_test)
 
     # Add synthetic values to balance dataset
     # sm = SMOTE(random_state=42)
@@ -60,16 +73,49 @@ def learn():
             params = load_obj(HYPER_PARAMS_PATH)
         else:
             logger.info('Hyper-parameters tuning')
-            params = _search_best_hyper_parameters(x_train, y_train)
+            params = _search_best_hyper_parameters(x_train, y_train, groups_train)
+
+        # Ensure GPU-friendly params and class imbalance handling
+        params = _ensure_gpu_params(params)
+        spw = _compute_scale_pos_weight(y_train)
+        if spw is not None:
+            params["scale_pos_weight"] = spw
+        # Ensure evaluation metrics are set on the model (sklearn API no longer accepts eval_metric in fit)
+        params.setdefault("eval_metric", ["error", "logloss", "auc"])
 
         logger.info('Cross-validation of params')
         y_train = y_train.ravel()
+        # Tune best number of boosting rounds using xgb.cv with group-aware folds
+        dtrain = xgb.DMatrix(x_train, label=y_train)
+        folds = list(GroupKFold(n_splits=10).split(x_train, y_train, groups_train))
+        cv_params = dict(params)
+        # Remove sklearn-only params
+        cv_params.pop('n_estimators', None)
+        # Ensure eval metrics are set
+        cv_params.setdefault('eval_metric', ['auc', 'logloss', 'error'])
+        logger.info('Running xgb.cv to find best iteration (n_estimators)')
+        cv_results = xgb.cv(
+            params=cv_params,
+            dtrain=dtrain,
+            num_boost_round=2000,
+            folds=folds,
+            early_stopping_rounds=50,
+            metrics=['auc', 'logloss', 'error'],
+            verbose_eval=False,
+            seed=42,
+        )
+        best_n_estimators = cv_results.shape[0]
+        logger.info(f'Best n_estimators from xgb.cv: {best_n_estimators}')
+        params['n_estimators'] = int(best_n_estimators)
+
         model = xgb.sklearn.XGBClassifier(**params)
         cv_results = evaluate_cross_validation(
             model=model,
             x_train=x_train,
             y_train=y_train,
-            save_path=CV_RESULTS_PATH)
+            groups=groups_train,
+            save_path=CV_RESULTS_PATH,
+        )
         logger.info(results_to_print_cv(cv_results))
 
         plot_cross_validation(cv_results, 'Model binary:logistic')
@@ -82,23 +128,35 @@ def learn():
     plot_fi(model, names, scale_name, sort=True, save_dir=ML_DIR)
     plot_logloss_and_error(model, model_name)
 
-    predict = model.predict(x_test)
+    # Use Booster + DMatrix for predictions to avoid device-mismatch warnings
+    booster = model.get_booster()
+    predict = (booster.predict(xgb.DMatrix(x_test)) >= 0.5).astype(int)
     logger.info('After training results on test data: ')
     logger.info(results_to_print(y_test, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y_test, predict))
 
-    predict = model.predict(x)
+    # Transform the whole dataset for global evaluation and SHAP
+    x_full = imputer.transform(x)
+    predict = (booster.predict(xgb.DMatrix(x_full)) >= 0.5).astype(int)
     logger.info('After training results on whole dataset: ')
     logger.info(results_to_print(y, predict))
     logger.info('Confusion matrix: ')
     logger.info(confusion_matrix(y, predict))
 
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(x)
+    # SHAP on a sample to keep runtime reasonable
+    sample_size = min(20000, x_full.shape[0])
+    if sample_size < x_full.shape[0]:
+        idx = np.random.RandomState(42).choice(x_full.shape[0], size=sample_size, replace=False)
+        x_shap = x_full[idx]
+    else:
+        x_shap = x_full
 
-    shap_summary_plot(names, shap_values, x, ML_DIR)
-    shap_beeswarm_plot(explainer, names, x, ML_DIR)
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(x_shap)
+
+    shap_summary_plot(names, shap_values, x_shap, ML_DIR)
+    shap_beeswarm_plot(explainer, names, x_shap, ML_DIR)
 
     return model
 
@@ -120,15 +178,33 @@ def train_model(model, x, y, eval_metrics=["error", "logloss", "auc"]):
 
 def train_model_test_train_data(model, x_test, x_train, y_test, y_train, eval_metrics=["error", "logloss", "auc"]):
     eval_set = [(x_train, y_train), (x_test, y_test)]
-    model.fit(x_train, y_train, early_stopping_rounds=10, eval_metric=eval_metrics, eval_set=eval_set,
-              verbose=True)
+    model.fit(
+        x_train,
+        y_train,
+        eval_set=eval_set,
+        verbose=False,
+    )
 
 
 def load_data():
-    if os.path.exists(DATASET_PATH):
-        logger.info(f'Load cached dataset')
+    # Prefer Parquet cache if available
+    if os.path.exists(DATASET_PARQUET_PATH):
+        logger.info('Load cached dataset (parquet)')
+        try:
+            super_df = pd.read_parquet(DATASET_PARQUET_PATH)
+        except Exception as e:
+            logger.info(f'Parquet read failed ({e}); falling back to Excel cache if present')
+            if os.path.exists(DATASET_PATH):
+                super_df = pd.read_excel(DATASET_PATH, index_col=0)
+            else:
+                super_df = None
+    elif os.path.exists(DATASET_PATH):
+        logger.info('Load cached dataset (excel)')
         super_df = pd.read_excel(DATASET_PATH, index_col=0)
     else:
+        super_df = None
+
+    if super_df is None:
         data = CsvData.objects.all()
         start = datetime.now()
         frames = []
@@ -136,31 +212,71 @@ def load_data():
             if d.training_data and os.path.exists(d.x_data_path) and not d.dreamt_data:
                 # Load the feature matrix and the label(s)
                 df = pd.read_excel(d.x_data_path, index_col=0)
+                # Attach group (subject) to avoid leakage
+                df["GROUP"] = d.subject.code
                 frames.append(df)
 
         super_df = pd.concat(frames)
         end = datetime.now()
         logger.info(f'Dataset merged in {end - start}, info: {df_into_to_sting(super_df)}')
-        super_df.to_excel(DATASET_PATH)
+        # Cache as Parquet primarily (fast IO, preserves dtypes)
+        try:
+            super_df.to_parquet(DATASET_PARQUET_PATH, index=True)
+            logger.info(f'Cached dataset to Parquet at {DATASET_PARQUET_PATH}')
+        except Exception as e:
+            logger.info(f'Parquet write failed ({e}); caching to Excel at {DATASET_PATH}')
+            super_df.to_excel(DATASET_PATH)
 
-    x = super_df[[c for c in super_df.columns if c != scale_name]].values
+    # If cached dataset exists but lacks GROUP, rebuild to include it
+    if "GROUP" not in super_df.columns:
+        data = CsvData.objects.all()
+        start = datetime.now()
+        frames = []
+        for d in data:
+            if d.training_data and os.path.exists(d.x_data_path) and not d.dreamt_data:
+                df = pd.read_excel(d.x_data_path, index_col=0)
+                df["GROUP"] = d.subject.code
+                frames.append(df)
+        if frames:
+            super_df = pd.concat(frames)
+            logger.info(f'Rebuilt dataset with GROUP in {datetime.now() - start}')
+            try:
+                super_df.to_parquet(DATASET_PARQUET_PATH, index=True)
+                logger.info(f'Cached dataset to Parquet at {DATASET_PARQUET_PATH}')
+            except Exception as e:
+                logger.info(f'Parquet write failed ({e}); caching to Excel at {DATASET_PATH}')
+                super_df.to_excel(DATASET_PATH)
+
+    x = super_df[[c for c in super_df.columns if c not in (scale_name, "GROUP")]].values
     y = super_df[scale_name].values
-    names = [c for c in super_df.columns if c != scale_name]
-    return x, y, names
+    names = [c for c in super_df.columns if c not in (scale_name, "GROUP")]
+    groups = super_df["GROUP"].values
+    return x, y, names, groups
 
 
-def _search_best_hyper_parameters(x, y):
+def _search_best_hyper_parameters(x, y, groups=None):
     start = datetime.now()
     # Create the classifier
-    model = xgb.sklearn.XGBClassifier(**model_params)
+    # Ensure GPU params for search
+    base_params = _ensure_gpu_params(dict(model_params))
+    spw = _compute_scale_pos_weight(y)
+    if spw is not None:
+        base_params["scale_pos_weight"] = spw
+    model = xgb.sklearn.XGBClassifier(**base_params)
 
     # Get the cross-validation indices
-    kfolds = StratifiedKFold(n_splits=10, shuffle=True)
+    if groups is not None:
+        cv = GroupKFold(n_splits=10)
+    else:
+        cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
     # Employ the hyper-parameter tuning
     y = y.astype(bool)
-    random_search = RandomizedSearchCV(model, cv=kfolds.split(x, y), **search_settings)
-    random_search.fit(x, y)
+    random_search = RandomizedSearchCV(model, cv=cv, **search_settings)
+    if groups is not None:
+        random_search.fit(x, y, groups=groups)
+    else:
+        random_search.fit(x, y)
 
     logger.info(f'Estimator: score = {random_search.best_score_:.4f} | model = {random_search.best_estimator_}')
     params = random_search.best_params_
@@ -169,6 +285,28 @@ def _search_best_hyper_parameters(x, y):
     end = datetime.now()
     logger.info(f'Best hyper parameters found and cached in {end - start}')
     return params
+
+
+def _ensure_gpu_params(params: dict) -> dict:
+    # Force GPU-backed training where available
+    params = dict(params)
+    # XGBoost 2.x style GPU config
+    params["tree_method"] = "hist"
+    params["device"] = "cuda"
+    # Remove deprecated/unused keys if present
+    params.pop("gpu_id", None)
+    params.pop("predictor", None)
+    return params
+
+
+def _compute_scale_pos_weight(y: np.ndarray):
+    # Compute neg/pos ratio for class imbalance handling
+    y = np.ravel(y)
+    pos = np.sum(y == 1)
+    neg = np.sum(y == 0)
+    if pos == 0:
+        return None
+    return float(neg) / float(pos)
 
 
 def results_to_print_cv(cv_results):
@@ -202,13 +340,13 @@ def results_to_print(y_test, predict):
     return f" ACC = {acc} | SEN = {sen} | SPE = {spe} | F1 = {f1} | MCC = {mcc}\n"
 
 
-def evaluate_cross_validation(model, x_train, y_train, save_path):
+def evaluate_cross_validation(model, x_train, y_train, groups, save_path):
     start = datetime.now()
-    # Prepare the cross-validation scheme
-    kfolds = RepeatedStratifiedKFold(n_splits=10, n_repeats=20)
+    # Prepare the cross-validation scheme (group-aware)
+    kfolds = GroupKFold(n_splits=10)
 
     # Cross-validate the classifier
-    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds)
+    cv_results = cross_validate(model, x_train, y_train, scoring=scoring, cv=kfolds, groups=groups)
     if save_path:
         save_obj(cv_results, save_path)
     end = datetime.now()
