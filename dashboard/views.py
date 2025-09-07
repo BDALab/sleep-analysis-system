@@ -19,6 +19,7 @@ from .export.export_hilev_clinic_data_activity_index import export_all_features_
 from .export.export_hilev_clinic_data_activity_index_sleeppy import export_all_features_clinic_activity_index_sleepy
 from .logic.machine_learning.learn import prepare_model
 from .logic.machine_learning.predict import predict_all, predict
+from .logic.machine_learning.validate_predictions import validate_dreamt_predictions
 from .logic.parkinson_analysis.train_classifier import train_parkinson_classifier
 from .logic.reults_visualization.sleep_graph import create_graph
 from .logic.sleep_diary.export_metadata import export_metadata_to_xlsx
@@ -349,6 +350,14 @@ def utils(request, action=None):
         context = {
             'ok': 'Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed'
         }
+    elif action == 'validate-against-dreamt':
+        logger.info('Validate against Dreamt data')
+        validate_dreamt_predictions(threshold=0.5, save_report="report.xlsx", include_per_file=True)
+        logger.info('Validation against Dreamt data completed')
+        context = {
+            'ok': 'Validation against Dreamt data completed'
+        }
+
 
     else:
         context = {}
