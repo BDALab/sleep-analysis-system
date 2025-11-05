@@ -14,6 +14,7 @@ další high level feature co můžou vstupovat do dalších algoritmů
 import logging
 import os.path
 from datetime import datetime, timezone
+from pathlib import Path
 from statistics import variance, stdev, mean, mode, median, harmonic_mean
 
 import numpy as np
@@ -53,13 +54,19 @@ def sleeppy_hilev(csv_data, force=False):
                 return True
 
             # get days
-            src_name = csv_data.data.path.split("/")[-1][0:-4]  # save naming convention
-            sub_dst = (csv_data.sleeppy_dir + "/" + src_name)
+            src_name = Path(csv_data.data.path).stem
+            sub_dst = Path(csv_data.sleeppy_dir).resolve() / src_name
+            activity_days_dir = sub_dst / "activity_index_days"
+            if not activity_days_dir.exists():
+                logger.warning(
+                    f'Activity index days folder not found for {csv_data.filename} at {activity_days_dir}'
+                )
+                return True
             days = sorted(
                 [
-                    sub_dst + "/activity_index_days/" + i
-                    for i in os.listdir(sub_dst + "/activity_index_days/")
-                    if ".DS_Store" not in i
+                    day_path
+                    for day_path in activity_days_dir.iterdir()
+                    if day_path.is_file() and day_path.name != ".DS_Store"
                 ]
             )
 

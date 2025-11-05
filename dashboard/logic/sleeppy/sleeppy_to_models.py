@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 def sleeppy_to_models():
     data = CsvData.objects.filter(training_data=False).all()
     for d in data:
-        src_name = d.data.path.split("/")[-1][0:-4]
-        sub_dir = (d.sleeppy_dir + "/" + src_name)
+        src_name = os.path.splitext(os.path.basename(d.data.path))[0]
+        sub_dir = os.path.join(d.sleeppy_dir, src_name)
         if os.path.exists(sub_dir):
-            results_dir = sub_dir + "/results"
+            results_dir = os.path.join(sub_dir, "results")
             if not os.path.exists(results_dir):
                 continue
-            major_rest_periods_df = pd.read_csv(results_dir + f"/{src_name}_major_rest_periods.csv")
-            sleep_endpoints_summary_df = pd.read_csv(results_dir + "/sleep_endpoints_summary.csv")
+            major_rest_periods_df = pd.read_csv(os.path.join(results_dir, f"{src_name}_major_rest_periods.csv"))
+            sleep_endpoints_summary_df = pd.read_csv(os.path.join(results_dir, "sleep_endpoints_summary.csv"))
             df = pd.merge(major_rest_periods_df, sleep_endpoints_summary_df, on='day')
             for index, row in df.iterrows():
                 available_hours = row['available_hours']

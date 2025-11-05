@@ -1,7 +1,7 @@
 import logging
-import os.path
 import shutil
 from datetime import datetime
+from pathlib import Path
 
 from dashboard.logic.sleeppy.sleeppy_core import SleepPy
 from dashboard.models import CsvData
@@ -27,6 +27,19 @@ def sleeppy(csv_data, force=False):
         start = datetime.now()
         logger.info(f'SleepPy for {csv_data.filename}')
         try:
+            stem = Path(csv_data.data.path).stem
+            results_dir = Path(csv_data.sleeppy_dir).resolve() / stem / "results"
+            expected_outputs = [
+                results_dir / f"{stem}_major_rest_periods.csv",
+                results_dir / "sleep_endpoints_summary.csv",
+            ]
+            if not force and all(p.exists() and p.stat().st_size > 0 for p in expected_outputs):
+                logger.info(
+                    f'SleepPy results already present for {csv_data.filename} at {results_dir}, skipping. '
+                    f'Use force=True to regenerate.'
+                )
+                return True
+
             if csv_data.end_date is None:
                 logger.info("Working without end date...")
                 sleepy = SleepPy(
@@ -46,6 +59,11 @@ def sleeppy(csv_data, force=False):
                 )
             sleepy.run_config = 0
             sleepy.run()
+            if any(not p.exists() or p.stat().st_size == 0 for p in expected_outputs):
+                logger.error(
+                    f'SleepPy outputs missing or empty for {csv_data.filename} (expected at {results_dir}).'
+                )
+                return False
         except Exception as e:
             logger.error(f'{csv_data.filename} failed due to {e}')
             return False
@@ -57,11 +75,11 @@ def sleeppy(csv_data, force=False):
 def sleeppy_clean():
     data = CsvData.objects.filter(training_data=False).all()
     for d in data:
-        src_name = d.data.path.split("/")[-1][0:-4]
-        sub_dir = (d.sleeppy_dir + "/" + src_name)
-        if os.path.exists(sub_dir):
-            results_dir = sub_dir + "/results"
-            if not os.path.exists(results_dir):
+        src_name = Path(d.data.path).stem
+        sub_dir = Path(d.sleeppy_dir).resolve() / src_name
+        if sub_dir.exists():
+            results_dir = sub_dir / "results"
+            if not results_dir.exists():
                 shutil.rmtree(sub_dir)
                 logger.info(f"{sub_dir} deleted")
     return True

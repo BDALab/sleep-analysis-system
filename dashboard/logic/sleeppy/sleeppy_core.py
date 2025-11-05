@@ -112,12 +112,10 @@ class SleepPy:
             self.src = aws_object
         else:
             self.src = input_file  # save input location
-        self.extension = input_file.split(".")[-1]
+        self.extension = os.path.splitext(input_file)[1].lstrip(".")
         self.dst = results_directory  # save output location
-        self.src_name = input_file.split("/")[-1][0:-4]  # save naming convention
-        self.sub_dst = (
-                results_directory + "/" + self.src_name
-        )  # create output directory
+        self.src_name = os.path.splitext(os.path.basename(input_file))[0]  # save naming convention
+        self.sub_dst = os.path.join(results_directory, self.src_name)  # create output directory
         self.fs = sampling_frequency  # save sampling frequency
         self.window_size = 60  # define window size in seconds
         self.band_pass_cutoff = (
@@ -212,25 +210,40 @@ class SleepPy:
             os.mkdir(self.sub_dst + "/raw_days")  # set up output directory
         except OSError:
             pass
-        # load data and fix time_stamps
-        data = pd.read_csv(
-            self.src,
+        base_kwargs = dict(
+            filepath_or_buffer=self.src,
             index_col=0,
             skiprows=100,
             header=None,
-            names=["Time", "X", "Y", "Z", "LUX", "Button", "T"],
-            usecols=["Time", "X", "Y", "Z", "LUX", "T"],
-            dtype={
-                "Time": object,
-                "X": np.float64,
-                "Y": np.float64,
-                "Z": np.float64,
-                "LUX": np.int64,
-                "Button": bool,
-                "T": np.float64,
-            },
             low_memory=False,
         )
+        dtype_full = {
+            "Time": object,
+            "X": np.float64,
+            "Y": np.float64,
+            "Z": np.float64,
+            "LUX": np.int64,
+            "Button": bool,
+            "T": np.float64,
+        }
+        try:
+            # expect full export with button column
+            data = pd.read_csv(
+                names=["Time", "X", "Y", "Z", "LUX", "Button", "T"],
+                usecols=["Time", "X", "Y", "Z", "LUX", "T"],
+                dtype=dtype_full,
+                **base_kwargs,
+            )
+        except ValueError as exc:
+            if "Too many columns specified" not in str(exc):
+                raise
+            dtype_fallback = {key: val for key, val in dtype_full.items() if key != "Button"}
+            data = pd.read_csv(
+                names=["Time", "X", "Y", "Z", "LUX", "T"],
+                usecols=["Time", "X", "Y", "Z", "LUX", "T"],
+                dtype=dtype_fallback,
+                **base_kwargs,
+            )
         data.index = pd.to_datetime(data.index, format="%Y-%m-%d %H:%M:%S:%f").values
 
         # remove any specified time periods from the beginning and end of the file

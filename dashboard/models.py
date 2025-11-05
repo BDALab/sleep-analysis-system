@@ -9,6 +9,7 @@
 import os
 from datetime import timedelta, datetime
 from os import path
+from pathlib import Path
 
 import pytz
 from django.core.validators import FileExtensionValidator
@@ -78,30 +79,24 @@ class CsvData(models.Model):
 
     @property
     def cached_prediction_path(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../predictions'
-        name = f'{split[1]}.pkl'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return f'{folder}/{name}'
+        data_path = Path(self.data.path).resolve()
+        folder = data_path.parent.parent / 'predictions'
+        folder.mkdir(exist_ok=True)
+        return str(folder / f'{data_path.name}.pkl')
 
     @property
     def x_data_path(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../cache'
-        name = f'{split[1]}.xlsx'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return f'{folder}/{name}'
+        data_path = Path(self.data.path).resolve()
+        folder = data_path.parent.parent / 'cache'
+        folder.mkdir(exist_ok=True)
+        return str(folder / f'{data_path.name}.xlsx')
 
     @property
     def excel_prediction_path(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../predictions-excel'
-        name = f'{split[1]}.xlsx'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return f'{folder}/{name}'
+        data_path = Path(self.data.path).resolve()
+        folder = data_path.parent.parent / 'predictions-excel'
+        folder.mkdir(exist_ok=True)
+        return str(folder / f'{data_path.name}.xlsx')
 
     @property
     def excel_prediction_url(self):
@@ -112,11 +107,10 @@ class CsvData(models.Model):
 
     @property
     def sleeppy_dir(self):
-        split = path.split(self.data.path)
-        folder = f'{split[0]}/../sleeppy'
-        if not path.exists(folder):
-            os.mkdir(folder)
-        return folder
+        data_path = Path(self.data.path).resolve()
+        folder = data_path.parent.parent / 'sleeppy'
+        folder.mkdir(exist_ok=True)
+        return str(folder)
 
     def __str__(self):
         return f'CSV data {self.filename} from subject {self.subject.code}'
