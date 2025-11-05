@@ -13,6 +13,8 @@ from dashboard.models import CsvData, SleepDiaryDay, SleepNight, WakeInterval
 
 logger = logging.getLogger(__name__)
 
+SLEEP_PROBABILITY_THRESHOLD = 0.5
+
 
 def hilev_all():
     structure = create_structure_all()
@@ -42,17 +44,17 @@ def hilev(structure):
             night = nights.first()
         s = day.t1 - timedelta(minutes=0)
         e = day.t4 + timedelta(minutes=0)
-        tib_interval = df.loc[s:e, [prediction_name]]
+        tib_interval = _ensure_binary_prediction(df.loc[s:e, [prediction_name]])
         sleep = tib_interval.index[tib_interval[prediction_name] == 1].tolist()
         if not sleep:
             logger.warning(f'No sleep found for {night.subject.code} {night.diary_day.date} {night.data.filename}')
             res = False
             continue
-        sleep_interval = df.loc[sleep[0]:sleep[-1], [prediction_name]]
+        sleep_interval = tib_interval.loc[sleep[0]:sleep[-1], [prediction_name]]
         wake = sleep_interval.index[sleep_interval[prediction_name] == 0].tolist()
         night.sleep_onset = pytz.timezone("UTC").localize(sleep[0])
         night.sleep_end = pytz.timezone("UTC").localize(sleep[-1])
-        tst_interval = df.loc[sleep[0]:sleep[-1], [prediction_name]]
+        tst_interval = sleep_interval
         _count_hilevs(day, night, tst_interval, sleep, wake)
         logger.info(night)
         try:
@@ -108,3 +110,15 @@ def _create_night(data, day, subject):
     night.data = data
     night.subject = subject
     return night
+
+
+def _ensure_binary_prediction(interval):
+    if prediction_name not in interval.columns:
+        return interval
+    result = interval.copy()
+    series = result[prediction_name]
+    if series.dropna().isin([0, 1]).all():
+        result[prediction_name] = series.astype(int)
+        return result
+    result[prediction_name] = (series >= SLEEP_PROBABILITY_THRESHOLD).astype(int)
+    return result
