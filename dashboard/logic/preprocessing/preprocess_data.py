@@ -160,7 +160,7 @@ def _preprocess_prediction_data(csv_object, predict=True):
     start_time = datetime.now()
     nights = _get_diary_nights(csv_object)
     if nights:
-        total_end = nights[-1][1]
+        total_end = max(night[1] for night in nights)
     with open(csv_object.data.path, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='|')
 
@@ -214,7 +214,7 @@ def _is_in_any_range(csv_date, nights):
 
 
 def _get_diary_nights(csv_object):
-    diary = SleepDiaryDay.objects.filter(subject=csv_object.subject)
+    diary = SleepDiaryDay.objects.filter(subject=csv_object.subject).order_by('date')
     nights = []
     if diary.exists():
         for day in diary:
