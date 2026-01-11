@@ -42,6 +42,13 @@ class Subject(models.Model):
     ]
     diagnosis = models.CharField('diagnosis', max_length=1, choices=DIAGNOSIS, default='U')
     diagnosis2024 = models.CharField('diagnosis', max_length=1, choices=DIAGNOSIS, default='U')
+    DIAGNOSIS_CODE = [
+        (3, 'preDLB'),
+        (2, 'MCI-AD'),
+        (1, 'NonHC'),
+        (0, 'HC'),
+    ]
+    diagnosis_code = models.PositiveSmallIntegerField('diagnosis code', choices=DIAGNOSIS_CODE, blank=True, null=True)
 
     def __str__(self):
         return self.code
