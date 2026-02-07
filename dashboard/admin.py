@@ -36,6 +36,7 @@ class SleepDiaryInline(NestedTabularInline):
     fk_name = 'subject'
     extra = 7
     inlines = [WakeIntervalInline]
+    template = 'admin/edit_inline/sleep_diary_day_rotated.html'
 
 
 class SleeppyDataInline(admin.TabularInline):

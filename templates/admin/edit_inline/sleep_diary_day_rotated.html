@@ -1,0 +1,132 @@
+{% load i18n static admin_modify admin_extras %}
+<div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
+    {% with recursive_formset=inline_admin_formset stacked_template='admin/edit_inline/stacked-nested.html' tabular_template='admin/edit_inline/tabular-nested.html' %}
+        <div class="tabular inline-related" id="{{ recursive_formset.formset.prefix }}">
+            {{ recursive_formset.formset.management_form }}
+            <fieldset class="module">
+                <h2>{{ recursive_formset.opts.verbose_name_plural|capfirst }}</h2>
+                {{ recursive_formset.formset.non_form_errors }}
+                <div class="rotated-inline-scroll">
+                    <table class="rotated-inline-table">
+                        <thead>
+                        <tr>
+                            <th class="row-label">{% trans "Field" %}</th>
+                            {% for inline_admin_form in recursive_formset %}
+                                <th class="day-column{% if forloop.last and recursive_formset.has_add_permission %} empty-form{% endif %}">
+                                    {% if inline_admin_form.needs_explicit_pk_field %}
+                                        {{ inline_admin_form.pk_field.field }}
+                                    {% endif %}
+                                    {{ inline_admin_form.fk_field.field }}
+                                    {% spaceless %}
+                                        {% for fieldset in inline_admin_form %}
+                                            {% for line in fieldset %}
+                                                {% for field in line %}
+                                                    {% if field.is_hidden %}{{ field.field }}{% endif %}
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endspaceless %}
+                                    <div class="day-input">
+                                        {{ inline_admin_form.form.date.errors.as_ul }}
+                                        {{ inline_admin_form.form.date }}
+                                    </div>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr class="non-field-errors-row">
+                            <th class="row-label">{% trans "Errors" %}</th>
+                            {% for inline_admin_form in recursive_formset %}
+                                <td{% if forloop.last and recursive_formset.has_add_permission %}
+                                    class="empty-form"{% endif %}>
+                                    {{ inline_admin_form.form.non_field_errors }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% for field in recursive_formset.fields %}
+                            {% if not field.widget.is_hidden and field.name != 'date' %}
+                                <tr class="field-row field-{{ field.name }}">
+                                    <th class="row-label">
+                                        {{ field.label|capfirst }}
+                                        {% if field.help_text %}
+                                            <img src="{% static "admin/img/icon-unknown.svg" %}"
+                                                 class="help help-tooltip" width="10" height="10"
+                                                 alt="({{ field.help_text|striptags }})"
+                                                 title="{{ field.help_text|striptags }}">
+                                        {% endif %}
+                                    </th>
+                                    {% for inline_admin_form in recursive_formset %}
+                                        {% with bound=inline_admin_form.form|form_field:field.name %}
+                                            <td class="field-
+                                                    {{ field.name }}{% if forloop.last and recursive_formset.has_add_permission %} empty-form{% endif %}">
+                                                {% if bound %}
+                                                    {{ bound.errors.as_ul }}
+                                                    {{ bound }}
+                                                {% endif %}
+                                            </td>
+                                        {% endwith %}
+                                    {% endfor %}
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                        {% if recursive_formset.formset.can_delete and recursive_formset.has_delete_permission %}
+                            <tr class="delete-row">
+                                <th class="row-label">{% trans "Delete?" %}</th>
+                                {% for inline_admin_form in recursive_formset %}
+                                    <td class="delete-cell{% if forloop.last and recursive_formset.has_add_permission %} empty-form{% endif %}">
+                                        {% if inline_admin_form.original %}
+                                            {{ inline_admin_form.deletion_field.field }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endif %}
+                        <tr class="nested-inline-row">
+                            <th class="row-label">{% trans "Wake intervals" %}</th>
+                            {% for inline_admin_form in recursive_formset %}
+                                <td{% if forloop.last and recursive_formset.has_add_permission %}
+                                    class="empty-form"{% endif %}>
+                                    {% if inline_admin_form.form.nested_formsets %}
+                                        {% for inline_admin_formset in inline_admin_form.form.nested_formsets %}
+                                            {% if inline_admin_formset.opts.template == stacked_template %}
+                                                {% include stacked_template with inline_admin_formset=inline_admin_formset indent=0 prev_prefix=recursive_formset.formset.prefix loopCounter=forloop.parentloop.counter0 %}
+                                            {% else %}
+                                                {% include tabular_template with inline_admin_formset=inline_admin_formset indent=0 prev_prefix=recursive_formset.formset.prefix loopCounter=forloop.parentloop.counter0 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+        </div>
+        </div>
+        <style>
+            .rotated-inline-scroll {
+                overflow-x: auto;
+            }
+
+            .rotated-inline-table {
+                border-collapse: collapse;
+            }
+
+            .rotated-inline-table th,
+            .rotated-inline-table td {
+                vertical-align: top;
+                padding: 8px;
+            }
+
+            .rotated-inline-table th.row-label {
+                text-align: left;
+                white-space: nowrap;
+            }
+
+            .rotated-inline-table .empty-form {
+                display: none;
+            }
+        </style>
+    {% endwith %}
