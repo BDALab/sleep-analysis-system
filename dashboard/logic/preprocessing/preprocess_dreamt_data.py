@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from dashboard.logic.features_extraction.data_entry import DataEntry
-from dashboard.logic.preprocessing.preprocess_csv_data import fix_csv_data
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,6 @@ def _proprocess_dreamt_training_data(csv_object):
     The epoch "time" stored is the start timestamp of the 15-second window.
     """
     logger.info(f'DREAMT data will be preprocessed for {csv_object.filename}')
-    # Fix potential null-bytes as we do for classic CSVs as a safety net
-    fix_csv_data(csv_object)
 
     data_list = []
     start_time = datetime.now()
@@ -42,7 +39,7 @@ def _proprocess_dreamt_training_data(csv_object):
             # fallback if no microseconds
             return datetime.strptime(s, '%Y-%m-%d %H:%M:%S')
 
-    with open(csv_object.data.path, 'r') as csv_file:
+    with open(csv_object.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',', quotechar='|')
 
         header = next(reader, None)

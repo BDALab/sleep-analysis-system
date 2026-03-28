@@ -1,11 +1,13 @@
 import csv
 import logging
 import os
+import re
 from datetime import datetime
 
 from dashboard.models import CsvData
 
 logger = logging.getLogger(__name__)
+CSV_TIMESTAMP_RE = re.compile(r'^\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})')
 
 
 def fix_csv_data(csv_data):
@@ -44,15 +46,22 @@ def _fix_csv_data(orig_path, fix_path):
 
 def get_csv_start(csv_data):
     if isinstance(csv_data, CsvData):
-        with open(csv_data.data.path, 'r') as csv_file:
+        with open(csv_data.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as csv_file:
             reader = csv.reader(csv_file, delimiter=',', quotechar='|')
             for row in reader:
                 # now I care just about data, which starts with timestamp starting with 20 --> begin of year
                 if len(row) > 0 and row[0].startswith('20'):
-                    return convert_csv_time(row)
+                    try:
+                        return convert_csv_time(row)
+                    except ValueError:
+                        continue
         return None
     return None
 
 
 def convert_csv_time(row):
-    return datetime.strptime(row[0][:-4], '%Y-%m-%d %H:%M:%S')
+    timestamp = row[0].replace('\x00', '').strip()
+    match = CSV_TIMESTAMP_RE.match(timestamp)
+    if match is None:
+        raise ValueError(f'Invalid csv timestamp: {timestamp!r}')
+    return datetime.strptime(match.group(1), '%Y-%m-%d %H:%M:%S')

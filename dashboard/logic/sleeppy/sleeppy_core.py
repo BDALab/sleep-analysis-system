@@ -953,6 +953,7 @@ class SleepPy:
                 "Wake After Sleep Onset(minutes)",
                 "Sleep Onset Latency(minutes)",
                 "Number of Wake Bouts",
+                "Number of Wake Bouts > 5 minutes",
             )
             t_vals = [endpoints.loc[day + 1].values]
 
@@ -1061,7 +1062,7 @@ class SleepPy:
             plt.subplots_adjust(wspace=0, hspace=0)
             fig.autofmt_xdate()
             for tick in ax5.xaxis.get_major_ticks():
-                tick.label.set_fontsize(16)
+                tick.label1.set_fontsize(16)
             plt.savefig(
                 self.sub_dst + "/reports/Visual_Results_Day_{}.pdf".format(day + 1)
             )

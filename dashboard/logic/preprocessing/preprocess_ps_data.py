@@ -6,7 +6,7 @@ from dashboard.models import PsData
 
 def get_ps_start(ps_data):
     if isinstance(ps_data, PsData):
-        with open(ps_data.data.path, 'r') as csv_file:
+        with open(ps_data.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as csv_file:
             reader = csv.reader(csv_file, delimiter='\t', quotechar='|')
             header_end = False
             after_midnight = False

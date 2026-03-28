@@ -8,7 +8,7 @@ import pandas as pd
 
 from dashboard.logic.features_extraction.data_entry import DataEntry
 from dashboard.models import PsData, CsvData, SleepDiaryDay
-from .preprocess_csv_data import fix_csv_data, get_csv_start, convert_csv_time
+from .preprocess_csv_data import get_csv_start, convert_csv_time
 from .preprocess_dreamt_data import _proprocess_dreamt_training_data
 from .preprocess_ps_data import get_ps_start, convert_ps_timestamp, convert_sleep
 from ..machine_learning.predict_core import predict_core
@@ -18,11 +18,19 @@ logger = logging.getLogger(__name__)
 
 def preprocess_all_data():
     total_start = datetime.now()
+    failed = 0
 
     data = CsvData.objects.all()
     for d in data:
-        preprocess_data(d)
-    logger.info(f'{len(data)} training csv data objects preprocessed in {datetime.now() - total_start}')
+        try:
+            preprocess_data(d)
+        except Exception:
+            failed += 1
+            logger.exception(f'Preprocessing failed for {d.filename}')
+    logger.info(
+        f'{len(data)} training csv data objects processed in {datetime.now() - total_start} '
+        f'with {failed} failures'
+    )
     return True
 
 
@@ -44,19 +52,19 @@ def preprocess_data(csv_object):
 def _preprocess_training_data(csv_object):
     logger.info(f'Data will be preprocessed for {csv_object.filename}')
     ps_object = PsData.objects.filter(csv_data=csv_object).first()
-    if not isinstance(ps_object, PsData) or not fix_csv_data(csv_object):
+    if not isinstance(ps_object, PsData):
         return False
     else:
         start_time = datetime.now()
         start = _find_start(csv_object, ps_object)
         data_list = []
-        with open(ps_object.data.path, 'r') as ps_file:
+        with open(ps_object.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as ps_file:
             ps_reader = csv.reader(ps_file, delimiter='\t', quotechar='|')
 
             frequency_modulo = 0
             modulo_reminder = 0
 
-            with open(csv_object.data.path, 'r') as csv_file:
+            with open(csv_object.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',', quotechar='|')
 
                 header_end = False
@@ -67,8 +75,13 @@ def _preprocess_training_data(csv_object):
                         frequency_modulo = _assign_frequency_modulo(csv_row)
                     # now I care just about data, which starts with timestamp starting with 20 --> begin of year
                     if len(csv_row) > 0 and csv_row[0].startswith('20'):
+                        try:
+                            csv_date = convert_csv_time(csv_row)
+                        except ValueError:
+                            logger.warning(f'Skipping malformed csv row in {csv_object.filename}: {csv_row[:2]}')
+                            continue
                         if modulo_reminder == 0:
-                            if convert_csv_time(csv_row) >= start:
+                            if csv_date >= start:
                                 break
                         modulo_reminder = (modulo_reminder + 1) % frequency_modulo
 
@@ -126,8 +139,11 @@ def _process_csv_data_core(csv_reader, end, frequency_modulo, modulo_reminder):
     temp = []
     for csv_row in csv_reader:
         if len(csv_row) > 0 and csv_row[0].startswith('20'):
-            if modulo_reminder == 0:
+            try:
                 csv_date = convert_csv_time(csv_row)
+            except ValueError:
+                continue
+            if modulo_reminder == 0:
                 acc_magnitude = math.sqrt(
                     float(csv_row[1]) ** 2 + float(csv_row[2]) ** 2 + float(csv_row[3]) ** 2)
                 acc_z_angle = math.degrees(
@@ -154,14 +170,12 @@ def _find_start(csv_object, ps_object):
 
 def _preprocess_prediction_data(csv_object, predict=True):
     logger.info(f'Data will be preprocessed for {csv_object.filename}')
-    if not fix_csv_data(csv_object):
-        return False
     data_list = []
     start_time = datetime.now()
     nights = _get_diary_nights(csv_object)
     if nights:
         total_end = max(night[1] for night in nights)
-    with open(csv_object.data.path, 'r') as csv_file:
+    with open(csv_object.data.path, 'r', encoding='latin-1', errors='ignore', newline='') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='|')
 
         frequency_modulo = 0
@@ -171,7 +185,11 @@ def _preprocess_prediction_data(csv_object, predict=True):
                 frequency_modulo = _assign_frequency_modulo(csv_row)
             # now I care just about data, which starts with timestamp starting with 20 --> begin of year
             if len(csv_row) > 0 and csv_row[0].startswith('20') and frequency_modulo != 0:
-                csv_date = convert_csv_time(csv_row)
+                try:
+                    csv_date = convert_csv_time(csv_row)
+                except ValueError:
+                    logger.warning(f'Skipping malformed csv row in {csv_object.filename}: {csv_row[:2]}')
+                    continue
                 if not _is_in_any_range(csv_date, nights):
                     if csv_date > total_end:
                         break
