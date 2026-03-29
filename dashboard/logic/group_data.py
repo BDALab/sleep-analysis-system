@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from mysite.settings import MEDIA_ROOT
@@ -51,18 +52,24 @@ def group_clinical_data_excel(source_path, output_path=None):
     grouped_df = _group_by_subject(df)
 
     output_path = Path(output_path) if output_path else source_path.parent / "grouped_clinical_matrix.xlsx"
+    stats_output_path = output_path.with_name(f"{output_path.stem}_with_stats.xlsx")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     grouped_df.to_excel(output_path, index=False)
+    grouped_stats_df = _add_grouped_statistics(grouped_df)
+    grouped_stats_df.to_excel(stats_output_path, index=False)
 
     logger.info(
-        f"Grouped clinical data saved to {output_path} "
-        f"({len(grouped_df)} subjects, {len(grouped_df.columns)} columns)"
+        f"Grouped clinical data saved to {output_path} and {stats_output_path} "
+        f"({len(grouped_df)} subjects, {len(grouped_df.columns)} grouped columns, "
+        f"{len(grouped_stats_df.columns)} columns with stats)"
     )
     return {
         "source_path": str(source_path),
         "output_path": str(output_path),
+        "stats_output_path": str(stats_output_path),
         "subject_count": int(grouped_df["#Subject"].nunique()) if not grouped_df.empty else 0,
         "column_count": int(len(grouped_df.columns)),
+        "stats_column_count": int(len(grouped_stats_df.columns)),
     }
 
 
@@ -124,6 +131,57 @@ def _group_by_subject(df):
         column for column in ordered_day_columns if column in grouped_df.columns
     ]
     return grouped_df.reindex(columns=ordered_columns)
+
+
+def _add_grouped_statistics(grouped_df):
+    day_groups = _collect_day_groups(grouped_df.columns)
+    base_df = grouped_df.copy()
+
+    stats_columns = {}
+    for feature_key in sorted(day_groups.keys()):
+        columns = day_groups[feature_key]
+        values = base_df[columns].apply(pd.to_numeric, errors="coerce")
+
+        sd = values.std(axis=1, ddof=0, skipna=True)
+        median = values.median(axis=1, skipna=True)
+        mad = values.sub(median, axis=0).abs().median(axis=1, skipna=True)
+        value_range = values.max(axis=1, skipna=True) - values.min(axis=1, skipna=True)
+        q75 = values.quantile(0.75, axis=1, interpolation="linear")
+        q25 = values.quantile(0.25, axis=1, interpolation="linear")
+        iqr = q75 - q25
+        mean = values.mean(axis=1, skipna=True)
+        mean_safe = mean.replace(0, np.nan)
+        cv = sd / mean_safe
+
+        stats_columns[f"SD.{feature_key}"] = sd
+        stats_columns[f"MAD.{feature_key}"] = mad
+        stats_columns[f"Range.{feature_key}"] = value_range
+        stats_columns[f"IQR.{feature_key}"] = iqr
+        stats_columns[f"CV.{feature_key}"] = cv
+
+    stats_only_df = pd.DataFrame(stats_columns, index=base_df.index)
+    stats_df = pd.concat([base_df, stats_only_df], axis=1)
+
+    ordered_columns = (
+            list(IDENTITY_COLUMNS)
+            + [column for column in grouped_df.columns if column not in IDENTITY_COLUMNS]
+            + list(stats_columns.keys())
+    )
+    return stats_df.reindex(columns=ordered_columns)
+
+
+def _collect_day_groups(columns):
+    groups = {}
+    for column in columns:
+        normalized = str(column)
+        if not normalized.startswith("day") or "." not in normalized:
+            continue
+
+        _, _, feature_key = normalized.partition(".")
+        if not feature_key:
+            continue
+        groups.setdefault(feature_key, []).append(column)
+    return groups
 
 
 def _is_auxiliary_column(column):

@@ -383,15 +383,18 @@ def utils(request, action=None):
                 )
             }
         elif action == 'group-clinical-data':
-            logger.info('Group clinical data by subject for all covariate outputs')
+            logger.info('Group clinical data by subject and calculate grouped statistics')
             results = group_all_covariate_datasets()
-            output_paths = ', '.join(result['output_path'] for result in results)
+            output_paths = ', '.join(
+                f'{result["output_path"]} | {result["stats_output_path"]}'
+                for result in results
+            )
             logger.info(
-                'Grouped clinical data completed: '
+                'Grouped clinical data and statistics completed: '
                 f'{output_paths}'
             )
             context = {
-                'ok': f'Grouped clinical data completed: {output_paths}'
+                'ok': f'Grouped clinical data and statistics completed: {output_paths}'
             }
 
         else:
