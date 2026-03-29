@@ -133,234 +133,238 @@ def utils(request, action=None):
         logger.warning(f'Blocked request to access utils site for user {request.user}')
         return redirect('dashboard:index')
     template = loader.get_template('dashboard/utils.html')
+    try:
+        if action == 'preprocess':
+            logger.info(f'Preprocess data')
+            if preprocess_all_data():
+                logger.info('Preprocess OK')
+                context = {
+                    'ok': 'Preprocess the data operation was successful'
+                }
+            else:
+                logger.error('Preprocess failed')
+                context = {
+                    'fail': 'Preprocess the data failed! Try to check all data.'
+                }
 
-    if action == 'preprocess':
-        logger.info(f'Preprocess data')
-        if preprocess_all_data():
-            logger.info('Preprocess OK')
+        elif action == 'learn':
+            logger.info(f'Training ML model')
+            if prepare_model():
+                logger.info('Model training OK')
+                context = {
+                    'ok': 'Model training was successful'
+                }
+            else:
+                logger.error('Training ML failed')
+                context = {
+                    'fail': 'Training model failed! Try to check data consistency first.'
+                }
+
+        elif action == 'predict':
+            logger.info(f'Caching data for prediction')
+            if predict_all():
+                logger.info('Prediction cached OK')
+                context = {
+                    'ok': 'Cache prediction data was successful'
+                }
+            else:
+                logger.error('Prediction cache failed')
+                context = {
+                    'fail': 'Cache prediction data failed!'
+                }
+
+        elif action == 'all':
+            if preprocess_all_data() and predict_all() and hilev_all():
+                logger.info('All operations OK')
+                context = {
+                    'ok': 'All operations performed successfully'
+                }
+            else:
+                logger.error('Some of the operations failed')
+                context = {
+                    'fail': 'Some of the operations failed!'
+                }
+
+        elif action == 'metadata':
+            logger.info('Read metadata')
+            if parse_metadata():
+                logger.info('All metadata parsed')
+                context = {
+                    'ok': 'All metadata parsed correctly'
+                }
+            else:
+                logger.error('Metadata parsing failed for some entry.')
+                context = {
+                    'fail': 'Some metadata were not parsed!'}
+        elif action == 'metadata_export':
+            logger.info('Export metadata')
+            if export_metadata_to_xlsx():
+                logger.info('All metadata exported')
+                context = {
+                    'ok': 'All metadata exported correctly'
+                }
+            else:
+                logger.error('Metadata export failed for some entry.')
+                context = {
+                    'fail': 'Some metadata were not exported!'}
+        elif action == 'validate_sleep_wake':
+            logger.info('Validate sleep wake')
+            if validate_sleep_wake():
+                logger.info('Validation completed')
+                context = {
+                    'ok': 'Validation completed, see log'
+                }
+            else:
+                logger.error('Validation failed with an exception.')
+                context = {
+                    'fail': 'Validation failed!'}
+        elif action == 'hilev':
+            logger.info('Calculate high level features')
+            if hilev_all():
+                logger.info('HiLev counted')
+                context = {
+                    'ok': 'High level features counted'
+                }
+            else:
+                logger.error('Count high level features end up with exception.')
+                context = {
+                    'fail': 'Count HiLev failed!'}
+        elif action == 'export':
+            logger.info('Export subjects to pdf')
+            if export_all(request.user.get_full_name()):
+                logger.info('Export completed')
+                context = {
+                    'ok': 'Export completed successfully'
+                }
+            else:
+                logger.error('Failed to export subjects')
+                context = {
+                    'fail': 'Export for all subjects failed!'}
+        elif action == 'export_dataset':
+            logger.info('Export dataset to excel')
+            if export_all_features():
+                logger.info('Export completed')
+                context = {
+                    'ok': 'Export completed successfully'
+                }
+            else:
+                logger.error('Failed to export dataset')
+                context = {
+                    'fail': 'Export of features to dataset failed!'}
+        elif action == 'export_dataset_avg':
+            logger.info('Export dataset with average for each subject to excel')
+            if export_all_features_avg():
+                logger.info('Export completed')
+                context = {
+                    'ok': 'Export completed successfully'
+                }
+            else:
+                logger.error('Failed to export dataset')
+                context = {
+                    'fail': 'Export of features to dataset failed!'}
+        elif action == 'export_dataset_clinic':
+            logger.info('Export dataset clinic data for each subject and night to excel')
+            if export_all_features_clinic(False):
+                logger.info('Export completed')
+                context = {
+                    'ok': 'Export completed successfully'
+                }
+            else:
+                logger.error('Failed to export dataset')
+                context = {
+                    'fail': 'Export of features to dataset failed!'}
+
+        elif action == 'export_avg_dataset_clinic':
+            logger.info('Export dataset with average and clinic data for each subject to excel')
+            if export_all_features_clinic():
+                logger.info('Export completed')
+                context = {
+                    'ok': 'Export completed successfully'
+                }
+            else:
+                logger.error('Failed to export dataset')
+                context = {
+                    'fail': 'Export of features to dataset failed!'}
+
+        elif action == 'parkinson_fnusa':
+            logger.info('Train parkinson classifier')
+            if train_parkinson_classifier():
+                logger.info('Training completed')
+                context = {
+                    'ok': 'Classifier trained successfully'
+                }
+            else:
+                logger.error('Failed to train classifier')
+                context = {
+                    'fail': 'Training of classifier failed!'}
+        elif action == 'sleeppy':
+            logger.info('SleepPy playground')
+            sleeppy_all()
+            logger.info('SleepPy playground completed')
             context = {
-                'ok': 'Preprocess the data operation was successful'
+                'ok': 'SleepPy playground completed'
             }
-        else:
-            logger.error('Preprocess failed')
+        elif action == 'sleeppy-clean':
+            logger.info('SleepPy clean')
+            sleeppy_clean()
+            logger.info('SleepPy clean completed')
             context = {
-                'fail': 'Preprocess the data failed! Try to check all data.'
+                'ok': 'SleepPy clean completed'
+            }
+        elif action == 'sleeppy-to-models':
+            logger.info('SleepPy models conversion')
+            sleeppy_to_models()
+            logger.info('SleepPy models conversion completed')
+            context = {
+                'ok': 'SleepPy models conversion completed'
             }
 
-    elif action == 'learn':
-        logger.info(f'Training ML model')
-        if prepare_model():
-            logger.info('Model training OK')
+        elif action == 'sleeppy-to-models-validation':
+            logger.info('SleepPy models validation')
+            sleeppy_to_models_validation()
+            logger.info('SleepPy models validation completed')
             context = {
-                'ok': 'Model training was successful'
-            }
-        else:
-            logger.error('Training ML failed')
-            context = {
-                'fail': 'Training model failed! Try to check data consistency first.'
+                'ok': 'SleepPy models validation completed'
             }
 
-    elif action == 'predict':
-        logger.info(f'Caching data for prediction')
-        if predict_all():
-            logger.info('Prediction cached OK')
+        elif action == 'sleeppy-new-hilev':
+            logger.info('SleepPy new high level features extraction')
+            sleeppy_new_hilev_all()
+            logger.info('SleepPy new high level features extraction completed')
             context = {
-                'ok': 'Cache prediction data was successful'
-            }
-        else:
-            logger.error('Prediction cache failed')
-            context = {
-                'fail': 'Cache prediction data failed!'
+                'ok': 'SleepPy new high level features extraction completed'
             }
 
-    elif action == 'all':
-        if preprocess_all_data() and predict_all() and hilev_all():
-            logger.info('All operations OK')
+        elif action == 'sleeppy-datasets':
+            logger.info('SleepPy new high level features export')
+            export_all_features_clinic_activity_index()
+            export_all_features_clinic_activity_index_sleepy()
+            logger.info('SleepPy new high level features export completed')
             context = {
-                'ok': 'All operations performed successfully'
+                'ok': 'SleepPy new high level features export completed'
             }
-        else:
-            logger.error('Some of the operations failed')
+        elif action == 'convert-64hz-dreamt':
+            logger.info('Convert 64Hz Dreamt data to GENEActiv format with PS data')
+            convert_64hz_dreamt()
+            logger.info('Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed')
             context = {
-                'fail': 'Some of the operations failed!'
+                'ok': 'Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed'
+            }
+        elif action == 'validate-against-dreamt':
+            logger.info('Validate against Dreamt data')
+            validate_dreamt_predictions(threshold=0.5, save_report="report.xlsx", include_per_file=True)
+            logger.info('Validation against Dreamt data completed')
+            context = {
+                'ok': 'Validation against Dreamt data completed'
             }
 
-    elif action == 'metadata':
-        logger.info('Read metadata')
-        if parse_metadata():
-            logger.info('All metadata parsed')
-            context = {
-                'ok': 'All metadata parsed correctly'
-            }
         else:
-            logger.error('Metadata parsing failed for some entry.')
-            context = {
-                'fail': 'Some metadata were not parsed!'}
-    elif action == 'metadata_export':
-        logger.info('Export metadata')
-        if export_metadata_to_xlsx():
-            logger.info('All metadata exported')
-            context = {
-                'ok': 'All metadata exported correctly'
-            }
-        else:
-            logger.error('Metadata export failed for some entry.')
-            context = {
-                'fail': 'Some metadata were not exported!'}
-    elif action == 'validate_sleep_wake':
-        logger.info('Validate sleep wake')
-        if validate_sleep_wake():
-            logger.info('Validation completed')
-            context = {
-                'ok': 'Validation completed, see log'
-            }
-        else:
-            logger.error('Validation failed with an exception.')
-            context = {
-                'fail': 'Validation failed!'}
-    elif action == 'hilev':
-        logger.info('Calculate high level features')
-        if hilev_all():
-            logger.info('HiLev counted')
-            context = {
-                'ok': 'High level features counted'
-            }
-        else:
-            logger.error('Count high level features end up with exception.')
-            context = {
-                'fail': 'Count HiLev failed!'}
-    elif action == 'export':
-        logger.info('Export subjects to pdf')
-        if export_all(request.user.get_full_name()):
-            logger.info('Export completed')
-            context = {
-                'ok': 'Export completed successfully'
-            }
-        else:
-            logger.error('Failed to export subjects')
-            context = {
-                'fail': 'Export for all subjects failed!'}
-    elif action == 'export_dataset':
-        logger.info('Export dataset to excel')
-        if export_all_features():
-            logger.info('Export completed')
-            context = {
-                'ok': 'Export completed successfully'
-            }
-        else:
-            logger.error('Failed to export dataset')
-            context = {
-                'fail': 'Export of features to dataset failed!'}
-    elif action == 'export_dataset_avg':
-        logger.info('Export dataset with average for each subject to excel')
-        if export_all_features_avg():
-            logger.info('Export completed')
-            context = {
-                'ok': 'Export completed successfully'
-            }
-        else:
-            logger.error('Failed to export dataset')
-            context = {
-                'fail': 'Export of features to dataset failed!'}
-    elif action == 'export_dataset_clinic':
-        logger.info('Export dataset clinic data for each subject and night to excel')
-        if export_all_features_clinic(False):
-            logger.info('Export completed')
-            context = {
-                'ok': 'Export completed successfully'
-            }
-        else:
-            logger.error('Failed to export dataset')
-            context = {
-                'fail': 'Export of features to dataset failed!'}
-
-    elif action == 'export_avg_dataset_clinic':
-        logger.info('Export dataset with average and clinic data for each subject to excel')
-        if export_all_features_clinic():
-            logger.info('Export completed')
-            context = {
-                'ok': 'Export completed successfully'
-            }
-        else:
-            logger.error('Failed to export dataset')
-            context = {
-                'fail': 'Export of features to dataset failed!'}
-
-    elif action == 'parkinson_fnusa':
-        logger.info('Train parkinson classifier')
-        if train_parkinson_classifier():
-            logger.info('Training completed')
-            context = {
-                'ok': 'Classifier trained successfully'
-            }
-        else:
-            logger.error('Failed to train classifier')
-            context = {
-                'fail': 'Training of classifier failed!'}
-    elif action == 'sleeppy':
-        logger.info('SleepPy playground')
-        sleeppy_all()
-        logger.info('SleepPy playground completed')
+            context = {}
+    except Exception as e:
+        logger.exception(f'Utils action failed: {action}')
         context = {
-            'ok': 'SleepPy playground completed'
+            'fail': f'Action "{action}" crashed: {e}'
         }
-    elif action == 'sleeppy-clean':
-        logger.info('SleepPy clean')
-        sleeppy_clean()
-        logger.info('SleepPy clean completed')
-        context = {
-            'ok': 'SleepPy clean completed'
-        }
-    elif action == 'sleeppy-to-models':
-        logger.info('SleepPy models conversion')
-        sleeppy_to_models()
-        logger.info('SleepPy models conversion completed')
-        context = {
-            'ok': 'SleepPy models conversion completed'
-        }
-
-    elif action == 'sleeppy-to-models-validation':
-        logger.info('SleepPy models validation')
-        sleeppy_to_models_validation()
-        logger.info('SleepPy models validation completed')
-        context = {
-            'ok': 'SleepPy models validation completed'
-        }
-
-    elif action == 'sleeppy-new-hilev':
-        logger.info('SleepPy new high level features extraction')
-        sleeppy_new_hilev_all()
-        logger.info('SleepPy new high level features extraction completed')
-        context = {
-            'ok': 'SleepPy new high level features extraction completed'
-        }
-
-    elif action == 'sleeppy-datasets':
-        logger.info('SleepPy new high level features export')
-        export_all_features_clinic_activity_index()
-        export_all_features_clinic_activity_index_sleepy()
-        logger.info('SleepPy new high level features export completed')
-        context = {
-            'ok': 'SleepPy new high level features export completed'
-        }
-    elif action == 'convert-64hz-dreamt':
-        logger.info('Convert 64Hz Dreamt data to GENEActiv format with PS data')
-        convert_64hz_dreamt()
-        logger.info('Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed')
-        context = {
-            'ok': 'Conversion of 64Hz Dreamt data to GENEActiv format with PS data completed'
-        }
-    elif action == 'validate-against-dreamt':
-        logger.info('Validate against Dreamt data')
-        validate_dreamt_predictions(threshold=0.5, save_report="report.xlsx", include_per_file=True)
-        logger.info('Validation against Dreamt data completed')
-        context = {
-            'ok': 'Validation against Dreamt data completed'
-        }
-
-
-    else:
-        context = {}
     return HttpResponse(template.render(context, request))
 
 
