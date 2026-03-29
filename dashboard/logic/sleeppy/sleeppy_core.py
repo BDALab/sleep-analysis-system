@@ -144,10 +144,6 @@ class SleepPy:
 
         """
         try:
-            if os.path.exists(self.sub_dst):
-                logger.info(f"Data already processed. See {self.sub_dst}. Skip...")
-                return
-
             os.mkdir(self.sub_dst)  # set up output directory
         except OSError:
             pass
@@ -216,71 +212,60 @@ class SleepPy:
             skiprows=100,
             header=None,
             low_memory=False,
+            chunksize=250000,
         )
         dtype_full = {
             "Time": object,
-            "X": np.float64,
-            "Y": np.float64,
-            "Z": np.float64,
-            "LUX": np.int64,
+            "X": np.float32,
+            "Y": np.float32,
+            "Z": np.float32,
+            "LUX": np.float32,
             "Button": bool,
-            "T": np.float64,
+            "T": np.float32,
         }
-        try:
-            # expect full export with button column
-            data = pd.read_csv(
-                names=["Time", "X", "Y", "Z", "LUX", "Button", "T"],
-                usecols=["Time", "X", "Y", "Z", "LUX", "T"],
-                dtype=dtype_full,
-                **base_kwargs,
-            )
-        except ValueError as exc:
-            if "Too many columns specified" not in str(exc):
-                raise
-            dtype_fallback = {key: val for key, val in dtype_full.items() if key != "Button"}
-            data = pd.read_csv(
-                names=["Time", "X", "Y", "Z", "LUX", "T"],
-                usecols=["Time", "X", "Y", "Z", "LUX", "T"],
-                dtype=dtype_fallback,
-                **base_kwargs,
-            )
-        data.index = pd.to_datetime(data.index, format="%Y-%m-%d %H:%M:%S:%f").values
 
-        # remove any specified time periods from the beginning and end of the file
-        data = data.loc[
-               data.index[0]
-               + pd.Timedelta(self.start_buffer): data.index[-1]
-                                                  - pd.Timedelta(self.stop_buffer)
-               ]
+        def chunk_iter():
+            try:
+                return pd.read_csv(
+                    names=["Time", "X", "Y", "Z", "LUX", "Button", "T"],
+                    usecols=["Time", "X", "Y", "Z", "LUX", "T"],
+                    dtype=dtype_full,
+                    **base_kwargs,
+                )
+            except ValueError as exc:
+                if "Too many columns specified" not in str(exc):
+                    raise
+                dtype_fallback = {
+                    key: val for key, val in dtype_full.items() if key != "Button"
+                }
+                return pd.read_csv(
+                    names=["Time", "X", "Y", "Z", "LUX", "T"],
+                    usecols=["Time", "X", "Y", "Z", "LUX", "T"],
+                    dtype=dtype_fallback,
+                    **base_kwargs,
+                )
 
-        # cut to defined start and end times if specified
-        if self.start_time and self.stop_time:
-            self.start_time = pd.to_datetime(
+        start_limit = None
+        stop_limit = None
+        if self.start_time:
+            start_limit = pd.to_datetime(
                 self.start_time, format="%Y-%m-%d %H:%M:%S:%f"
             )
-            self.stop_time = pd.to_datetime(
+        if self.stop_time:
+            stop_limit = pd.to_datetime(
                 self.stop_time, format="%Y-%m-%d %H:%M:%S:%f"
             )
-            data = data.loc[self.start_time: self.stop_time]
-        elif self.start_time:
-            self.start_time = pd.to_datetime(
-                self.start_time, format="%Y-%m-%d %H:%M:%S:%f"
-            )
-            data = data.loc[self.start_time:]
-        elif self.stop_time:
-            self.stop_time = pd.to_datetime(
-                self.stop_time, format="%Y-%m-%d %H:%M:%S:%f"
-            )
-            data = data.loc[: self.stop_time]
+        start_buffer = pd.Timedelta(self.start_buffer)
 
-        # split data into days from noon to noon
-        days = data.groupby(pd.Grouper(level=0, freq="24h", offset="12h"))
-
-        # iterate through days keeping track of the day
         count = 0
-        for day in days:
-            # save each 24 hour day separately if there's enough data to analyze
-            df = day[1].copy()
+        current_day_key = None
+        current_day_parts = []
+
+        def flush_day():
+            nonlocal count, current_day_key, current_day_parts
+            if not current_day_parts:
+                return
+            df = pd.concat(current_day_parts)
             available_hours = (len(df) / float(self.fs)) / 3600.0
             if available_hours >= self.minimum_hours:
                 count += 1
@@ -288,6 +273,53 @@ class SleepPy:
                     self.src_name, str(count).zfill(2)
                 )
                 df.to_hdf(self.sub_dst + dst, key="raw_geneactiv_data_24hr", mode="w")
+            current_day_key = None
+            current_day_parts = []
+
+        for chunk in chunk_iter():
+            if chunk.empty:
+                continue
+
+            timestamps = pd.Index(chunk.index.astype(str)).str.replace("\x00", "", regex=False)
+            chunk.index = pd.to_datetime(
+                timestamps,
+                format="%Y-%m-%d %H:%M:%S:%f",
+                errors="coerce",
+            )
+            chunk = chunk[~chunk.index.isna()]
+            if chunk.empty:
+                continue
+
+            if start_limit is None:
+                start_limit = chunk.index[0] + start_buffer
+
+            chunk = chunk.loc[chunk.index >= start_limit]
+            reached_stop = False
+            if stop_limit is not None:
+                reached_stop = chunk.index[-1] >= stop_limit
+                chunk = chunk.loc[chunk.index <= stop_limit]
+            if chunk.empty:
+                if reached_stop:
+                    break
+                continue
+
+            group_keys = (
+                    (pd.Series(chunk.index, index=chunk.index) - pd.Timedelta(hours=12))
+                    .dt.floor("24h")
+                    + pd.Timedelta(hours=12)
+            )
+            for day_key, day_df in chunk.groupby(group_keys, sort=True):
+                if current_day_key is None:
+                    current_day_key = day_key
+                elif day_key != current_day_key:
+                    flush_day()
+                    current_day_key = day_key
+                current_day_parts.append(day_df.copy())
+
+            if reached_stop:
+                break
+
+        flush_day()
         return
 
     def split_days_geneactiv_bin(self):

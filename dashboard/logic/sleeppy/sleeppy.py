@@ -28,6 +28,7 @@ def sleeppy(csv_data, force=False):
         logger.info(f'SleepPy for {csv_data.filename}')
         try:
             stem = Path(csv_data.data.path).stem
+            sub_dir = Path(csv_data.sleeppy_dir).resolve() / stem
             results_dir = Path(csv_data.sleeppy_dir).resolve() / stem / "results"
             expected_outputs = [
                 results_dir / f"{stem}_major_rest_periods.csv",
@@ -39,6 +40,9 @@ def sleeppy(csv_data, force=False):
                     f'Use force=True to regenerate.'
                 )
                 return True
+            if sub_dir.exists():
+                logger.info(f'Removing incomplete SleepPy directory for {csv_data.filename} at {sub_dir}')
+                shutil.rmtree(sub_dir)
 
             if csv_data.end_date is None:
                 logger.info("Working without end date...")
