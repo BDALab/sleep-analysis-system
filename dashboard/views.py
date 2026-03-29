@@ -9,6 +9,10 @@ from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
 from dashboard.export.export_hilev import export_all_features
+from dashboard.logic.classification_grouped_statistics import (
+    classification_grouped_statistics_dataset_clinical,
+    classification_grouped_statistics_dataset_clinical_acc,
+)
 from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical,
     calculate_covariates_dataset_clinical_acc_dreamt,
@@ -395,6 +399,32 @@ def utils(request, action=None):
             )
             context = {
                 'ok': f'Grouped clinical data and statistics completed: {output_paths}'
+            }
+        elif action == 'classification-grouped-stats-clinical':
+            logger.info('Run grouped-statistics classification for dataset-clinical')
+            result = classification_grouped_statistics_dataset_clinical()
+            logger.info(
+                'Grouped-statistics classification for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-clinical-acc':
+            logger.info('Run grouped-statistics classification for dataset-clinical-acc')
+            result = classification_grouped_statistics_dataset_clinical_acc()
+            logger.info(
+                'Grouped-statistics classification for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
             }
 
         else:

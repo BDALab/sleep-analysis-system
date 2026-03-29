@@ -192,6 +192,18 @@
             <a href="{% url 'dashboard:utils' 'group-clinical-data' %}"
                class="button button-small button-fix-width">Group</a>
         </div>
+        <div class="small-column">
+            <h3>Classify grouped stats</h3>
+            <p>Run the final grouped-statistics classification for dataset-clinical.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Classify grouped stats + acc</h3>
+            <p>Run the final grouped-statistics classification for dataset-clinical-acc.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
     </div>
 </div>
 
