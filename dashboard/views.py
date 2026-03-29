@@ -9,6 +9,10 @@ from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
 from dashboard.export.export_hilev import export_all_features
+from dashboard.logic.covariates import (
+    calculate_covariates_dataset_clinical,
+    calculate_covariates_dataset_clinical_acc_dreamt,
+)
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .conversion.convert_dreamt import convert_64hz_dreamt
@@ -356,6 +360,26 @@ def utils(request, action=None):
             logger.info('Validation against Dreamt data completed')
             context = {
                 'ok': 'Validation against Dreamt data completed'
+            }
+        elif action == 'covariates-clinical':
+            logger.info('Calculate covariates for dataset-clinical.xlsx')
+            result = calculate_covariates_dataset_clinical()
+            logger.info(f'Covariates for dataset-clinical.xlsx completed: {result["data_dir"]}')
+            context = {
+                'ok': f'Covariates for dataset-clinical.xlsx completed: {result["data_dir"]}'
+            }
+        elif action == 'covariates-clinical-acc':
+            logger.info('Calculate covariates for dataset-clinical-acc.xlsx')
+            result = calculate_covariates_dataset_clinical_acc_dreamt()
+            logger.info(
+                'Covariates for dataset-clinical-acc.xlsx completed: '
+                f'{result["data_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Covariates for dataset-clinical-acc-dreamt.xlsx completed: '
+                    f'{result["data_dir"]}'
+                )
             }
 
         else:
