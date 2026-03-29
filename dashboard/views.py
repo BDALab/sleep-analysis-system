@@ -14,6 +14,7 @@ from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical_acc_dreamt,
 )
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
+from dashboard.logic.group_data import group_all_covariate_datasets
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .conversion.convert_dreamt import convert_64hz_dreamt
 from .export.export_actions import export_all, export_subject
@@ -380,6 +381,17 @@ def utils(request, action=None):
                     'Covariates for dataset-clinical-acc-dreamt.xlsx completed: '
                     f'{result["data_dir"]}'
                 )
+            }
+        elif action == 'group-clinical-data':
+            logger.info('Group clinical data by subject for all covariate outputs')
+            results = group_all_covariate_datasets()
+            output_paths = ', '.join(result['output_path'] for result in results)
+            logger.info(
+                'Grouped clinical data completed: '
+                f'{output_paths}'
+            )
+            context = {
+                'ok': f'Grouped clinical data completed: {output_paths}'
             }
 
         else:
