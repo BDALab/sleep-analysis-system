@@ -13,6 +13,10 @@ from dashboard.logic.classification_grouped_statistics import (
     classification_grouped_statistics_dataset_clinical,
     classification_grouped_statistics_dataset_clinical_acc,
 )
+from dashboard.logic.classification_grouped_statistics_strict import (
+    classification_grouped_statistics_strict_dataset_clinical,
+    classification_grouped_statistics_strict_dataset_clinical_acc,
+)
 from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical,
     calculate_covariates_dataset_clinical_acc_dreamt,
@@ -423,6 +427,32 @@ def utils(request, action=None):
             context = {
                 'ok': (
                     'Grouped-statistics classification for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-clinical':
+            logger.info('Run strict grouped-statistics classification for dataset-clinical')
+            result = classification_grouped_statistics_strict_dataset_clinical()
+            logger.info(
+                'Strict grouped-statistics classification for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict grouped-statistics classification for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-clinical-acc':
+            logger.info('Run strict grouped-statistics classification for dataset-clinical-acc')
+            result = classification_grouped_statistics_strict_dataset_clinical_acc()
+            logger.info(
+                'Strict grouped-statistics classification for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict grouped-statistics classification for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
                 )
             }
