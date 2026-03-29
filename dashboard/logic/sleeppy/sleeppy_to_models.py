@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 from datetime import datetime
@@ -18,8 +19,22 @@ def sleeppy_to_models():
             results_dir = os.path.join(sub_dir, "results")
             if not os.path.exists(results_dir):
                 continue
-            major_rest_periods_df = pd.read_csv(os.path.join(results_dir, f"{src_name}_major_rest_periods.csv"))
-            sleep_endpoints_summary_df = pd.read_csv(os.path.join(results_dir, "sleep_endpoints_summary.csv"))
+            major_rest_periods_df = _read_results_csv(
+                os.path.join(results_dir, f"{src_name}_major_rest_periods.csv")
+            )
+            sleep_endpoints_summary_df = _read_results_csv(
+                os.path.join(results_dir, "sleep_endpoints_summary.csv")
+            )
+            if major_rest_periods_df is None or sleep_endpoints_summary_df is None:
+                logger.warning(f"Skipping {src_name}, Sleeppy result CSV is empty or corrupted")
+                continue
+            if 'day' not in major_rest_periods_df.columns or 'day' not in sleep_endpoints_summary_df.columns:
+                logger.warning(
+                    f"Skipping {src_name}, missing 'day' column in Sleeppy results. "
+                    f"MR columns: {list(major_rest_periods_df.columns)} | "
+                    f"SE columns: {list(sleep_endpoints_summary_df.columns)}"
+                )
+                continue
             df = pd.merge(major_rest_periods_df, sleep_endpoints_summary_df, on='day')
             for index, row in df.iterrows():
                 available_hours = row['available_hours']
@@ -66,6 +81,21 @@ def sleeppy_to_models():
                 else:
                     sleeppydata.save()
                     logger.info(f'Sleeppy data for {sleep_night.date}, {d.filename}, {d.subject.code} created')
+
+
+def _read_results_csv(path):
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read().replace(b'\x00', b'').strip()
+        if not raw:
+            return None
+        df = pd.read_csv(io.StringIO(raw.decode('utf-8', errors='ignore')))
+        if 'day' not in df.columns and len(df.columns) > 1 and df.columns[0] == 'Unnamed: 0':
+            df = df.rename(columns={'Unnamed: 0': 'day'})
+        return df
+    except Exception as e:
+        logger.warning(f'Failed to read Sleeppy results CSV {path}: {e}')
+        return None
 
 
 def _get_closest_to_sleep_onset(data, target):
