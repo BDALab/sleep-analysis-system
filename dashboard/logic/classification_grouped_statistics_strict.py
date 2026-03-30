@@ -31,6 +31,7 @@ from dashboard.logic.classification_grouped_statistics import (
     _feature_importances_dataframe,
     _is_gpu_error,
     _json_ready_dict,
+    _pipeline_params_for_json,
     _prepare_dataset,
     _prepare_scenario_features,
     _save_curve_points,
@@ -460,7 +461,7 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
 
     _save_pickle(final_estimator, output_dir / "trained_model.pkl")
     _save_json(
-        _json_ready_dict(final_estimator.get_params()),
+        _pipeline_params_for_json(final_estimator),
         output_dir / "trained_model_hyper_parameters.json",
     )
     pd.DataFrame(random_search.cv_results_).sort_values(by="rank_test_score").to_excel(

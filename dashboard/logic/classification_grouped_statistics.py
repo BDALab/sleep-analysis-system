@@ -28,7 +28,7 @@ from sklearn.metrics import (
     recall_score,
     roc_curve,
 )
-from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV
+from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 
@@ -61,6 +61,7 @@ TARGET_COLUMN = "#DiseaseNew"
 TARGET_LABEL_COLUMN = "#DiseaseNewLabel"
 STATS_PREFIXES = ("SD.", "MAD.", "Range.", "IQR.", "CV.")
 FEATURE_COVERAGE_THRESHOLD = 0.90
+TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
 SEED = 17
 LABEL_MAPPING = dict(Subject.DIAGNOSIS_CODE)
 SCENARIOS = (
@@ -151,6 +152,8 @@ def run_classification_grouped_statistics(grouped_stats_path):
             "seed": SEED,
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
+            "tuning_cv_strategy": "StratifiedKFold",
+            "tuning_cv_splits_cap": TUNING_MAX_CV_SPLITS,
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
             "scenarios": [
                 {
@@ -328,6 +331,15 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
             "default_summary": default_summary,
             "tuned_summary": tuned_summary,
         }
+    if min(class_counts.values()) < 2:
+        reason = "Need at least 2 subjects in each class for stratified tuning"
+        logger.warning(f"Skipping {scenario_label}: {reason}")
+        default_summary.update({"status": "skipped", "skip_reason": reason})
+        tuned_summary.update({"status": "skipped", "skip_reason": reason})
+        return {
+            "default_summary": default_summary,
+            "tuned_summary": tuned_summary,
+        }
 
     stats_columns = [column for column in scenario_df.columns if str(column).startswith(STATS_PREFIXES)]
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
@@ -374,7 +386,7 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
     best_estimator, random_search = _run_hyperparameter_search(X, y)
     _save_pickle(best_estimator, scenario_dir / "trained_model.pkl")
     _save_json(
-        _json_ready_dict(best_estimator.get_params()),
+        _pipeline_params_for_json(best_estimator),
         scenario_dir / "trained_model_hyper_parameters.json",
     )
     pd.DataFrame(random_search.cv_results_).sort_values(
@@ -598,7 +610,7 @@ def _prepare_scenario_features(scenario_df, stats_columns):
 
 
 def _run_hyperparameter_search(X, y):
-    cv = LeaveOneOut()
+    cv = _build_tuning_cv(y)
     search = RandomizedSearchCV(
         estimator=_build_pipeline(),
         cv=cv,
@@ -617,6 +629,18 @@ def _run_hyperparameter_search(X, y):
         else:
             raise
     return search.best_estimator_, search
+
+
+def _build_tuning_cv(y):
+    class_counts = pd.Series(y).value_counts()
+    min_class_count = int(class_counts.min())
+    if min_class_count < 2:
+        raise ValueError(
+            "Stratified tuning requires at least 2 samples in each class, "
+            f"got {class_counts.to_dict()}"
+        )
+    n_splits = min(TUNING_MAX_CV_SPLITS, min_class_count)
+    return StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=SEED)
 
 
 def _evaluate_leave_one_out(estimator, X, y, subjects, diagnosis_codes, diagnosis_labels):
@@ -893,7 +917,16 @@ def _save_shap_outputs(estimator, X, feature_columns, subjects, scenario_dir):
         def predict_positive(data):
             return estimator.named_steps["clf"].predict_proba(data)[:, 1]
 
-        explainer = shap.Explainer(predict_positive, transformed_df)
+        min_max_evals = max(2 * len(feature_columns) + 1, 500)
+        logger.info(
+            f"Using SHAP generic explainer fallback with max_evals={min_max_evals} "
+            f"for {len(feature_columns)} features"
+        )
+        explainer = shap.Explainer(
+            predict_positive,
+            transformed_df,
+            max_evals=min_max_evals,
+        )
         shap_explanation = explainer(transformed_df)
 
     shap_values_df = pd.DataFrame(
@@ -945,16 +978,35 @@ def _save_json(data, output_path):
         json.dump(data, file_handle, indent=2, ensure_ascii=True)
 
 
+def _pipeline_params_for_json(estimator):
+    if hasattr(estimator, "named_steps"):
+        return {
+            step_name: (
+                _json_ready_dict(step.get_params())
+                if hasattr(step, "get_params")
+                else repr(step)
+            )
+            for step_name, step in estimator.named_steps.items()
+        }
+    if hasattr(estimator, "get_params"):
+        return _json_ready_dict(estimator.get_params())
+    return _json_ready_dict(estimator)
+
+
 def _json_ready_dict(data):
+    if isinstance(data, (str, int, float, bool)) or data is None:
+        return data
     if isinstance(data, dict):
         return {str(key): _json_ready_dict(value) for key, value in data.items()}
     if isinstance(data, (list, tuple)):
         return [_json_ready_dict(value) for value in data]
     if isinstance(data, np.generic):
         return data.item()
+    if isinstance(data, np.ndarray):
+        return data.tolist()
     if isinstance(data, Path):
         return str(data)
-    return data
+    return repr(data)
 
 
 def _is_gpu_error(exc):
