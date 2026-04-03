@@ -139,20 +139,28 @@ def _add_grouped_statistics(grouped_df):
 
     stats_columns = {}
     for feature_key in sorted(day_groups.keys()):
-        columns = day_groups[feature_key]
+        columns = sorted(day_groups[feature_key], key=_day_column_index)
         values = base_df[columns].apply(pd.to_numeric, errors="coerce")
 
         sd = values.std(axis=1, ddof=0, skipna=True)
+        mean = values.mean(axis=1, skipna=True)
         median = values.median(axis=1, skipna=True)
+        min_value = values.min(axis=1, skipna=True)
+        max_value = values.max(axis=1, skipna=True)
         mad = values.sub(median, axis=0).abs().median(axis=1, skipna=True)
-        value_range = values.max(axis=1, skipna=True) - values.min(axis=1, skipna=True)
+        value_range = max_value - min_value
         q75 = values.quantile(0.75, axis=1, interpolation="linear")
         q25 = values.quantile(0.25, axis=1, interpolation="linear")
         iqr = q75 - q25
-        mean = values.mean(axis=1, skipna=True)
         mean_safe = mean.replace(0, np.nan)
         cv = sd / mean_safe
+        slope = _calculate_nightly_slope(values)
 
+        stats_columns[f"Mean.{feature_key}"] = mean
+        stats_columns[f"Median.{feature_key}"] = median
+        stats_columns[f"Min.{feature_key}"] = min_value
+        stats_columns[f"Max.{feature_key}"] = max_value
+        stats_columns[f"Slope.{feature_key}"] = slope
         stats_columns[f"SD.{feature_key}"] = sd
         stats_columns[f"MAD.{feature_key}"] = mad
         stats_columns[f"Range.{feature_key}"] = value_range
@@ -182,6 +190,38 @@ def _collect_day_groups(columns):
             continue
         groups.setdefault(feature_key, []).append(column)
     return groups
+
+
+def _calculate_nightly_slope(values):
+    day_axis = np.arange(1, len(values.columns) + 1, dtype=float)
+    return values.apply(
+        lambda row: _fit_row_slope(row.to_numpy(dtype=float), day_axis),
+        axis=1,
+    )
+
+
+def _fit_row_slope(row_values, day_axis):
+    valid_mask = np.isfinite(row_values)
+    if valid_mask.sum() < 2:
+        return np.nan
+
+    x = day_axis[valid_mask]
+    y = row_values[valid_mask]
+    x_centered = x - x.mean()
+    denominator = np.square(x_centered).sum()
+    if denominator == 0:
+        return np.nan
+    return float(np.dot(x_centered, y - y.mean()) / denominator)
+
+
+def _day_column_index(column):
+    day_token, _, _ = str(column).partition(".")
+    if not day_token.startswith("day"):
+        return 0
+    try:
+        return int(day_token[3:])
+    except ValueError:
+        return 0
 
 
 def _is_auxiliary_column(column):

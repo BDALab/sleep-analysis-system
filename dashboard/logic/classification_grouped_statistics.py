@@ -60,7 +60,18 @@ CLASSIFICATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-sta
 IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
 TARGET_COLUMN = "#DiseaseNew"
 TARGET_LABEL_COLUMN = "#DiseaseNewLabel"
-STATS_PREFIXES = ("SD.", "MAD.", "Range.", "IQR.", "CV.")
+STATS_PREFIXES = (
+    "Mean.",
+    "Median.",
+    "Min.",
+    "Max.",
+    "Slope.",
+    "SD.",
+    "MAD.",
+    "Range.",
+    "IQR.",
+    "CV.",
+)
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
 SEED = 17
