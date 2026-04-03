@@ -15,6 +15,7 @@ DATASET_CLINICAL_ACC_PATH = (
         Path(MEDIA_ROOT) / "covariates" / "dataset-clinical-acc" / "data" / "clinical_data.xlsx"
 )
 IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
+MIN_NIGHTS_PER_SUBJECT = 5
 
 
 def group_covariates_dataset_clinical():
@@ -49,24 +50,36 @@ def group_clinical_data_excel(source_path, output_path=None):
         df = df[df["#Subject"].notna()].copy()
 
     df = _sort_rows_for_grouping(df)
+    df, excluded_short_subjects_df = _filter_subjects_by_night_count(
+        df,
+        min_nights=MIN_NIGHTS_PER_SUBJECT,
+    )
     grouped_df = _group_by_subject(df)
 
     output_path = Path(output_path) if output_path else source_path.parent / "grouped_clinical_matrix.xlsx"
     stats_output_path = output_path.with_name(f"{output_path.stem}_with_stats.xlsx")
+    short_subjects_path = output_path.with_name(
+        f"{output_path.stem}_excluded_subjects_lt{MIN_NIGHTS_PER_SUBJECT}nights.xlsx"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     grouped_df.to_excel(output_path, index=False)
     grouped_stats_df = _add_grouped_statistics(grouped_df)
     grouped_stats_df.to_excel(stats_output_path, index=False)
+    excluded_short_subjects_df.to_excel(short_subjects_path, index=False)
 
     logger.info(
         f"Grouped clinical data saved to {output_path} and {stats_output_path} "
         f"({len(grouped_df)} subjects, {len(grouped_df.columns)} grouped columns, "
-        f"{len(grouped_stats_df.columns)} columns with stats)"
+        f"{len(grouped_stats_df.columns)} columns with stats, "
+        f"{len(excluded_short_subjects_df)} subject(s) excluded for <{MIN_NIGHTS_PER_SUBJECT} nights)"
     )
     return {
         "source_path": str(source_path),
         "output_path": str(output_path),
         "stats_output_path": str(stats_output_path),
+        "excluded_short_subjects_path": str(short_subjects_path),
+        "min_nights_per_subject": MIN_NIGHTS_PER_SUBJECT,
+        "excluded_short_subject_count": int(len(excluded_short_subjects_df)),
         "subject_count": int(grouped_df["#Subject"].nunique()) if not grouped_df.empty else 0,
         "column_count": int(len(grouped_df.columns)),
         "stats_column_count": int(len(grouped_stats_df.columns)),
@@ -97,6 +110,32 @@ def _sort_rows_for_grouping(df):
         sorted_df = sorted_df.sort_values(by=["#Subject", "_row_order"], kind="mergesort")
 
     return sorted_df.drop(columns=["_row_order"])
+
+
+def _filter_subjects_by_night_count(df, min_nights):
+    night_counts = (
+        df.groupby("#Subject", sort=True)
+        .size()
+        .rename("night_count")
+        .reset_index()
+    )
+    keep_subjects = set(
+        night_counts.loc[night_counts["night_count"] >= min_nights, "#Subject"]
+        .astype(str)
+        .tolist()
+    )
+    excluded_subjects_df = night_counts[
+        night_counts["night_count"] < min_nights
+        ].copy()
+
+    if not excluded_subjects_df.empty:
+        logger.info(
+            f"Excluding {len(excluded_subjects_df)} subject(s) with fewer than "
+            f"{min_nights} nights before grouping"
+        )
+
+    filtered_df = df[df["#Subject"].astype(str).isin(keep_subjects)].copy()
+    return filtered_df, excluded_subjects_df
 
 
 def _group_by_subject(df):
