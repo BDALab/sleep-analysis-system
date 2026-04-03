@@ -35,6 +35,7 @@ from dashboard.logic.classification_grouped_statistics import (
     _prepare_dataset,
     _prepare_scenario_features,
     _save_curve_points,
+    _save_dataset_pca_projection,
     _save_feature_importance_plot,
     _save_json,
     _save_metrics,
@@ -86,6 +87,7 @@ def run_classification_grouped_statistics_strict(grouped_stats_path):
     dataset_overview_df.to_excel(run_dir / "dataset_overview.xlsx", index=False)
     if not excluded_labels_df.empty:
         excluded_labels_df.to_excel(run_dir / "excluded_subjects_missing_labels.xlsx", index=False)
+    pca_output = _save_dataset_pca_projection(prepared_df, run_dir)
 
     _save_json(
         {
@@ -148,6 +150,7 @@ def run_classification_grouped_statistics_strict(grouped_stats_path):
         "run_dir": str(run_dir),
         "summary_path": str(summary_path),
         "prepared_dataset_path": str(run_dir / "prepared_dataset.xlsx"),
+        "pca_dir": str(pca_output["pca_dir"]),
     }
 
 

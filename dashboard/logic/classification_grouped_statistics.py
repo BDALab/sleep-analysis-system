@@ -14,6 +14,7 @@ import seaborn as sns
 import shap
 import xgboost as xgb
 from sklearn.base import clone
+from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     auc,
@@ -30,7 +31,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from dashboard.models import Subject
 from mysite.settings import MEDIA_ROOT
@@ -143,6 +144,7 @@ def run_classification_grouped_statistics(grouped_stats_path):
     dataset_overview_df.to_excel(run_dir / "dataset_overview.xlsx", index=False)
     if not excluded_labels_df.empty:
         excluded_labels_df.to_excel(run_dir / "excluded_subjects_missing_labels.xlsx", index=False)
+    pca_output = _save_dataset_pca_projection(prepared_df, run_dir)
 
     _save_json(
         {
@@ -200,6 +202,7 @@ def run_classification_grouped_statistics(grouped_stats_path):
         "run_dir": str(run_dir),
         "summary_path": str(summary_path),
         "prepared_dataset_path": str(run_dir / "prepared_dataset.xlsx"),
+        "pca_dir": str(pca_output["pca_dir"]),
     }
 
 
@@ -256,6 +259,127 @@ def _prepare_dataset(df):
     )
 
     return prepared, excluded_labels_df, pd.DataFrame(dataset_overview_rows)
+
+
+def _save_dataset_pca_projection(prepared_df, run_dir):
+    pca_dir = run_dir / "pca_projection"
+    pca_dir.mkdir(parents=True, exist_ok=True)
+
+    stats_columns = [
+        column
+        for column in prepared_df.columns
+        if str(column).startswith(STATS_PREFIXES)
+    ]
+    if len(prepared_df) < 2 or len(stats_columns) < 2:
+        logger.warning(
+            f"Skipping PCA projection for {run_dir.name}: "
+            f"need at least 2 subjects and 2 stats features"
+        )
+        return {"pca_dir": pca_dir}
+
+    pca_df = prepared_df.copy()
+    pca_df["subject_prefix"] = (
+        pca_df["#Subject"]
+        .astype(str)
+        .str.extract(r"^([A-Za-z]+(?:-[A-Za-z]+)?|[A-Za-z]+)", expand=False)
+        .fillna("NO_PREFIX")
+    )
+
+    X = pca_df[stats_columns].replace([np.inf, -np.inf], np.nan)
+    pipeline = Pipeline(
+        [
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("pca", PCA(n_components=2, random_state=SEED)),
+        ]
+    )
+    components = pipeline.fit_transform(X)
+    pca_model = pipeline.named_steps["pca"]
+
+    projection_df = pca_df[
+        [
+            column
+            for column in (
+            "#Subject",
+            "#Age",
+            "#Gender",
+            "#Disease",
+            TARGET_COLUMN,
+            TARGET_LABEL_COLUMN,
+            "subject_prefix",
+        )
+            if column in pca_df.columns
+        ]
+    ].copy()
+    projection_df["PC1"] = components[:, 0]
+    projection_df["PC2"] = components[:, 1]
+    projection_df.to_excel(pca_dir / "pca_projection.xlsx", index=False)
+
+    summary_df = pd.DataFrame(
+        [
+            {
+                "component": "PC1",
+                "explained_variance_ratio": float(pca_model.explained_variance_ratio_[0]),
+            },
+            {
+                "component": "PC2",
+                "explained_variance_ratio": float(pca_model.explained_variance_ratio_[1]),
+            },
+        ]
+    )
+    summary_df.to_excel(pca_dir / "pca_summary.xlsx", index=False)
+
+    _save_pca_scatter_plot(
+        projection_df=projection_df,
+        color_column=TARGET_LABEL_COLUMN,
+        title="PCA projection colored by diagnosis",
+        explained_variance_ratio=pca_model.explained_variance_ratio_,
+        output_path=pca_dir / "pca_by_diagnosis.png",
+    )
+    _save_pca_scatter_plot(
+        projection_df=projection_df,
+        color_column="subject_prefix",
+        title="PCA projection colored by subject prefix",
+        explained_variance_ratio=pca_model.explained_variance_ratio_,
+        output_path=pca_dir / "pca_by_subject_prefix.png",
+    )
+
+    logger.info(f"PCA projection diagnostics saved to {pca_dir}")
+    return {
+        "pca_dir": pca_dir,
+        "projection_path": pca_dir / "pca_projection.xlsx",
+        "summary_path": pca_dir / "pca_summary.xlsx",
+        "diagnosis_plot_path": pca_dir / "pca_by_diagnosis.png",
+        "prefix_plot_path": pca_dir / "pca_by_subject_prefix.png",
+    }
+
+
+def _save_pca_scatter_plot(
+        projection_df,
+        color_column,
+        title,
+        explained_variance_ratio,
+        output_path,
+):
+    fig, ax = plt.subplots(figsize=(10, 7))
+    for label, group_df in projection_df.groupby(color_column, dropna=False):
+        ax.scatter(
+            group_df["PC1"],
+            group_df["PC2"],
+            s=36,
+            alpha=0.8,
+            label=str(label),
+            edgecolors="none",
+        )
+
+    ax.set_title(title)
+    ax.set_xlabel(f"PC1 ({explained_variance_ratio[0] * 100:.1f}% var)")
+    ax.set_ylabel(f"PC2 ({explained_variance_ratio[1] * 100:.1f}% var)")
+    ax.grid(alpha=0.2)
+    ax.legend(loc="best", frameon=False, fontsize=9)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
 
 
 def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir):
