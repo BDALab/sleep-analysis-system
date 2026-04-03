@@ -13,8 +13,9 @@ import pandas as pd
 import seaborn as sns
 import shap
 import xgboost as xgb
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
+from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_classif
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     auc,
@@ -74,6 +75,7 @@ STATS_PREFIXES = (
 )
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
+FEATURE_SELECTION_K_OPTIONS = (20, 40, 80, 120, "all")
 SEED = 17
 LABEL_MAPPING = dict(Subject.DIAGNOSIS_CODE)
 SCENARIOS = (
@@ -102,6 +104,7 @@ MODEL_PARAMS = {
     "device": None,
 }
 PARAM_GRID = {
+    "feature_selector__k": list(FEATURE_SELECTION_K_OPTIONS),
     "clf__learning_rate": [0.001, 0.01, 0.1, 0.15, 0.2, 0.3],
     "clf__gamma": [0, 0.025, 0.05, 0.10, 0.20, 0.25, 0.30],
     "clf__max_depth": [10, 11, 12, 13],
@@ -120,6 +123,36 @@ SEARCH_SETTINGS = {
     "random_state": SEED,
     "return_train_score": False,
 }
+
+
+class AdaptiveSelectKBest(BaseEstimator, TransformerMixin):
+    def __init__(self, k="all"):
+        self.k = k
+        self.selector_ = None
+        self.effective_k_ = k
+        self.scores_ = None
+        self.pvalues_ = None
+
+    def fit(self, X, y=None):
+        if self.k == "all":
+            self.effective_k_ = "all"
+        else:
+            self.effective_k_ = max(1, min(int(self.k), X.shape[1]))
+
+        self.selector_ = SelectKBest(
+            score_func=_safe_f_classif,
+            k=self.effective_k_,
+        )
+        self.selector_.fit(X, y)
+        self.scores_ = self.selector_.scores_
+        self.pvalues_ = self.selector_.pvalues_
+        return self
+
+    def transform(self, X):
+        return self.selector_.transform(X)
+
+    def get_support(self, indices=False):
+        return self.selector_.get_support(indices=indices)
 
 
 def classification_grouped_statistics_dataset_clinical():
@@ -165,6 +198,16 @@ def run_classification_grouped_statistics(grouped_stats_path):
             "seed": SEED,
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
+            "feature_selection": {
+                "pipeline_steps": [
+                    "median imputation",
+                    "constant-feature removal",
+                    "min-max scaling",
+                    "ANOVA SelectKBest",
+                ],
+                "k_options": list(FEATURE_SELECTION_K_OPTIONS),
+                "k_note": "k is tuned inside CV; when k exceeds current feature count it is clipped safely.",
+            },
             "tuning_cv_strategy": "StratifiedKFold",
             "tuning_cv_splits_cap": TUNING_MAX_CV_SPLITS,
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
@@ -514,7 +557,10 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
     y = filtered_df["binary_target"].astype(int).values
     subjects = filtered_df["#Subject"].astype(str).tolist()
 
-    _save_json({"feature_labels": feature_columns}, scenario_dir / "feature_labels.json")
+    _save_json(
+        {"candidate_feature_labels": feature_columns},
+        scenario_dir / "candidate_feature_labels.json",
+    )
     np.save(scenario_dir / "X_original.npy", X)
     np.save(scenario_dir / "y_original.npy", y)
 
@@ -524,13 +570,20 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
         _pipeline_params_for_json(best_estimator),
         scenario_dir / "trained_model_hyper_parameters.json",
     )
+    selected_feature_columns = _selected_feature_columns(best_estimator, feature_columns)
+    _save_json({"feature_labels": selected_feature_columns}, scenario_dir / "feature_labels.json")
+    _save_selected_feature_scores(
+        estimator=best_estimator,
+        selected_feature_columns=selected_feature_columns,
+        output_path=scenario_dir / "selected_feature_scores.xlsx",
+    )
     pd.DataFrame(random_search.cv_results_).sort_values(
         by="rank_test_score"
     ).to_excel(scenario_dir / "hyperparameter_search_results.xlsx", index=False)
 
     feature_importance_df = _feature_importances_dataframe(
         best_estimator.named_steps["clf"],
-        feature_columns,
+        selected_feature_columns,
     )
     feature_importance_df.to_excel(scenario_dir / "feature_importances.xlsx", index=False)
     _save_feature_importance_plot(
@@ -648,7 +701,7 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
     shap_importance_df = _save_shap_outputs(
         estimator=best_estimator,
         X=X,
-        feature_columns=feature_columns,
+        feature_columns=selected_feature_columns,
         subjects=subjects,
         scenario_dir=scenario_dir,
     )
@@ -820,7 +873,9 @@ def _build_pipeline():
     return Pipeline(
         [
             ("imputer", SimpleImputer(strategy="median")),
+            ("variance_filter", VarianceThreshold(threshold=0.0)),
             ("scaler", MinMaxScaler(feature_range=(0, 1))),
+            ("feature_selector", AdaptiveSelectKBest(k="all")),
             ("clf", xgb.XGBClassifier(**_resolved_model_params())),
         ]
     )
@@ -929,6 +984,40 @@ def _feature_importances_dataframe(model, feature_columns):
     return df.sort_values(by="importance", ascending=False).reset_index(drop=True)
 
 
+def _selected_feature_columns(estimator, feature_columns):
+    selected_columns = np.array(feature_columns, dtype=object)
+    for step_name in ("variance_filter", "feature_selector"):
+        step = estimator.named_steps.get(step_name)
+        if step is None or not hasattr(step, "get_support"):
+            continue
+        selected_columns = selected_columns[step.get_support()]
+    return selected_columns.tolist()
+
+
+def _save_selected_feature_scores(estimator, selected_feature_columns, output_path):
+    selector = estimator.named_steps.get("feature_selector")
+    if selector is None or selector.scores_ is None:
+        pd.DataFrame(columns=["feature", "score", "p_value"]).to_excel(output_path, index=False)
+        return
+
+    selected_mask = selector.get_support()
+    score_df = pd.DataFrame(
+        {
+            "feature": selected_feature_columns,
+            "score": np.asarray(selector.scores_)[selected_mask],
+            "p_value": np.asarray(selector.pvalues_)[selected_mask],
+        }
+    ).sort_values(by="score", ascending=False).reset_index(drop=True)
+    score_df.to_excel(output_path, index=False)
+
+
+def _safe_f_classif(X, y):
+    scores, p_values = f_classif(X, y)
+    scores = np.nan_to_num(scores, nan=0.0, posinf=0.0, neginf=0.0)
+    p_values = np.nan_to_num(p_values, nan=1.0, posinf=1.0, neginf=1.0)
+    return scores, p_values
+
+
 def _save_metrics(metrics, output_path):
     pd.DataFrame([metrics]).to_excel(output_path, index=False)
 
@@ -1031,9 +1120,7 @@ def _save_roc_pr_figure(y_true, y_prob, y_pred_tuned, target_names, tuned_thresh
 
 
 def _save_shap_outputs(estimator, X, feature_columns, subjects, scenario_dir):
-    transformed = estimator.named_steps["scaler"].transform(
-        estimator.named_steps["imputer"].transform(X)
-    )
+    transformed = estimator[:-1].transform(X)
     transformed_df = pd.DataFrame(transformed, columns=feature_columns, index=subjects)
 
     try:

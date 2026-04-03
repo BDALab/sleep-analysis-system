@@ -41,8 +41,10 @@ from dashboard.logic.classification_grouped_statistics import (
     _save_metrics,
     _save_pickle,
     _save_roc_pr_figure,
+    _save_selected_feature_scores,
     _save_shap_outputs,
     _scenario_label,
+    _selected_feature_columns,
     _tune_threshold,
 )
 from mysite.settings import MEDIA_ROOT
@@ -98,6 +100,17 @@ def run_classification_grouped_statistics_strict(grouped_stats_path):
             "seed": SEED,
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
+            "feature_selection": {
+                "pipeline_steps": [
+                    "median imputation",
+                    "constant-feature removal",
+                    "min-max scaling",
+                    "ANOVA SelectKBest",
+                ],
+                "k_options": _json_ready_dict(
+                    SEARCH_SETTINGS.get("param_distributions", {}).get("feature_selector__k", [])),
+                "k_note": "k is tuned inside each inner CV and clipped if larger than the current feature count.",
+            },
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
             "strict_search_iterations": STRICT_DEFAULT_SEARCH_ITER,
             "strict_max_inner_cv_splits": STRICT_MAX_INNER_CV_SPLITS,
@@ -467,6 +480,13 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
         _pipeline_params_for_json(final_estimator),
         output_dir / "trained_model_hyper_parameters.json",
     )
+    selected_feature_columns = _selected_feature_columns(final_estimator, feature_columns)
+    _save_json({"feature_labels": selected_feature_columns}, output_dir / "feature_labels.json")
+    _save_selected_feature_scores(
+        estimator=final_estimator,
+        selected_feature_columns=selected_feature_columns,
+        output_path=output_dir / "selected_feature_scores.xlsx",
+    )
     pd.DataFrame(random_search.cv_results_).sort_values(by="rank_test_score").to_excel(
         output_dir / "hyperparameter_search_results.xlsx",
         index=False,
@@ -474,7 +494,7 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
 
     feature_importance_df = _feature_importances_dataframe(
         final_estimator.named_steps["clf"],
-        feature_columns,
+        selected_feature_columns,
     )
     feature_importance_df.to_excel(output_dir / "feature_importances.xlsx", index=False)
     _save_feature_importance_plot(
@@ -485,7 +505,7 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
     shap_importance_df = _save_shap_outputs(
         estimator=final_estimator,
         X=X,
-        feature_columns=feature_columns,
+        feature_columns=selected_feature_columns,
         subjects=subjects,
         scenario_dir=output_dir,
     )
