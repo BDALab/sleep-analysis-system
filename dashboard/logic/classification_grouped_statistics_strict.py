@@ -12,6 +12,7 @@ from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedK
 
 from dashboard.logic.classification_grouped_statistics import (
     FEATURE_COVERAGE_THRESHOLD,
+    FEATURE_BLOCK_ALL,
     GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
     GROUPED_STATS_DATASET_CLINICAL_PATH,
     LABEL_MAPPING,
@@ -223,6 +224,7 @@ def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, r
 
     default_summary = _base_summary_row(
         scenario_label=scenario_label,
+        feature_block_key=FEATURE_BLOCK_ALL,
         positive_codes=positive_codes,
         negative_codes=negative_codes,
         subject_count=len(scenario_df),

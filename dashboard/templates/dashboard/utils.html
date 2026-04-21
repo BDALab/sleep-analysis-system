@@ -205,6 +205,18 @@
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
+            <h3>Ablate grouped stats</h3>
+            <p>Compare diary-only, actigraphy-only, norm-only, level-only, trend-only, and variability-only blocks.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-ablation-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Ablate grouped stats + acc</h3>
+            <p>Run the same feature-block ablation for dataset-clinical-acc.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-ablation-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
             <h3>Strict grouped stats</h3>
             <p>Run the stricter nested-CV publication variant for dataset-clinical.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical' %}"

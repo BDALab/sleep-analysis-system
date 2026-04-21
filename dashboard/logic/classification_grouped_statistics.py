@@ -58,6 +58,7 @@ GROUPED_STATS_DATASET_CLINICAL_ACC_PATH = (
         / "grouped_clinical_matrix_with_stats.xlsx"
 )
 CLASSIFICATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics"
+ABLATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics-ablation"
 IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
 TARGET_COLUMN = "#DiseaseNew"
 TARGET_LABEL_COLUMN = "#DiseaseNewLabel"
@@ -76,6 +77,45 @@ STATS_PREFIXES = (
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
 FEATURE_SELECTION_K_OPTIONS = (20, 40, 80, 120, "all")
+FEATURE_BLOCK_ALL = "all"
+FEATURE_BLOCKS = {
+    FEATURE_BLOCK_ALL: {
+        "label": "all feature blocks",
+        "description": "Use all grouped statistics features.",
+    },
+    "diary-only": {
+        "label": "diary only",
+        "description": "Use diary and diary_norm grouped statistics features only.",
+    },
+    "actigraphy-only": {
+        "label": "actigraphy only",
+        "description": "Use actigraphy and actigraphy_norm grouped statistics features only.",
+    },
+    "activity-only": {
+        "label": "activity only",
+        "description": "Use activity grouped statistics features only.",
+    },
+    "norm-only": {
+        "label": "norm features only",
+        "description": "Use *_norm grouped statistics features only.",
+    },
+    "non-norm-only": {
+        "label": "non-norm features only",
+        "description": "Exclude *_norm grouped statistics features.",
+    },
+    "level-only": {
+        "label": "level features only",
+        "description": "Use Mean, Median, Min, and Max statistics only.",
+    },
+    "trend-only": {
+        "label": "trend features only",
+        "description": "Use Slope statistics only.",
+    },
+    "variability-only": {
+        "label": "variability features only",
+        "description": "Use SD, MAD, Range, IQR, and CV statistics only.",
+    },
+}
 SEED = 17
 LABEL_MAPPING = dict(Subject.DIAGNOSIS_CODE)
 SCENARIOS = (
@@ -163,7 +203,19 @@ def classification_grouped_statistics_dataset_clinical_acc():
     return run_classification_grouped_statistics(GROUPED_STATS_DATASET_CLINICAL_ACC_PATH)
 
 
-def run_classification_grouped_statistics(grouped_stats_path):
+def classification_grouped_statistics_ablation_dataset_clinical():
+    return run_classification_grouped_statistics_ablation(GROUPED_STATS_DATASET_CLINICAL_PATH)
+
+
+def classification_grouped_statistics_ablation_dataset_clinical_acc():
+    return run_classification_grouped_statistics_ablation(GROUPED_STATS_DATASET_CLINICAL_ACC_PATH)
+
+
+def run_classification_grouped_statistics(
+        grouped_stats_path,
+        feature_block_key=FEATURE_BLOCK_ALL,
+        results_root=CLASSIFICATION_RESULTS_ROOT,
+):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
         raise FileNotFoundError(
@@ -171,14 +223,20 @@ def run_classification_grouped_statistics(grouped_stats_path):
             f"Run grouped clinical data first."
         )
 
+    if feature_block_key not in FEATURE_BLOCKS:
+        raise ValueError(
+            f"Unknown feature block {feature_block_key}. "
+            f"Available blocks: {', '.join(FEATURE_BLOCKS.keys())}"
+        )
+
     dataset_name = grouped_stats_path.parents[1].name
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = CLASSIFICATION_RESULTS_ROOT / dataset_name / run_label
+    run_dir = Path(results_root) / dataset_name / feature_block_key / run_label
     run_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
         f"Starting grouped-statistics classification for {dataset_name} "
-        f"from {grouped_stats_path}"
+        f"from {grouped_stats_path} using feature block {feature_block_key}"
     )
 
     base_df = pd.read_excel(grouped_stats_path)
@@ -188,7 +246,11 @@ def run_classification_grouped_statistics(grouped_stats_path):
     dataset_overview_df.to_excel(run_dir / "dataset_overview.xlsx", index=False)
     if not excluded_labels_df.empty:
         excluded_labels_df.to_excel(run_dir / "excluded_subjects_missing_labels.xlsx", index=False)
-    pca_output = _save_dataset_pca_projection(prepared_df, run_dir)
+    pca_output = _save_dataset_pca_projection(
+        prepared_df=prepared_df,
+        run_dir=run_dir,
+        feature_block_key=feature_block_key,
+    )
 
     _save_json(
         {
@@ -196,6 +258,10 @@ def run_classification_grouped_statistics(grouped_stats_path):
             "source_path": str(grouped_stats_path),
             "run_dir": str(run_dir),
             "seed": SEED,
+            "feature_block_key": feature_block_key,
+            "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
+            "feature_block_description": FEATURE_BLOCKS[feature_block_key]["description"],
+            "available_feature_blocks": _json_ready_dict(FEATURE_BLOCKS),
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
             "feature_selection": {
@@ -235,6 +301,7 @@ def run_classification_grouped_statistics(grouped_stats_path):
             positive_codes=positive_codes,
             negative_codes=negative_codes,
             run_dir=run_dir,
+            feature_block_key=feature_block_key,
         )
         default_summary_rows.append(scenario_result["default_summary"])
         tuned_summary_rows.append(scenario_result["tuned_summary"])
@@ -253,11 +320,96 @@ def run_classification_grouped_statistics(grouped_stats_path):
     )
     return {
         "dataset_name": dataset_name,
+        "feature_block_key": feature_block_key,
+        "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
         "run_dir": str(run_dir),
         "summary_path": str(summary_path),
         "prepared_dataset_path": str(run_dir / "prepared_dataset.xlsx"),
         "pca_dir": str(pca_output["pca_dir"]),
     }
+
+
+def run_classification_grouped_statistics_ablation(grouped_stats_path):
+    grouped_stats_path = Path(grouped_stats_path)
+    dataset_name = grouped_stats_path.parents[1].name
+    run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ablation_dir = ABLATION_RESULTS_ROOT / dataset_name / run_label
+    ablation_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info(
+        f"Starting grouped-statistics feature-block ablation for {dataset_name} "
+        f"from {grouped_stats_path}"
+    )
+
+    block_results = []
+    for feature_block_key in FEATURE_BLOCKS.keys():
+        result = run_classification_grouped_statistics(
+            grouped_stats_path=grouped_stats_path,
+            feature_block_key=feature_block_key,
+            results_root=ablation_dir,
+        )
+        block_results.append(result)
+
+    ablation_summary_path = _save_ablation_summary(
+        ablation_dir=ablation_dir,
+        block_results=block_results,
+    )
+    logger.info(
+        f"Grouped-statistics feature-block ablation finished for {dataset_name}. "
+        f"Results saved to {ablation_dir}"
+    )
+    return {
+        "dataset_name": dataset_name,
+        "run_dir": str(ablation_dir),
+        "summary_path": str(ablation_summary_path),
+        "block_results": block_results,
+    }
+
+
+def _save_ablation_summary(ablation_dir, block_results):
+    default_rows = []
+    tuned_rows = []
+    block_rows = []
+
+    for result in block_results:
+        feature_block_key = result["feature_block_key"]
+        summary_path = Path(result["summary_path"])
+        if summary_path.exists():
+            default_df = pd.read_excel(summary_path, sheet_name="default_metrics")
+            tuned_df = pd.read_excel(summary_path, sheet_name="tuned_metrics")
+            default_rows.append(default_df)
+            tuned_rows.append(tuned_df)
+
+        block_rows.append(
+            {
+                "feature_block_key": feature_block_key,
+                "feature_block_label": result["feature_block_label"],
+                "run_dir": result["run_dir"],
+                "summary_path": result["summary_path"],
+                "pca_dir": result["pca_dir"],
+            }
+        )
+
+    summary_path = ablation_dir / "ablation_summary.xlsx"
+    with pd.ExcelWriter(summary_path) as writer:
+        if default_rows:
+            pd.concat(default_rows, ignore_index=True).to_excel(
+                writer,
+                sheet_name="default_metrics",
+                index=False,
+            )
+        if tuned_rows:
+            pd.concat(tuned_rows, ignore_index=True).to_excel(
+                writer,
+                sheet_name="tuned_metrics",
+                index=False,
+            )
+        pd.DataFrame(block_rows).to_excel(
+            writer,
+            sheet_name="block_runs",
+            index=False,
+        )
+    return summary_path
 
 
 def _prepare_dataset(df):
@@ -315,7 +467,11 @@ def _prepare_dataset(df):
     return prepared, excluded_labels_df, pd.DataFrame(dataset_overview_rows)
 
 
-def _save_dataset_pca_projection(prepared_df, run_dir):
+def _save_dataset_pca_projection(
+        prepared_df,
+        run_dir,
+        feature_block_key=FEATURE_BLOCK_ALL,
+):
     pca_dir = run_dir / "pca_projection"
     pca_dir.mkdir(parents=True, exist_ok=True)
 
@@ -323,11 +479,12 @@ def _save_dataset_pca_projection(prepared_df, run_dir):
         column
         for column in prepared_df.columns
         if str(column).startswith(STATS_PREFIXES)
+           and _feature_belongs_to_block(column, feature_block_key)
     ]
     if len(prepared_df) < 2 or len(stats_columns) < 2:
         logger.warning(
-            f"Skipping PCA projection for {run_dir.name}: "
-            f"need at least 2 subjects and 2 stats features"
+            f"Skipping PCA projection for {run_dir.name} [{feature_block_key}]: "
+            f"need at least 2 subjects and 2 stats features in this block"
         )
         return {"pca_dir": pca_dir}
 
@@ -386,14 +543,14 @@ def _save_dataset_pca_projection(prepared_df, run_dir):
     _save_pca_scatter_plot(
         projection_df=projection_df,
         color_column=TARGET_LABEL_COLUMN,
-        title="PCA projection colored by diagnosis",
+        title=f"PCA projection colored by diagnosis ({feature_block_key})",
         explained_variance_ratio=pca_model.explained_variance_ratio_,
         output_path=pca_dir / "pca_by_diagnosis.png",
     )
     _save_pca_scatter_plot(
         projection_df=projection_df,
         color_column="subject_prefix",
-        title="PCA projection colored by subject prefix",
+        title=f"PCA projection colored by subject prefix ({feature_block_key})",
         explained_variance_ratio=pca_model.explained_variance_ratio_,
         output_path=pca_dir / "pca_by_subject_prefix.png",
     )
@@ -436,7 +593,13 @@ def _save_pca_scatter_plot(
     plt.close(fig)
 
 
-def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir):
+def _run_scenario_analysis(
+        prepared_df,
+        positive_codes,
+        negative_codes,
+        run_dir,
+        feature_block_key=FEATURE_BLOCK_ALL,
+):
     scenario_label = _scenario_label(positive_codes, negative_codes)
     scenario_dir = run_dir / scenario_label
     scenario_dir.mkdir(parents=True, exist_ok=True)
@@ -492,6 +655,7 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
 
     default_summary = _base_summary_row(
         scenario_label=scenario_label,
+        feature_block_key=feature_block_key,
         positive_codes=positive_codes,
         negative_codes=negative_codes,
         subject_count=len(scenario_df),
@@ -520,6 +684,11 @@ def _run_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir)
         }
 
     stats_columns = [column for column in scenario_df.columns if str(column).startswith(STATS_PREFIXES)]
+    stats_columns = [
+        column
+        for column in stats_columns
+        if _feature_belongs_to_block(column, feature_block_key)
+    ]
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
         scenario_df,
         stats_columns=stats_columns,
@@ -902,9 +1071,19 @@ def _codes_to_label(codes):
     return "+".join(LABEL_MAPPING[code] for code in codes)
 
 
-def _base_summary_row(scenario_label, positive_codes, negative_codes, subject_count, positive_count, negative_count):
+def _base_summary_row(
+        scenario_label,
+        feature_block_key,
+        positive_codes,
+        negative_codes,
+        subject_count,
+        positive_count,
+        negative_count,
+):
     return {
         "scenario": scenario_label,
+        "feature_block_key": feature_block_key,
+        "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
         "positive_codes": ",".join(str(code) for code in positive_codes),
         "positive_labels": _codes_to_label(positive_codes),
         "negative_codes": ",".join(str(code) for code in negative_codes),
@@ -920,6 +1099,45 @@ def _feature_display_name(feature_name):
         if str(feature_name).startswith(prefix):
             return f"{feature_name[len(prefix):]} ({prefix.rstrip('.')})"
     return str(feature_name)
+
+
+def _feature_belongs_to_block(feature_name, feature_block_key):
+    if feature_block_key == FEATURE_BLOCK_ALL:
+        return True
+
+    raw_name = str(feature_name)
+    stat_prefix, payload = _split_stats_feature_name(raw_name)
+    if not payload:
+        return False
+
+    if feature_block_key == "diary-only":
+        return payload.startswith(("diary.", "diary_norm."))
+    if feature_block_key == "actigraphy-only":
+        return payload.startswith(("actigraphy.", "actigraphy_norm."))
+    if feature_block_key == "activity-only":
+        return payload.startswith("activity.")
+    if feature_block_key == "norm-only":
+        return "_norm." in payload
+    if feature_block_key == "non-norm-only":
+        return "_norm." not in payload
+    if feature_block_key == "level-only":
+        return stat_prefix in {"Mean.", "Median.", "Min.", "Max."}
+    if feature_block_key == "trend-only":
+        return stat_prefix == "Slope."
+    if feature_block_key == "variability-only":
+        return stat_prefix in {"SD.", "MAD.", "Range.", "IQR.", "CV."}
+
+    raise ValueError(
+        f"Unknown feature block {feature_block_key}. "
+        f"Available blocks: {', '.join(FEATURE_BLOCKS.keys())}"
+    )
+
+
+def _split_stats_feature_name(feature_name):
+    for prefix in STATS_PREFIXES:
+        if str(feature_name).startswith(prefix):
+            return prefix, str(feature_name)[len(prefix):]
+    return "", str(feature_name)
 
 
 def _compute_binary_metrics(y_true, y_pred):

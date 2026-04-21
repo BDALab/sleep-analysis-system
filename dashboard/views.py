@@ -10,6 +10,8 @@ from django.template import loader
 
 from dashboard.export.export_hilev import export_all_features
 from dashboard.logic.classification_grouped_statistics import (
+    classification_grouped_statistics_ablation_dataset_clinical,
+    classification_grouped_statistics_ablation_dataset_clinical_acc,
     classification_grouped_statistics_dataset_clinical,
     classification_grouped_statistics_dataset_clinical_acc,
 )
@@ -454,6 +456,32 @@ def utils(request, action=None):
                 'ok': (
                     'Strict grouped-statistics classification for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-ablation-clinical':
+            logger.info('Run grouped-statistics feature-block ablation for dataset-clinical')
+            result = classification_grouped_statistics_ablation_dataset_clinical()
+            logger.info(
+                'Grouped-statistics feature-block ablation for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics feature-block ablation for dataset-clinical completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-ablation-clinical-acc':
+            logger.info('Run grouped-statistics feature-block ablation for dataset-clinical-acc')
+            result = classification_grouped_statistics_ablation_dataset_clinical_acc()
+            logger.info(
+                'Grouped-statistics feature-block ablation for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics feature-block ablation for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
                 )
             }
 
