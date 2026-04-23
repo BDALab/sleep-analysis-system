@@ -205,6 +205,18 @@
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
+            <h3>Classify + covariates</h3>
+            <p>Run grouped-stats classification for dataset-clinical with diary covariates.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Classify + covariates + acc</h3>
+            <p>Run grouped-stats classification for dataset-clinical-acc with diary covariates.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
             <h3>Ablate grouped stats</h3>
             <p>Compare diary-only, actigraphy-only, norm-only, level-only, trend-only, and variability-only blocks.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-ablation-clinical' %}"
@@ -226,6 +238,18 @@
             <h3>Strict grouped stats + acc</h3>
             <p>Run the stricter nested-CV publication variant for dataset-clinical-acc.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Strict + covariates</h3>
+            <p>Run strict grouped-stats classification for dataset-clinical with diary covariates.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Strict + covariates + acc</h3>
+            <p>Run strict grouped-stats classification for dataset-clinical-acc with diary covariates.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
     </div>

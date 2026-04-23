@@ -34,7 +34,7 @@ from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedK
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from dashboard.models import Subject
+from dashboard.models import SleepDiaryDay, Subject
 from mysite.settings import MEDIA_ROOT
 
 matplotlib.use("Agg")
@@ -58,6 +58,9 @@ GROUPED_STATS_DATASET_CLINICAL_ACC_PATH = (
         / "grouped_clinical_matrix_with_stats.xlsx"
 )
 CLASSIFICATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics"
+CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT = (
+        Path(MEDIA_ROOT) / "classification" / "grouped-statistics-with-covariates"
+)
 ABLATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics-ablation"
 IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
 TARGET_COLUMN = "#DiseaseNew"
@@ -77,6 +80,12 @@ STATS_PREFIXES = (
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
 FEATURE_SELECTION_K_OPTIONS = (20, 40, 80, 120, "all")
+DIARY_COVARIATE_COLUMNS = (
+    "sleeping_pill_rate",
+    "rest_quality_mean",
+    "caffeine_time_mean",
+    "alcohol_time_mean",
+)
 FEATURE_BLOCK_ALL = "all"
 FEATURE_BLOCKS = {
     FEATURE_BLOCK_ALL: {
@@ -122,8 +131,6 @@ SCENARIOS = (
     ((3,), (0,)),
     ((3, 2), (0,)),
     ((2,), (0,)),
-    ((3, 2, 1), (0,)),
-    ((0,), (1,)),
 )
 MODEL_PARAMS = {
     "booster": "dart",
@@ -203,6 +210,22 @@ def classification_grouped_statistics_dataset_clinical_acc():
     return run_classification_grouped_statistics(GROUPED_STATS_DATASET_CLINICAL_ACC_PATH)
 
 
+def classification_grouped_statistics_with_covariates_dataset_clinical():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_PATH,
+        include_diary_covariates=True,
+        results_root=CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT,
+    )
+
+
+def classification_grouped_statistics_with_covariates_dataset_clinical_acc():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+        include_diary_covariates=True,
+        results_root=CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT,
+    )
+
+
 def classification_grouped_statistics_ablation_dataset_clinical():
     return run_classification_grouped_statistics_ablation(GROUPED_STATS_DATASET_CLINICAL_PATH)
 
@@ -214,6 +237,7 @@ def classification_grouped_statistics_ablation_dataset_clinical_acc():
 def run_classification_grouped_statistics(
         grouped_stats_path,
         feature_block_key=FEATURE_BLOCK_ALL,
+        include_diary_covariates=False,
         results_root=CLASSIFICATION_RESULTS_ROOT,
 ):
     grouped_stats_path = Path(grouped_stats_path)
@@ -236,11 +260,15 @@ def run_classification_grouped_statistics(
 
     logger.info(
         f"Starting grouped-statistics classification for {dataset_name} "
-        f"from {grouped_stats_path} using feature block {feature_block_key}"
+        f"from {grouped_stats_path} using feature block {feature_block_key} "
+        f"(diary covariates enabled={include_diary_covariates})"
     )
 
     base_df = pd.read_excel(grouped_stats_path)
-    prepared_df, excluded_labels_df, dataset_overview_df = _prepare_dataset(base_df)
+    prepared_df, excluded_labels_df, dataset_overview_df, covariate_info = _prepare_dataset(
+        base_df,
+        include_diary_covariates=include_diary_covariates,
+    )
 
     prepared_df.to_excel(run_dir / "prepared_dataset.xlsx", index=False)
     dataset_overview_df.to_excel(run_dir / "dataset_overview.xlsx", index=False)
@@ -260,6 +288,8 @@ def run_classification_grouped_statistics(
             "seed": SEED,
             "feature_block_key": feature_block_key,
             "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
+            "include_diary_covariates": bool(include_diary_covariates),
+            "diary_covariates": _json_ready_dict(covariate_info),
             "feature_block_description": FEATURE_BLOCKS[feature_block_key]["description"],
             "available_feature_blocks": _json_ready_dict(FEATURE_BLOCKS),
             "stats_prefixes": list(STATS_PREFIXES),
@@ -322,6 +352,7 @@ def run_classification_grouped_statistics(
         "dataset_name": dataset_name,
         "feature_block_key": feature_block_key,
         "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
+        "include_diary_covariates": bool(include_diary_covariates),
         "run_dir": str(run_dir),
         "summary_path": str(summary_path),
         "prepared_dataset_path": str(run_dir / "prepared_dataset.xlsx"),
@@ -412,7 +443,7 @@ def _save_ablation_summary(ablation_dir, block_results):
     return summary_path
 
 
-def _prepare_dataset(df):
+def _prepare_dataset(df, include_diary_covariates=False):
     if "#Subject" not in df.columns:
         raise KeyError("Grouped dataset must contain #Subject")
 
@@ -438,12 +469,29 @@ def _prepare_dataset(df):
     if not stats_columns:
         raise ValueError("Grouped dataset does not contain statistics columns")
 
+    covariate_info = {
+        "enabled": bool(include_diary_covariates),
+        "columns_requested": list(DIARY_COVARIATE_COLUMNS),
+        "rows_with_diary_data": 0,
+        "subject_count_with_any_covariate": 0,
+        "subject_count_total": int(prepared["#Subject"].nunique()),
+        "non_missing_ratio": {},
+    }
+    covariate_columns = []
+    if include_diary_covariates:
+        covariates_df, covariate_summary = _subject_diary_covariates(
+            prepared["#Subject"].astype(str).dropna().unique().tolist()
+        )
+        prepared = prepared.merge(covariates_df, on="#Subject", how="left")
+        covariate_columns = [column for column in DIARY_COVARIATE_COLUMNS if column in prepared.columns]
+        covariate_info.update(covariate_summary)
+
     prepared[stats_columns] = prepared[stats_columns].replace([np.inf, -np.inf], np.nan)
     ordered_columns = [
                           column
                           for column in (*IDENTITY_COLUMNS, TARGET_COLUMN, TARGET_LABEL_COLUMN)
                           if column in prepared.columns
-                      ] + stats_columns
+                      ] + covariate_columns + stats_columns
     prepared = prepared[ordered_columns]
 
     dataset_overview_rows = []
@@ -464,7 +512,77 @@ def _prepare_dataset(df):
         }
     )
 
-    return prepared, excluded_labels_df, pd.DataFrame(dataset_overview_rows)
+    return prepared, excluded_labels_df, pd.DataFrame(dataset_overview_rows), covariate_info
+
+
+def _subject_diary_covariates(subject_codes):
+    subject_codes = [str(code) for code in subject_codes if str(code)]
+    covariates_df = pd.DataFrame({"#Subject": sorted(set(subject_codes))})
+    for column in DIARY_COVARIATE_COLUMNS:
+        covariates_df[column] = np.nan
+
+    rows = list(
+        SleepDiaryDay.objects.filter(subject__code__in=subject_codes).values(
+            "subject__code",
+            "sleeping_pill",
+            "rest_quality",
+            "caffeine_time",
+            "alcohol_time",
+        )
+    )
+    if not rows:
+        return covariates_df, {
+            "rows_with_diary_data": 0,
+            "subject_count_with_any_covariate": 0,
+            "subject_count_total": int(len(covariates_df)),
+            "non_missing_ratio": {column: 0.0 for column in DIARY_COVARIATE_COLUMNS},
+        }
+
+    diary_df = pd.DataFrame(rows)
+    diary_df["sleeping_pill_num"] = pd.to_numeric(diary_df["sleeping_pill"], errors="coerce")
+    diary_df["rest_quality_num"] = pd.to_numeric(diary_df["rest_quality"], errors="coerce")
+    diary_df["caffeine_time_min"] = diary_df["caffeine_time"].apply(_time_to_minutes)
+    diary_df["alcohol_time_min"] = diary_df["alcohol_time"].apply(_time_to_minutes)
+
+    aggregated = diary_df.groupby("subject__code", as_index=False).agg(
+        sleeping_pill_rate=("sleeping_pill_num", "mean"),
+        rest_quality_mean=("rest_quality_num", "mean"),
+        caffeine_time_mean=("caffeine_time_min", "mean"),
+        alcohol_time_mean=("alcohol_time_min", "mean"),
+    )
+    aggregated = aggregated.rename(columns={"subject__code": "#Subject"})
+    covariates_df = covariates_df.merge(aggregated, on="#Subject", how="left", suffixes=("", "_agg"))
+
+    # Fill canonical columns from aggregated results and keep the expected names only.
+    for column in DIARY_COVARIATE_COLUMNS:
+        agg_column = f"{column}_agg"
+        if agg_column in covariates_df.columns:
+            covariates_df[column] = covariates_df[agg_column]
+            covariates_df = covariates_df.drop(columns=[agg_column])
+
+    any_covariate = covariates_df[list(DIARY_COVARIATE_COLUMNS)].notna().any(axis=1)
+    summary = {
+        "rows_with_diary_data": int(len(diary_df)),
+        "subject_count_with_any_covariate": int(any_covariate.sum()),
+        "subject_count_total": int(len(covariates_df)),
+        "non_missing_ratio": {
+            column: float(covariates_df[column].notna().mean())
+            for column in DIARY_COVARIATE_COLUMNS
+        },
+    }
+    return covariates_df, summary
+
+
+def _time_to_minutes(value):
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return np.nan
+    if hasattr(value, "hour"):
+        return float(value.hour * 60 + value.minute + value.second / 60.0)
+
+    parsed = pd.to_datetime(value, format="%H:%M:%S", errors="coerce")
+    if pd.isna(parsed):
+        return np.nan
+    return float(parsed.hour * 60 + parsed.minute + parsed.second / 60.0)
 
 
 def _save_dataset_pca_projection(
@@ -689,9 +807,11 @@ def _run_scenario_analysis(
         for column in stats_columns
         if _feature_belongs_to_block(column, feature_block_key)
     ]
+    covariate_columns = [column for column in DIARY_COVARIATE_COLUMNS if column in scenario_df.columns]
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
         scenario_df,
         stats_columns=stats_columns,
+        additional_feature_columns=covariate_columns,
     )
 
     feature_coverage_df.to_excel(scenario_dir / "feature_coverage.xlsx", index=False)
@@ -916,12 +1036,28 @@ def _run_scenario_analysis(
     }
 
 
-def _prepare_scenario_features(scenario_df, stats_columns):
+def _prepare_scenario_features(scenario_df, stats_columns, additional_feature_columns=()):
     filtered = scenario_df.copy()
-    numeric_features = filtered[stats_columns].apply(pd.to_numeric, errors="coerce")
+    stats_columns = [column for column in stats_columns if column in filtered.columns]
+    additional_feature_columns = [
+        column for column in additional_feature_columns if column in filtered.columns
+    ]
+    candidate_columns = list(dict.fromkeys(stats_columns + additional_feature_columns))
+    if not candidate_columns:
+        metadata_only = filtered.copy()
+        return metadata_only, pd.DataFrame(), pd.DataFrame()
+
+    numeric_features = filtered[candidate_columns].apply(pd.to_numeric, errors="coerce")
     coverage = numeric_features.notna().mean()
-    keep_by_coverage = coverage >= FEATURE_COVERAGE_THRESHOLD
-    kept_columns = coverage[keep_by_coverage].index.tolist()
+
+    kept_columns = []
+    for column in stats_columns:
+        if coverage.get(column, 0.0) >= FEATURE_COVERAGE_THRESHOLD:
+            kept_columns.append(column)
+    for column in additional_feature_columns:
+        # Keep requested covariates whenever they contain at least one value for this scenario.
+        if coverage.get(column, 0.0) > 0:
+            kept_columns.append(column)
 
     numeric_after_coverage = numeric_features[kept_columns]
     keep_by_nonzero = numeric_after_coverage.fillna(0).abs().sum(axis=0) > 0
@@ -929,18 +1065,22 @@ def _prepare_scenario_features(scenario_df, stats_columns):
 
     feature_mapping_rows = []
     coverage_rows = []
-    for column in stats_columns:
+    for column in candidate_columns:
         display_name = _feature_display_name(column)
         kept = column in kept_columns
+        is_covariate = column in additional_feature_columns
         coverage_rows.append(
             {
                 "original_feature": column,
                 "display_feature": display_name,
+                "feature_source": "covariate" if is_covariate else "statistics",
                 "non_missing_ratio": float(coverage.get(column, 0)),
                 "kept": kept,
                 "drop_reason": (
                     ""
                     if kept
+                    else "all_missing"
+                    if is_covariate and coverage.get(column, 0) <= 0
                     else "coverage"
                     if coverage.get(column, 0) < FEATURE_COVERAGE_THRESHOLD
                     else "all_zero"
@@ -952,10 +1092,11 @@ def _prepare_scenario_features(scenario_df, stats_columns):
                 {
                     "original_feature": column,
                     "display_feature": display_name,
+                    "feature_source": "covariate" if is_covariate else "statistics",
                 }
             )
 
-    metadata_columns = [column for column in filtered.columns if column not in stats_columns]
+    metadata_columns = [column for column in filtered.columns if column not in candidate_columns]
     filtered = filtered[metadata_columns + kept_columns].copy()
     filtered = filtered.rename(columns={column: _feature_display_name(column) for column in kept_columns})
 

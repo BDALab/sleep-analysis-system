@@ -11,6 +11,7 @@ from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedKFold, cross_val_predict
 
 from dashboard.logic.classification_grouped_statistics import (
+    DIARY_COVARIATE_COLUMNS,
     FEATURE_COVERAGE_THRESHOLD,
     FEATURE_BLOCK_ALL,
     GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
@@ -53,6 +54,9 @@ from mysite.settings import MEDIA_ROOT
 logger = logging.getLogger(__name__)
 
 STRICT_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics-strict"
+STRICT_RESULTS_WITH_COVARIATES_ROOT = (
+        Path(MEDIA_ROOT) / "classification" / "grouped-statistics-strict-with-covariates"
+)
 STRICT_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_SEARCH_ITER", "20")))
 STRICT_MAX_INNER_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_STRICT_INNER_CV_SPLITS", "5")))
 
@@ -65,7 +69,27 @@ def classification_grouped_statistics_strict_dataset_clinical_acc():
     return run_classification_grouped_statistics_strict(GROUPED_STATS_DATASET_CLINICAL_ACC_PATH)
 
 
-def run_classification_grouped_statistics_strict(grouped_stats_path):
+def classification_grouped_statistics_strict_with_covariates_dataset_clinical():
+    return run_classification_grouped_statistics_strict(
+        GROUPED_STATS_DATASET_CLINICAL_PATH,
+        include_diary_covariates=True,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+    )
+
+
+def classification_grouped_statistics_strict_with_covariates_dataset_clinical_acc():
+    return run_classification_grouped_statistics_strict(
+        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+        include_diary_covariates=True,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+    )
+
+
+def run_classification_grouped_statistics_strict(
+        grouped_stats_path,
+        include_diary_covariates=False,
+        results_root=STRICT_RESULTS_ROOT,
+):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
         raise FileNotFoundError(
@@ -75,16 +99,20 @@ def run_classification_grouped_statistics_strict(grouped_stats_path):
 
     dataset_name = grouped_stats_path.parents[1].name
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = STRICT_RESULTS_ROOT / dataset_name / run_label
+    run_dir = results_root / dataset_name / run_label
     run_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
         f"Starting strict grouped-statistics classification for {dataset_name} "
-        f"from {grouped_stats_path}"
+        f"from {grouped_stats_path} "
+        f"(diary covariates enabled={include_diary_covariates})"
     )
 
     base_df = pd.read_excel(grouped_stats_path)
-    prepared_df, excluded_labels_df, dataset_overview_df = _prepare_dataset(base_df)
+    prepared_df, excluded_labels_df, dataset_overview_df, covariate_info = _prepare_dataset(
+        base_df,
+        include_diary_covariates=include_diary_covariates,
+    )
 
     prepared_df.to_excel(run_dir / "prepared_dataset.xlsx", index=False)
     dataset_overview_df.to_excel(run_dir / "dataset_overview.xlsx", index=False)
@@ -99,6 +127,8 @@ def run_classification_grouped_statistics_strict(grouped_stats_path):
             "run_dir": str(run_dir),
             "mode": "strict_nested_cv_publication",
             "seed": SEED,
+            "include_diary_covariates": bool(include_diary_covariates),
+            "diary_covariates": _json_ready_dict(covariate_info),
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
             "feature_selection": {
@@ -244,9 +274,11 @@ def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, r
         }
 
     stats_columns = [column for column in scenario_df.columns if str(column).startswith(STATS_PREFIXES)]
+    covariate_columns = [column for column in DIARY_COVARIATE_COLUMNS if column in scenario_df.columns]
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
         scenario_df,
         stats_columns=stats_columns,
+        additional_feature_columns=covariate_columns,
     )
     feature_coverage_df.to_excel(scenario_dir / "feature_coverage.xlsx", index=False)
     feature_mapping_df.to_excel(scenario_dir / "feature_name_mapping.xlsx", index=False)
