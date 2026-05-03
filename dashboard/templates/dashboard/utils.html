@@ -252,6 +252,19 @@
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
+        <div class="small-column">
+            <h3>Strict + covariates + RFE</h3>
+            <p>Run strict grouped-stats classification for dataset-clinical with diary covariates and XGBoost RFE.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Strict + covariates + RFE + acc</h3>
+            <p>Run strict grouped-stats classification for dataset-clinical-acc with diary covariates and XGBoost
+                RFE.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
     </div>
 </div>
 

@@ -15,7 +15,7 @@ import shap
 import xgboost as xgb
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_classif
+from sklearn.feature_selection import RFE, SelectKBest, VarianceThreshold, f_classif
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     auc,
@@ -80,11 +80,22 @@ STATS_PREFIXES = (
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
 FEATURE_SELECTION_K_OPTIONS = (20, 40, 80, 120, "all")
+FEATURE_SELECTION_RFE_OPTIONS = (20, 40, 80, 120)
+FEATURE_SELECTOR_MODE_KBEST = "kbest"
+FEATURE_SELECTOR_MODE_RFE = "rfe"
+FEATURE_SELECTOR_MODES = (FEATURE_SELECTOR_MODE_KBEST, FEATURE_SELECTOR_MODE_RFE)
 DIARY_COVARIATE_COLUMNS = (
     "sleeping_pill_rate",
     "rest_quality_mean",
+    "sleep_quality_mean",
+    "day_sleep_time_mean",
+    "day_sleep_count_mean",
+    "caffeine_count_mean",
+    "alcohol_count_mean",
     "caffeine_time_mean",
     "alcohol_time_mean",
+    "caffeine_time_std",
+    "alcohol_time_std",
 )
 FEATURE_BLOCK_ALL = "all"
 FEATURE_BLOCKS = {
@@ -200,6 +211,61 @@ class AdaptiveSelectKBest(BaseEstimator, TransformerMixin):
 
     def get_support(self, indices=False):
         return self.selector_.get_support(indices=indices)
+
+
+class AdaptiveRFESelector(BaseEstimator, TransformerMixin):
+    def __init__(self, n_features_to_select=40, step=0.1):
+        self.n_features_to_select = n_features_to_select
+        self.step = step
+        self.selector_ = None
+        self.effective_n_features_ = None
+        self.support_ = None
+        self.ranking_ = None
+        self.scores_ = None
+        self.pvalues_ = None
+
+    def fit(self, X, y=None):
+        n_features = int(X.shape[1])
+        if n_features <= 0:
+            raise ValueError("AdaptiveRFESelector requires at least one feature")
+
+        if self.n_features_to_select in (None, "all"):
+            self.effective_n_features_ = n_features
+            self.selector_ = None
+            self.support_ = np.ones(n_features, dtype=bool)
+            self.ranking_ = np.ones(n_features, dtype=int)
+            return self
+
+        requested = int(self.n_features_to_select)
+        self.effective_n_features_ = max(1, min(requested, n_features))
+        step = self.step
+        if isinstance(step, float):
+            step = min(max(step, 0.01), 0.99)
+        else:
+            step = max(1, int(step))
+
+        self.selector_ = RFE(
+            estimator=_build_rfe_estimator(),
+            n_features_to_select=self.effective_n_features_,
+            step=step,
+            importance_getter="auto",
+        )
+        self.selector_.fit(X, y)
+        self.support_ = self.selector_.support_
+        self.ranking_ = self.selector_.ranking_
+        return self
+
+    def transform(self, X):
+        if self.selector_ is None:
+            return X
+        return self.selector_.transform(X)
+
+    def get_support(self, indices=False):
+        if self.support_ is None:
+            raise ValueError("Selector has to be fitted before calling get_support")
+        if indices:
+            return np.where(self.support_)[0]
+        return self.support_
 
 
 def classification_grouped_statistics_dataset_clinical():
@@ -524,7 +590,12 @@ def _subject_diary_covariates(subject_codes):
     rows = list(
         SleepDiaryDay.objects.filter(subject__code__in=subject_codes).values(
             "subject__code",
+            "day_sleep_count",
+            "day_sleep_time",
+            "alcohol_count",
             "sleeping_pill",
+            "caffeine_count",
+            "sleep_quality",
             "rest_quality",
             "caffeine_time",
             "alcohol_time",
@@ -539,16 +610,28 @@ def _subject_diary_covariates(subject_codes):
         }
 
     diary_df = pd.DataFrame(rows)
+    diary_df["day_sleep_count_num"] = pd.to_numeric(diary_df["day_sleep_count"], errors="coerce")
+    diary_df["day_sleep_time_num"] = pd.to_numeric(diary_df["day_sleep_time"], errors="coerce")
+    diary_df["alcohol_count_num"] = pd.to_numeric(diary_df["alcohol_count"], errors="coerce")
     diary_df["sleeping_pill_num"] = pd.to_numeric(diary_df["sleeping_pill"], errors="coerce")
+    diary_df["caffeine_count_num"] = pd.to_numeric(diary_df["caffeine_count"], errors="coerce")
+    diary_df["sleep_quality_num"] = pd.to_numeric(diary_df["sleep_quality"], errors="coerce")
     diary_df["rest_quality_num"] = pd.to_numeric(diary_df["rest_quality"], errors="coerce")
     diary_df["caffeine_time_min"] = diary_df["caffeine_time"].apply(_time_to_minutes)
     diary_df["alcohol_time_min"] = diary_df["alcohol_time"].apply(_time_to_minutes)
 
     aggregated = diary_df.groupby("subject__code", as_index=False).agg(
+        day_sleep_count_mean=("day_sleep_count_num", "mean"),
+        day_sleep_time_mean=("day_sleep_time_num", "mean"),
+        alcohol_count_mean=("alcohol_count_num", "mean"),
         sleeping_pill_rate=("sleeping_pill_num", "mean"),
+        caffeine_count_mean=("caffeine_count_num", "mean"),
+        sleep_quality_mean=("sleep_quality_num", "mean"),
         rest_quality_mean=("rest_quality_num", "mean"),
         caffeine_time_mean=("caffeine_time_min", "mean"),
         alcohol_time_mean=("alcohol_time_min", "mean"),
+        caffeine_time_std=("caffeine_time_min", "std"),
+        alcohol_time_std=("alcohol_time_min", "std"),
     )
     aggregated = aggregated.rename(columns={"subject__code": "#Subject"})
     covariates_df = covariates_df.merge(aggregated, on="#Subject", how="left", suffixes=("", "_agg"))
@@ -865,6 +948,7 @@ def _run_scenario_analysis(
         estimator=best_estimator,
         selected_feature_columns=selected_feature_columns,
         output_path=scenario_dir / "selected_feature_scores.xlsx",
+        candidate_feature_columns=feature_columns,
     )
     pd.DataFrame(random_search.cv_results_).sort_values(
         by="rank_test_score"
@@ -1180,12 +1264,28 @@ def _evaluate_leave_one_out(estimator, X, y, subjects, diagnosis_codes, diagnosi
 
 
 def _build_pipeline():
+    return _build_pipeline_with_selector(FEATURE_SELECTOR_MODE_KBEST)
+
+
+def _build_pipeline_with_selector(feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST):
+    if feature_selector_mode not in FEATURE_SELECTOR_MODES:
+        raise ValueError(
+            f"Unknown feature selector mode {feature_selector_mode}. "
+            f"Available: {', '.join(FEATURE_SELECTOR_MODES)}"
+        )
+
+    feature_selector = (
+        AdaptiveSelectKBest(k="all")
+        if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST
+        else AdaptiveRFESelector(n_features_to_select=40, step=0.1)
+    )
+
     return Pipeline(
         [
             ("imputer", SimpleImputer(strategy="median")),
             ("variance_filter", VarianceThreshold(threshold=0.0)),
             ("scaler", MinMaxScaler(feature_range=(0, 1))),
-            ("feature_selector", AdaptiveSelectKBest(k="all")),
+            ("feature_selector", feature_selector),
             ("clf", xgb.XGBClassifier(**_resolved_model_params())),
         ]
     )
@@ -1195,6 +1295,23 @@ def _resolved_model_params():
     params = MODEL_PARAMS.copy()
     params["device"] = _default_xgb_device()
     return params
+
+
+def _build_rfe_estimator():
+    ranking_params = _resolved_model_params().copy()
+    ranking_params.update(
+        {
+            "booster": "gbtree",
+            "n_estimators": max(80, min(160, int(ranking_params.get("n_estimators", 100)))),
+            "max_depth": min(5, int(ranking_params.get("max_depth", 10))),
+            "learning_rate": min(0.2, float(ranking_params.get("learning_rate", 0.2))),
+            "subsample": min(0.9, float(ranking_params.get("subsample", 1.0))),
+            "colsample_bytree": min(0.9, float(ranking_params.get("colsample_bytree", 1.0))),
+            "gamma": min(0.2, float(ranking_params.get("gamma", 1.0))),
+            "min_child_weight": max(1.0, min(5.0, float(ranking_params.get("min_child_weight", 5.0)))),
+        }
+    )
+    return xgb.XGBClassifier(**ranking_params)
 
 
 def _default_xgb_device():
@@ -1353,21 +1470,63 @@ def _selected_feature_columns(estimator, feature_columns):
     return selected_columns.tolist()
 
 
-def _save_selected_feature_scores(estimator, selected_feature_columns, output_path):
+def _save_selected_feature_scores(
+        estimator,
+        selected_feature_columns,
+        output_path,
+        candidate_feature_columns=None,
+):
     selector = estimator.named_steps.get("feature_selector")
-    if selector is None or selector.scores_ is None:
-        pd.DataFrame(columns=["feature", "score", "p_value"]).to_excel(output_path, index=False)
+    if selector is None:
+        pd.DataFrame(columns=["feature", "score", "p_value", "rank", "selected"]).to_excel(
+            output_path, index=False
+        )
         return
 
+    if candidate_feature_columns is None:
+        candidate_feature_columns = selected_feature_columns
+    feature_after_variance = np.array(candidate_feature_columns, dtype=object)
+    variance_filter = estimator.named_steps.get("variance_filter")
+    if variance_filter is not None and hasattr(variance_filter, "get_support"):
+        variance_mask = variance_filter.get_support()
+        if len(variance_mask) == len(feature_after_variance):
+            feature_after_variance = feature_after_variance[variance_mask]
+
     selected_mask = selector.get_support()
-    score_df = pd.DataFrame(
-        {
-            "feature": selected_feature_columns,
-            "score": np.asarray(selector.scores_)[selected_mask],
-            "p_value": np.asarray(selector.pvalues_)[selected_mask],
-        }
-    ).sort_values(by="score", ascending=False).reset_index(drop=True)
-    score_df.to_excel(output_path, index=False)
+    if len(selected_mask) != len(feature_after_variance):
+        feature_after_variance = np.array(
+            [f"feature_{idx}" for idx in range(len(selected_mask))],
+            dtype=object,
+        )
+
+    if hasattr(selector, "scores_") and selector.scores_ is not None:
+        selected_feature_names = feature_after_variance[selected_mask]
+        score_df = pd.DataFrame(
+            {
+                "feature": selected_feature_names,
+                "score": np.asarray(selector.scores_)[selected_mask],
+                "p_value": np.asarray(selector.pvalues_)[selected_mask],
+                "rank": 1,
+                "selected": True,
+            }
+        ).sort_values(by="score", ascending=False).reset_index(drop=True)
+        score_df.to_excel(output_path, index=False)
+        return
+
+    if hasattr(selector, "ranking_") and selector.ranking_ is not None:
+        ranking_df = pd.DataFrame(
+            {
+                "feature": feature_after_variance,
+                "rank": np.asarray(selector.ranking_, dtype=int),
+                "selected": np.asarray(selected_mask, dtype=bool),
+            }
+        ).sort_values(by=["rank", "feature"]).reset_index(drop=True)
+        ranking_df.to_excel(output_path, index=False)
+        return
+
+    pd.DataFrame(columns=["feature", "score", "p_value", "rank", "selected"]).to_excel(
+        output_path, index=False
+    )
 
 
 def _safe_f_classif(X, y):

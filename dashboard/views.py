@@ -22,6 +22,8 @@ from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_dataset_clinical_acc,
     classification_grouped_statistics_strict_with_covariates_dataset_clinical,
     classification_grouped_statistics_strict_with_covariates_dataset_clinical_acc,
+    classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical,
+    classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc,
 )
 from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical,
@@ -511,6 +513,34 @@ def utils(request, action=None):
             context = {
                 'ok': (
                     'Strict grouped-statistics classification with diary covariates for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-covariates-rfe-clinical':
+            logger.info('Run strict grouped-statistics classification with diary covariates + RFE for dataset-clinical')
+            result = classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical()
+            logger.info(
+                'Strict grouped-statistics classification with diary covariates + RFE for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict grouped-statistics classification with diary covariates + RFE for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-covariates-rfe-clinical-acc':
+            logger.info(
+                'Run strict grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc'
+            )
+            result = classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc()
+            logger.info(
+                'Strict grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
                 )
             }

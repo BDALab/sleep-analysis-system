@@ -14,6 +14,11 @@ from dashboard.logic.classification_grouped_statistics import (
     DIARY_COVARIATE_COLUMNS,
     FEATURE_COVERAGE_THRESHOLD,
     FEATURE_BLOCK_ALL,
+    FEATURE_SELECTION_K_OPTIONS,
+    FEATURE_SELECTION_RFE_OPTIONS,
+    FEATURE_SELECTOR_MODE_KBEST,
+    FEATURE_SELECTOR_MODE_RFE,
+    FEATURE_SELECTOR_MODES,
     GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
     GROUPED_STATS_DATASET_CLINICAL_PATH,
     LABEL_MAPPING,
@@ -25,7 +30,7 @@ from dashboard.logic.classification_grouped_statistics import (
     TARGET_LABEL_COLUMN,
     _base_summary_row,
     _binarize_proba,
-    _build_pipeline,
+    _build_pipeline_with_selector,
     _classification_report_dataframe,
     _codes_to_label,
     _compute_binary_metrics,
@@ -59,6 +64,7 @@ STRICT_RESULTS_WITH_COVARIATES_ROOT = (
 )
 STRICT_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_SEARCH_ITER", "20")))
 STRICT_MAX_INNER_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_STRICT_INNER_CV_SPLITS", "5")))
+STRICT_RFE_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_RFE_SEARCH_ITER", "12")))
 
 
 def classification_grouped_statistics_strict_dataset_clinical():
@@ -85,10 +91,29 @@ def classification_grouped_statistics_strict_with_covariates_dataset_clinical_ac
     )
 
 
+def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical():
+    return run_classification_grouped_statistics_strict(
+        GROUPED_STATS_DATASET_CLINICAL_PATH,
+        include_diary_covariates=True,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
+def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc():
+    return run_classification_grouped_statistics_strict(
+        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+        include_diary_covariates=True,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
 def run_classification_grouped_statistics_strict(
         grouped_stats_path,
         include_diary_covariates=False,
         results_root=STRICT_RESULTS_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
 ):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
@@ -96,16 +121,22 @@ def run_classification_grouped_statistics_strict(
             f"Grouped statistics dataset not found: {grouped_stats_path}. "
             f"Run grouped clinical data first."
         )
+    if feature_selector_mode not in FEATURE_SELECTOR_MODES:
+        raise ValueError(
+            f"Unknown feature selector mode {feature_selector_mode}. "
+            f"Available: {', '.join(FEATURE_SELECTOR_MODES)}"
+        )
 
     dataset_name = grouped_stats_path.parents[1].name
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = results_root / dataset_name / run_label
+    mode_dir = dataset_name if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST else f"{dataset_name}-{feature_selector_mode}"
+    run_dir = results_root / mode_dir / run_label
     run_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
         f"Starting strict grouped-statistics classification for {dataset_name} "
         f"from {grouped_stats_path} "
-        f"(diary covariates enabled={include_diary_covariates})"
+        f"(diary covariates enabled={include_diary_covariates}, selector={feature_selector_mode})"
     )
 
     base_df = pd.read_excel(grouped_stats_path)
@@ -131,19 +162,14 @@ def run_classification_grouped_statistics_strict(
             "diary_covariates": _json_ready_dict(covariate_info),
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
-            "feature_selection": {
-                "pipeline_steps": [
-                    "median imputation",
-                    "constant-feature removal",
-                    "min-max scaling",
-                    "ANOVA SelectKBest",
-                ],
-                "k_options": _json_ready_dict(
-                    SEARCH_SETTINGS.get("param_distributions", {}).get("feature_selector__k", [])),
-                "k_note": "k is tuned inside each inner CV and clipped if larger than the current feature count.",
-            },
+            "feature_selector_mode": feature_selector_mode,
+            "feature_selection": _feature_selection_metadata(feature_selector_mode),
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
-            "strict_search_iterations": STRICT_DEFAULT_SEARCH_ITER,
+            "strict_search_iterations": (
+                STRICT_DEFAULT_SEARCH_ITER
+                if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST
+                else STRICT_RFE_DEFAULT_SEARCH_ITER
+            ),
             "strict_max_inner_cv_splits": STRICT_MAX_INNER_CV_SPLITS,
             "notes": [
                 "Outer evaluation uses Leave-One-Out cross-validation.",
@@ -173,6 +199,7 @@ def run_classification_grouped_statistics_strict(
             positive_codes=positive_codes,
             negative_codes=negative_codes,
             run_dir=run_dir,
+            feature_selector_mode=feature_selector_mode,
         )
         default_summary_rows.append(scenario_result["default_summary"])
         tuned_summary_rows.append(scenario_result["tuned_summary"])
@@ -198,7 +225,13 @@ def run_classification_grouped_statistics_strict(
     }
 
 
-def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, run_dir):
+def _run_strict_scenario_analysis(
+        prepared_df,
+        positive_codes,
+        negative_codes,
+        run_dir,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+):
     scenario_label = _scenario_label(positive_codes, negative_codes)
     scenario_dir = run_dir / scenario_label
     scenario_dir.mkdir(parents=True, exist_ok=True)
@@ -321,6 +354,7 @@ def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, r
         y=y,
         subjects=subjects,
         scenario_dir=scenario_dir,
+        feature_selector_mode=feature_selector_mode,
     )
     nested_results["outer_fold_details"].to_excel(scenario_dir / "outer_fold_details.xlsx", index=False)
     nested_results["subject_predictions"].to_excel(scenario_dir / "subject_predictions.xlsx", index=False)
@@ -388,6 +422,7 @@ def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, r
         subjects=subjects,
         output_dir=final_model_dir,
         title=scenario_label,
+        feature_selector_mode=feature_selector_mode,
     )
 
     top_feature_string = ", ".join(
@@ -430,7 +465,13 @@ def _run_strict_scenario_analysis(prepared_df, positive_codes, negative_codes, r
     }
 
 
-def _run_nested_leave_one_out(X, y, subjects, scenario_dir):
+def _run_nested_leave_one_out(
+        X,
+        y,
+        subjects,
+        scenario_dir,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+):
     outer_cv = LeaveOneOut()
     y_true_buffer = []
     y_pred_default_buffer = []
@@ -449,6 +490,7 @@ def _run_nested_leave_one_out(X, y, subjects, scenario_dir):
             X=X_train,
             y=y_train,
             cv=inner_cv,
+            feature_selector_mode=feature_selector_mode,
         )
         tuned_threshold = _estimate_threshold_from_training(
             estimator=best_estimator,
@@ -504,9 +546,22 @@ def _run_nested_leave_one_out(X, y, subjects, scenario_dir):
     }
 
 
-def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir, title):
+def _fit_final_interpretation_model(
+        X,
+        y,
+        feature_columns,
+        subjects,
+        output_dir,
+        title,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+):
     inner_cv = _build_inner_cv(y)
-    final_estimator, random_search = _run_search_with_cv(X=X, y=y, cv=inner_cv)
+    final_estimator, random_search = _run_search_with_cv(
+        X=X,
+        y=y,
+        cv=inner_cv,
+        feature_selector_mode=feature_selector_mode,
+    )
     final_estimator = _fit_with_device_fallback(final_estimator, X, y)
 
     _save_pickle(final_estimator, output_dir / "trained_model.pkl")
@@ -520,6 +575,7 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
         estimator=final_estimator,
         selected_feature_columns=selected_feature_columns,
         output_path=output_dir / "selected_feature_scores.xlsx",
+        candidate_feature_columns=feature_columns,
     )
     pd.DataFrame(random_search.cv_results_).sort_values(by="rank_test_score").to_excel(
         output_dir / "hyperparameter_search_results.xlsx",
@@ -550,11 +606,10 @@ def _fit_final_interpretation_model(X, y, feature_columns, subjects, output_dir,
     }
 
 
-def _run_search_with_cv(X, y, cv):
-    search_settings = SEARCH_SETTINGS.copy()
-    search_settings["n_iter"] = STRICT_DEFAULT_SEARCH_ITER
+def _run_search_with_cv(X, y, cv, feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST):
+    search_settings = _search_settings_for_selector_mode(feature_selector_mode)
     search = RandomizedSearchCV(
-        estimator=_build_pipeline(),
+        estimator=_build_pipeline_with_selector(feature_selector_mode),
         cv=cv,
         **search_settings,
     )
@@ -571,6 +626,56 @@ def _run_search_with_cv(X, y, cv):
         else:
             raise
     return search.best_estimator_, search
+
+
+def _search_settings_for_selector_mode(feature_selector_mode):
+    search_settings = SEARCH_SETTINGS.copy()
+    param_distributions = {
+        key: value
+        for key, value in SEARCH_SETTINGS.get("param_distributions", {}).items()
+    }
+
+    if feature_selector_mode == FEATURE_SELECTOR_MODE_RFE:
+        param_distributions.pop("feature_selector__k", None)
+        param_distributions["feature_selector__n_features_to_select"] = list(FEATURE_SELECTION_RFE_OPTIONS)
+        param_distributions["feature_selector__step"] = [0.05, 0.1, 0.2]
+        search_settings["n_iter"] = STRICT_RFE_DEFAULT_SEARCH_ITER
+    else:
+        param_distributions["feature_selector__k"] = list(FEATURE_SELECTION_K_OPTIONS)
+        search_settings["n_iter"] = STRICT_DEFAULT_SEARCH_ITER
+
+    search_settings["param_distributions"] = param_distributions
+    return search_settings
+
+
+def _feature_selection_metadata(feature_selector_mode):
+    if feature_selector_mode == FEATURE_SELECTOR_MODE_RFE:
+        return {
+            "pipeline_steps": [
+                "median imputation",
+                "constant-feature removal",
+                "min-max scaling",
+                "XGBoost RFE",
+            ],
+            "n_features_options": list(FEATURE_SELECTION_RFE_OPTIONS),
+            "step_options": [0.05, 0.1, 0.2],
+            "note": (
+                "RFE runs inside each inner CV split; "
+                "n_features_to_select is clipped if larger than current feature count."
+            ),
+        }
+    return {
+        "pipeline_steps": [
+            "median imputation",
+            "constant-feature removal",
+            "min-max scaling",
+            "ANOVA SelectKBest",
+        ],
+        "k_options": _json_ready_dict(
+            SEARCH_SETTINGS.get("param_distributions", {}).get("feature_selector__k", [])
+        ),
+        "k_note": "k is tuned inside each inner CV and clipped if larger than the current feature count.",
+    }
 
 
 def _estimate_threshold_from_training(estimator, X_train, y_train, cv):
