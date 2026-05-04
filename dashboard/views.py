@@ -14,8 +14,12 @@ from dashboard.logic.classification_grouped_statistics import (
     classification_grouped_statistics_ablation_dataset_clinical_acc,
     classification_grouped_statistics_dataset_clinical,
     classification_grouped_statistics_dataset_clinical_acc,
+    classification_grouped_statistics_rfe_dataset_clinical,
+    classification_grouped_statistics_rfe_dataset_clinical_acc,
     classification_grouped_statistics_with_covariates_dataset_clinical,
     classification_grouped_statistics_with_covariates_dataset_clinical_acc,
+    classification_grouped_statistics_with_covariates_rfe_dataset_clinical,
+    classification_grouped_statistics_with_covariates_rfe_dataset_clinical_acc,
 )
 from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_dataset_clinical,
@@ -438,6 +442,32 @@ def utils(request, action=None):
                     f'{result["run_dir"]}'
                 )
             }
+        elif action == 'classification-grouped-stats-rfe-clinical':
+            logger.info('Run grouped-statistics classification + RFE for dataset-clinical')
+            result = classification_grouped_statistics_rfe_dataset_clinical()
+            logger.info(
+                'Grouped-statistics classification + RFE for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification + RFE for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-rfe-clinical-acc':
+            logger.info('Run grouped-statistics classification + RFE for dataset-clinical-acc')
+            result = classification_grouped_statistics_rfe_dataset_clinical_acc()
+            logger.info(
+                'Grouped-statistics classification + RFE for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification + RFE for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
         elif action == 'classification-grouped-stats-covariates-clinical':
             logger.info('Run grouped-statistics classification with diary covariates for dataset-clinical')
             result = classification_grouped_statistics_with_covariates_dataset_clinical()
@@ -461,6 +491,32 @@ def utils(request, action=None):
             context = {
                 'ok': (
                     'Grouped-statistics classification with diary covariates for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-covariates-rfe-clinical':
+            logger.info('Run grouped-statistics classification with diary covariates + RFE for dataset-clinical')
+            result = classification_grouped_statistics_with_covariates_rfe_dataset_clinical()
+            logger.info(
+                'Grouped-statistics classification with diary covariates + RFE for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification with diary covariates + RFE for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-covariates-rfe-clinical-acc':
+            logger.info('Run grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc')
+            result = classification_grouped_statistics_with_covariates_rfe_dataset_clinical_acc()
+            logger.info(
+                'Grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
                 )
             }

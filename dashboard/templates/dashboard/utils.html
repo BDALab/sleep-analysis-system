@@ -205,6 +205,18 @@
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
+            <h3>Classify grouped stats + RFE</h3>
+            <p>Run grouped-statistics classification for dataset-clinical with XGBoost RFE feature selection.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-rfe-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Classify grouped stats + RFE + acc</h3>
+            <p>Run grouped-statistics classification for dataset-clinical-acc with XGBoost RFE feature selection.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-rfe-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
             <h3>Classify + covariates</h3>
             <p>Run grouped-stats classification for dataset-clinical with diary covariates.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical' %}"
@@ -214,6 +226,18 @@
             <h3>Classify + covariates + acc</h3>
             <p>Run grouped-stats classification for dataset-clinical-acc with diary covariates.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Classify + covariates + RFE</h3>
+            <p>Run grouped-stats classification for dataset-clinical with diary covariates and XGBoost RFE.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-rfe-clinical' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+        <div class="small-column">
+            <h3>Classify + covariates + RFE + acc</h3>
+            <p>Run grouped-stats classification for dataset-clinical-acc with diary covariates and XGBoost RFE.</p>
+            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-rfe-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">

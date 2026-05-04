@@ -79,6 +79,7 @@ STATS_PREFIXES = (
 )
 FEATURE_COVERAGE_THRESHOLD = 0.90
 TUNING_MAX_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_TUNING_CV_SPLITS", "5")))
+RFE_TUNING_N_ITER = max(1, int(os.environ.get("GENEACTIV_RFE_SEARCH_ITER", "40")))
 FEATURE_SELECTION_K_OPTIONS = (20, 40, 80, 120, "all")
 FEATURE_SELECTION_RFE_OPTIONS = (20, 40, 80, 120)
 FEATURE_SELECTOR_MODE_KBEST = "kbest"
@@ -292,6 +293,38 @@ def classification_grouped_statistics_with_covariates_dataset_clinical_acc():
     )
 
 
+def classification_grouped_statistics_rfe_dataset_clinical():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_PATH,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
+def classification_grouped_statistics_rfe_dataset_clinical_acc():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
+def classification_grouped_statistics_with_covariates_rfe_dataset_clinical():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_PATH,
+        include_diary_covariates=True,
+        results_root=CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
+def classification_grouped_statistics_with_covariates_rfe_dataset_clinical_acc():
+    return run_classification_grouped_statistics(
+        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+        include_diary_covariates=True,
+        results_root=CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
 def classification_grouped_statistics_ablation_dataset_clinical():
     return run_classification_grouped_statistics_ablation(GROUPED_STATS_DATASET_CLINICAL_PATH)
 
@@ -305,6 +338,7 @@ def run_classification_grouped_statistics(
         feature_block_key=FEATURE_BLOCK_ALL,
         include_diary_covariates=False,
         results_root=CLASSIFICATION_RESULTS_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
 ):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
@@ -318,16 +352,26 @@ def run_classification_grouped_statistics(
             f"Unknown feature block {feature_block_key}. "
             f"Available blocks: {', '.join(FEATURE_BLOCKS.keys())}"
         )
+    if feature_selector_mode not in FEATURE_SELECTOR_MODES:
+        raise ValueError(
+            f"Unknown feature selector mode {feature_selector_mode}. "
+            f"Available: {', '.join(FEATURE_SELECTOR_MODES)}"
+        )
 
     dataset_name = grouped_stats_path.parents[1].name
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = Path(results_root) / dataset_name / feature_block_key / run_label
+    mode_dataset_name = (
+        dataset_name
+        if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST
+        else f"{dataset_name}-{feature_selector_mode}"
+    )
+    run_dir = Path(results_root) / mode_dataset_name / feature_block_key / run_label
     run_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
         f"Starting grouped-statistics classification for {dataset_name} "
         f"from {grouped_stats_path} using feature block {feature_block_key} "
-        f"(diary covariates enabled={include_diary_covariates})"
+        f"(diary covariates enabled={include_diary_covariates}, selector={feature_selector_mode})"
     )
 
     base_df = pd.read_excel(grouped_stats_path)
@@ -355,21 +399,13 @@ def run_classification_grouped_statistics(
             "feature_block_key": feature_block_key,
             "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
             "include_diary_covariates": bool(include_diary_covariates),
+            "feature_selector_mode": feature_selector_mode,
             "diary_covariates": _json_ready_dict(covariate_info),
             "feature_block_description": FEATURE_BLOCKS[feature_block_key]["description"],
             "available_feature_blocks": _json_ready_dict(FEATURE_BLOCKS),
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
-            "feature_selection": {
-                "pipeline_steps": [
-                    "median imputation",
-                    "constant-feature removal",
-                    "min-max scaling",
-                    "ANOVA SelectKBest",
-                ],
-                "k_options": list(FEATURE_SELECTION_K_OPTIONS),
-                "k_note": "k is tuned inside CV; when k exceeds current feature count it is clipped safely.",
-            },
+            "feature_selection": _feature_selection_metadata(feature_selector_mode),
             "tuning_cv_strategy": "StratifiedKFold",
             "tuning_cv_splits_cap": TUNING_MAX_CV_SPLITS,
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
@@ -383,7 +419,7 @@ def run_classification_grouped_statistics(
                 for positive_codes, negative_codes in SCENARIOS
             ],
             "model_params": _json_ready_dict(_resolved_model_params()),
-            "search_settings": _json_ready_dict(SEARCH_SETTINGS),
+            "search_settings": _json_ready_dict(_search_settings_for_selector_mode(feature_selector_mode)),
         },
         run_dir / "analysis_metadata.json",
     )
@@ -398,6 +434,7 @@ def run_classification_grouped_statistics(
             negative_codes=negative_codes,
             run_dir=run_dir,
             feature_block_key=feature_block_key,
+            feature_selector_mode=feature_selector_mode,
         )
         default_summary_rows.append(scenario_result["default_summary"])
         tuned_summary_rows.append(scenario_result["tuned_summary"])
@@ -418,6 +455,7 @@ def run_classification_grouped_statistics(
         "dataset_name": dataset_name,
         "feature_block_key": feature_block_key,
         "feature_block_label": FEATURE_BLOCKS[feature_block_key]["label"],
+        "feature_selector_mode": feature_selector_mode,
         "include_diary_covariates": bool(include_diary_covariates),
         "run_dir": str(run_dir),
         "summary_path": str(summary_path),
@@ -800,6 +838,7 @@ def _run_scenario_analysis(
         negative_codes,
         run_dir,
         feature_block_key=FEATURE_BLOCK_ALL,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
 ):
     scenario_label = _scenario_label(positive_codes, negative_codes)
     scenario_dir = run_dir / scenario_label
@@ -936,7 +975,11 @@ def _run_scenario_analysis(
     np.save(scenario_dir / "X_original.npy", X)
     np.save(scenario_dir / "y_original.npy", y)
 
-    best_estimator, random_search = _run_hyperparameter_search(X, y)
+    best_estimator, random_search = _run_hyperparameter_search(
+        X,
+        y,
+        feature_selector_mode=feature_selector_mode,
+    )
     _save_pickle(best_estimator, scenario_dir / "trained_model.pkl")
     _save_json(
         _pipeline_params_for_json(best_estimator),
@@ -1191,12 +1234,13 @@ def _prepare_scenario_features(scenario_df, stats_columns, additional_feature_co
     )
 
 
-def _run_hyperparameter_search(X, y):
+def _run_hyperparameter_search(X, y, feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST):
     cv = _build_tuning_cv(y)
+    search_settings = _search_settings_for_selector_mode(feature_selector_mode)
     search = RandomizedSearchCV(
-        estimator=_build_pipeline(),
+        estimator=_build_pipeline_with_selector(feature_selector_mode),
         cv=cv,
-        **SEARCH_SETTINGS,
+        **search_settings,
     )
     try:
         search.fit(X, y)
@@ -1211,6 +1255,60 @@ def _run_hyperparameter_search(X, y):
         else:
             raise
     return search.best_estimator_, search
+
+
+def _search_settings_for_selector_mode(feature_selector_mode):
+    if feature_selector_mode not in FEATURE_SELECTOR_MODES:
+        raise ValueError(
+            f"Unknown feature selector mode {feature_selector_mode}. "
+            f"Available: {', '.join(FEATURE_SELECTOR_MODES)}"
+        )
+
+    search_settings = SEARCH_SETTINGS.copy()
+    param_distributions = {
+        key: value
+        for key, value in SEARCH_SETTINGS.get("param_distributions", {}).items()
+    }
+
+    if feature_selector_mode == FEATURE_SELECTOR_MODE_RFE:
+        param_distributions.pop("feature_selector__k", None)
+        param_distributions["feature_selector__n_features_to_select"] = list(FEATURE_SELECTION_RFE_OPTIONS)
+        param_distributions["feature_selector__step"] = [0.05, 0.1, 0.2]
+        search_settings["n_iter"] = RFE_TUNING_N_ITER
+    else:
+        param_distributions["feature_selector__k"] = list(FEATURE_SELECTION_K_OPTIONS)
+
+    search_settings["param_distributions"] = param_distributions
+    return search_settings
+
+
+def _feature_selection_metadata(feature_selector_mode):
+    if feature_selector_mode == FEATURE_SELECTOR_MODE_RFE:
+        return {
+            "pipeline_steps": [
+                "median imputation",
+                "constant-feature removal",
+                "min-max scaling",
+                "XGBoost RFE",
+            ],
+            "n_features_options": list(FEATURE_SELECTION_RFE_OPTIONS),
+            "step_options": [0.05, 0.1, 0.2],
+            "search_iterations": RFE_TUNING_N_ITER,
+            "note": (
+                "RFE is tuned inside CV; n_features_to_select is clipped "
+                "if larger than current feature count."
+            ),
+        }
+    return {
+        "pipeline_steps": [
+            "median imputation",
+            "constant-feature removal",
+            "min-max scaling",
+            "ANOVA SelectKBest",
+        ],
+        "k_options": list(FEATURE_SELECTION_K_OPTIONS),
+        "k_note": "k is tuned inside CV; when k exceeds current feature count it is clipped safely.",
+    }
 
 
 def _build_tuning_cv(y):
