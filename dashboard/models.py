@@ -49,6 +49,13 @@ class Subject(models.Model):
         (0, 'HC'),
     ]
     diagnosis_code = models.PositiveSmallIntegerField('diagnosis code', choices=DIAGNOSIS_CODE, blank=True, null=True)
+    # Imported clinical scores from KARDIOVIZE.xlsx and preDLB_shared.xlsx.
+    rbdq = models.FloatField('RBDq', blank=True, null=True)
+    updrs = models.FloatField('UPDRS', blank=True, null=True)
+    mfs = models.FloatField('MFS', blank=True, null=True)
+    visuospatial = models.FloatField('Visuospatial', blank=True, null=True)
+    attention = models.FloatField('Attention', blank=True, null=True)
+    executive = models.FloatField('Executive', blank=True, null=True)
 
     def __str__(self):
         return self.code
