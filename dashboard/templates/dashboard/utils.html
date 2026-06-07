@@ -98,6 +98,67 @@
                     </table>
                 {% endfor %}
             {% endif %}
+            {% if feature_correlation_results %}
+                <h3>Feature correlation analysis</h3>
+                <p>
+                    Subject-level analysis for preDLB vs HC, preDLB + MCI-AD vs HC,
+                    and MCI-AD vs HC using Shapiro-Wilk normality tests,
+                    Mann-Whitney U tests, and feature-by-clinical-outcome
+                    Spearman correlations with Benjamini-Hochberg FDR correction.
+                </p>
+                <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
+                    <thead>
+                    <tr>
+                        <th style="padding: 0.5em; text-align: left;">Dataset</th>
+                        <th style="padding: 0.5em; text-align: left;">Scenario</th>
+                        <th style="padding: 0.5em; text-align: right;">Features</th>
+                        <th style="padding: 0.5em; text-align: right;">Reference n</th>
+                        <th style="padding: 0.5em; text-align: right;">Case n</th>
+                        <th style="padding: 0.5em; text-align: right;">Outcomes</th>
+                        <th style="padding: 0.5em; text-align: right;">Correlation pairs</th>
+                        <th style="padding: 0.5em; text-align: right;">Group FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: right;">Clinical correlations FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: left;">Output</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for result in feature_correlation_results %}
+                        <tr>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ result.dataset_name }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ result.scenario_label }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.feature_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.reference_subject_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.case_subject_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.clinical_outcome_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.correlation_pair_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.significant_group_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.significant_correlation_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ result.output_path }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
 
@@ -239,6 +300,12 @@
             <p>Test age, gender, and education between each planned diagnostic comparison.</p>
             <a href="{% url 'dashboard:utils' 'verify-covariates' %}"
                class="button button-small button-fix-width">Verify</a>
+        </div>
+        <div class="small-column">
+            <h3>Feature correlations</h3>
+            <p>Run all diagnostic scenarios and correlate calculated features with all clinical outcomes.</p>
+            <a href="{% url 'dashboard:utils' 'feature-correlation-analysis' %}"
+               class="button button-small button-fix-width">Analyze</a>
         </div>
         <div class="small-column">
             <h3>Calculate covariates</h3>

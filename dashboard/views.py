@@ -34,6 +34,7 @@ from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical_acc_dreamt,
     verify_all_covariate_datasets,
 )
+from dashboard.logic.feature_correlation_analysis import analyze_all_feature_datasets
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.group_data import group_all_covariate_datasets
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
@@ -398,6 +399,14 @@ def utils(request, action=None):
             context = {
                 'ok': f'Covariate verification completed; control: {selected_text}',
                 'covariate_verification': results,
+            }
+        elif action == 'feature-correlation-analysis':
+            logger.info('Run all diagnostic-scenario feature correlation analyses')
+            results = analyze_all_feature_datasets()
+            logger.info('Feature correlation analysis completed')
+            context = {
+                'ok': 'Feature correlation analysis completed',
+                'feature_correlation_results': results,
             }
         elif action == 'covariates-clinical':
             logger.info('Calculate covariates for dataset-clinical.xlsx')
