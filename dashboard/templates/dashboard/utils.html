@@ -228,6 +228,8 @@
                     and MCI-AD vs HC using Shapiro-Wilk normality tests,
                     Mann-Whitney U tests, and feature-by-clinical-outcome
                     Spearman correlations with Benjamini-Hochberg FDR correction.
+                    Significant variants are also reduced into interpretable feature
+                    families using within-family redundancy clustering.
                 </p>
                 <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
                     <thead>
@@ -240,7 +242,9 @@
                         <th style="padding: 0.5em; text-align: right;">Outcomes</th>
                         <th style="padding: 0.5em; text-align: right;">Correlation pairs</th>
                         <th style="padding: 0.5em; text-align: right;">Group FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: right;">Group family candidates</th>
                         <th style="padding: 0.5em; text-align: right;">Clinical correlations FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: right;">Correlation family candidates</th>
                         <th style="padding: 0.5em; text-align: left;">Output</th>
                     </tr>
                     </thead>
@@ -272,7 +276,13 @@
                                 {{ result.significant_group_count }}
                             </td>
                             <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.group_family_candidate_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
                                 {{ result.significant_correlation_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.correlation_family_candidate_count }}
                             </td>
                             <td style="padding: 0.5em; border-top: 1px solid #ddd;">
                                 {{ result.output_path }}

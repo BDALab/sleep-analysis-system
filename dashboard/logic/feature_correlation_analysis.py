@@ -1,10 +1,13 @@
 import logging
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+from scipy.cluster.hierarchy import fcluster, linkage
+from scipy.spatial.distance import squareform
 from scipy.stats import mannwhitneyu, shapiro, spearmanr
 
 from dashboard.logic.analysis_preparation import prepare_all_analysis_datasets
@@ -33,6 +36,7 @@ HC_CODE = 0
 MCI_CODE = 2
 PRE_DLB_CODE = 3
 ALPHA = 0.05
+FAMILY_CORRELATION_THRESHOLD = 0.85
 ANALYSIS_SCENARIOS = (
     {
         "key": "predlb-vs-hc",
@@ -87,6 +91,18 @@ CORRELATION_COLUMNS = (
     "p",
     "adj p",
 )
+AGGREGATION_PREFERENCE = {
+    "Median": 0,
+    "IQR": 1,
+    "MAD": 1,
+    "Mean": 2,
+    "SD": 3,
+    "CV": 3,
+    "Min": 4,
+    "Max": 4,
+    "Range": 4,
+    "Slope": 5,
+}
 
 
 def analyze_all_feature_datasets():
@@ -181,6 +197,13 @@ def analyze_feature_dataset(
     significant_correlations_df = correlations_df[
         pd.to_numeric(correlations_df["adj p"], errors="coerce") < ALPHA
         ].copy()
+    family_outputs = _build_interpretable_feature_families(
+        analysis_df,
+        feature_columns,
+        results_df,
+        correlations_df,
+        scenario,
+    )
     significant_by_outcome = {
         outcome: int(
             (
@@ -232,6 +255,24 @@ def analyze_feature_dataset(
                 "setting": "multiple_testing",
                 "value": "Benjamini-Hochberg FDR separately across features for each clinical outcome",
             },
+            {
+                "setting": "feature_family_method",
+                "value": (
+                    "Project-specific conceptual families followed by complete-linkage "
+                    "clustering of absolute within-cohort Spearman correlations"
+                ),
+            },
+            {
+                "setting": "feature_family_redundancy_threshold",
+                "value": f"|Spearman rho| >= {FAMILY_CORRELATION_THRESHOLD:.2f}",
+            },
+            {
+                "setting": "family_representative_selection",
+                "value": (
+                    "largest absolute effect, then completeness, robust aggregation "
+                    "preference, non-normalized source, and FDR-adjusted p-value"
+                ),
+            },
             {"setting": "alpha", "value": ALPHA},
             {"setting": "feature_count", "value": len(feature_columns)},
             {"setting": "clinical_outcome_count", "value": len(CLINICAL_OUTCOMES)},
@@ -255,6 +296,14 @@ def analyze_feature_dataset(
                 "setting": "significant_clinical_correlations_FDR",
                 "value": int(len(significant_correlations_df)),
             },
+            {
+                "setting": "group_family_candidate_count",
+                "value": int(len(family_outputs["group_candidates"])),
+            },
+            {
+                "setting": "correlation_family_candidate_count",
+                "value": int(len(family_outputs["correlation_candidates"])),
+            },
             *[
                 {
                     "setting": f"significant_{outcome}_correlations_FDR",
@@ -277,6 +326,26 @@ def analyze_feature_dataset(
         )
         correlations_df.to_excel(writer, sheet_name="correlations_long", index=False)
         normality_df.to_excel(writer, sheet_name="normality_details", index=False)
+        family_outputs["family_map"].to_excel(
+            writer,
+            sheet_name="family_map",
+            index=False,
+        )
+        family_outputs["family_summary"].to_excel(
+            writer,
+            sheet_name="family_summary",
+            index=False,
+        )
+        family_outputs["group_candidates"].to_excel(
+            writer,
+            sheet_name="group_family_candidates",
+            index=False,
+        )
+        family_outputs["correlation_candidates"].to_excel(
+            writer,
+            sheet_name="corr_family_candidates",
+            index=False,
+        )
         settings_df.to_excel(writer, sheet_name="settings", index=False)
         _style_workbook(writer.book)
 
@@ -308,6 +377,12 @@ def analyze_feature_dataset(
         "clinical_outcome_count": int(len(CLINICAL_OUTCOMES)),
         "correlation_pair_count": int(len(correlations_df)),
         "significant_correlation_count": int(len(significant_correlations_df)),
+        "group_family_candidate_count": int(
+            len(family_outputs["group_candidates"])
+        ),
+        "correlation_family_candidate_count": int(
+            len(family_outputs["correlation_candidates"])
+        ),
         "significant_by_outcome": significant_by_outcome,
         "preview": results_df.head(20).replace({np.nan: None}).to_dict("records"),
     }
@@ -457,6 +532,509 @@ def _correlation_matrix(correlations_df, value_column):
     )
     matrix = matrix.reindex(columns=list(CLINICAL_OUTCOMES))
     return matrix.reset_index()
+
+
+def _build_interpretable_feature_families(
+        analysis_df,
+        feature_columns,
+        group_results_df,
+        correlations_df,
+        scenario,
+):
+    family_map = _cluster_feature_families(analysis_df, feature_columns)
+    group_candidates = _select_group_family_candidates(
+        analysis_df,
+        group_results_df,
+        family_map,
+        scenario,
+    )
+    correlation_candidates = _select_correlation_family_candidates(
+        correlations_df,
+        family_map,
+    )
+    family_summary = _summarize_family_candidates(
+        group_results_df,
+        correlations_df,
+        family_map,
+        group_candidates,
+        correlation_candidates,
+    )
+    return {
+        "family_map": family_map,
+        "family_summary": family_summary,
+        "group_candidates": group_candidates,
+        "correlation_candidates": correlation_candidates,
+    }
+
+
+def _cluster_feature_families(
+        analysis_df,
+        feature_columns,
+        threshold=FAMILY_CORRELATION_THRESHOLD,
+):
+    metadata = pd.DataFrame(
+        [_feature_metadata(feature) for feature in feature_columns]
+    )
+    cluster_labels = {}
+    for family, family_rows in metadata.groupby("Feature family", sort=True):
+        features = family_rows["Features"].sort_values().tolist()
+        if len(features) == 1:
+            labels = np.array([1], dtype=int)
+        else:
+            numeric = analysis_df[features].apply(
+                pd.to_numeric,
+                errors="coerce",
+            )
+            correlations = numeric.corr(
+                method="spearman",
+                min_periods=3,
+            ).abs()
+            distances = 1.0 - correlations
+            distances = distances.fillna(1.0).clip(lower=0.0, upper=1.0)
+            np.fill_diagonal(distances.values, 0.0)
+            tree = linkage(
+                squareform(distances.values, checks=False),
+                method="complete",
+            )
+            labels = fcluster(
+                tree,
+                t=1.0 - threshold,
+                criterion="distance",
+            )
+
+        ordered_clusters = {
+            old_label: new_label
+            for new_label, old_label in enumerate(
+                sorted(
+                    set(labels),
+                    key=lambda label: min(
+                        feature
+                        for feature, current_label in zip(features, labels)
+                        if current_label == label
+                    ),
+                ),
+                start=1,
+            )
+        }
+        family_slug = _slugify(family)
+        for feature, label in zip(features, labels):
+            cluster_labels[feature] = (
+                f"{family_slug}-C{ordered_clusters[label]:02d}"
+            )
+
+    metadata["Redundancy cluster"] = metadata["Features"].map(cluster_labels)
+    cluster_sizes = metadata.groupby("Redundancy cluster")["Features"].size()
+    metadata["Cluster size"] = metadata["Redundancy cluster"].map(cluster_sizes)
+    completeness = analysis_df[feature_columns].apply(
+        lambda column: pd.to_numeric(
+            column,
+            errors="coerce",
+        ).replace([np.inf, -np.inf], np.nan).notna().sum()
+    )
+    metadata["Available n"] = metadata["Features"].map(completeness).astype(int)
+    metadata["Redundancy threshold"] = (
+        f"|Spearman rho| >= {threshold:.2f}"
+    )
+    return metadata[
+        [
+            "Features",
+            "Feature family",
+            "Redundancy cluster",
+            "Cluster size",
+            "Source",
+            "Nightly summary",
+            "Measurement",
+            "Normalized source",
+            "Available n",
+            "Redundancy threshold",
+        ]
+    ].sort_values(
+        ["Feature family", "Redundancy cluster", "Features"]
+    ).reset_index(drop=True)
+
+
+def _feature_metadata(feature):
+    parts = str(feature).split(".", 2)
+    aggregation = parts[0] if parts else ""
+    source = parts[1] if len(parts) > 1 else "unknown"
+    measurement = parts[2] if len(parts) > 2 else str(feature)
+    return {
+        "Features": feature,
+        "Feature family": _feature_family(source, measurement),
+        "Source": source,
+        "Nightly summary": aggregation,
+        "Measurement": measurement,
+        "Normalized source": source.endswith("_norm"),
+    }
+
+
+def _feature_family(source, measurement):
+    source_lower = source.lower()
+    measurement_lower = measurement.lower()
+    if source_lower.startswith(("actigraphy", "diary")):
+        rules = (
+            ("sleep onset latency", "Sleep timing: onset latency"),
+            ("wake after sleep onset", "Nocturnal wakefulness"),
+            ("wake after sleep offset", "Post-sleep wakefulness"),
+            ("awakening > 5 minutes", "Awakenings"),
+            ("wake bouts", "Awakenings"),
+            ("sleep efficiency", "Sleep efficiency"),
+            ("sleep fragmentation", "Sleep fragmentation"),
+            ("total sleep time", "Sleep duration"),
+            ("time in bed", "Time in bed"),
+        )
+        for keyword, family in rules:
+            if keyword in measurement_lower:
+                return family
+        return "Other sleep measures"
+
+    if source_lower == "activity":
+        if re.search(r"\b(1st|5th|10th|20th) percentile\b", measurement_lower):
+            return "Activity level: lower distribution"
+        if re.search(r"\b(80th|90th|95th|99th) percentile\b", measurement_lower):
+            return "Activity level: upper distribution"
+        if any(
+                keyword in measurement_lower
+                for keyword in (
+                        "standard deviation",
+                        "variance",
+                        "median absolute deviation",
+                        "index of dispersion",
+                        "range",
+                        "interquartile",
+                        "interpercentile",
+                        "interdencile",
+                        "modulation",
+                )
+        ):
+            return "Activity variability and dispersion"
+        if any(
+                keyword in measurement_lower
+                for keyword in (
+                        "skewness",
+                        "kurtosis",
+                )
+        ):
+            return "Activity distribution shape"
+        if any(
+                keyword in measurement_lower
+                for keyword in (
+                        "entropy",
+                        "teager kaiser",
+                )
+        ):
+            return "Activity complexity and energy"
+        if any(
+                keyword in measurement_lower
+                for keyword in (
+                        "relative position",
+                        "max",
+                        "min",
+                )
+        ):
+            return "Activity extrema and timing"
+        if any(
+                keyword in measurement_lower
+                for keyword in (
+                        "mean",
+                        "median",
+                        "mode",
+                        "harmonic mean",
+                )
+        ):
+            return "Activity level: central tendency"
+        return "Other activity measures"
+
+    return "Other measures"
+
+
+def _select_group_family_candidates(
+        analysis_df,
+        group_results_df,
+        family_map,
+        scenario,
+):
+    significant = group_results_df[
+        pd.to_numeric(group_results_df["adj p"], errors="coerce") < ALPHA
+        ].copy()
+    columns = [
+        "Feature family",
+        "Redundancy cluster",
+        "Representative feature",
+        "Cluster members",
+        "Member count",
+        "Significant member count",
+        f"median ({scenario['reference_label']})",
+        f"median ({scenario['case_label']})",
+        "Rank-biserial effect",
+        "Absolute effect",
+        "Effect direction",
+        "Available n",
+        "FDR p",
+        "Selection basis",
+    ]
+    if significant.empty:
+        return pd.DataFrame(columns=columns)
+
+    candidates = significant.merge(family_map, on="Features", how="left")
+    effect_rows = []
+    for feature in candidates["Features"]:
+        reference = _numeric_values(
+            analysis_df.loc[
+                analysis_df["analysis_group"] == "reference",
+                feature,
+            ]
+        )
+        case = _numeric_values(
+            analysis_df.loc[
+                analysis_df["analysis_group"] == "case",
+                feature,
+            ]
+        )
+        effect = _rank_biserial_effect(reference, case)
+        effect_rows.append(
+            {
+                "Features": feature,
+                "Rank-biserial effect": effect,
+                "Absolute effect": abs(effect) if effect is not None else np.nan,
+                "Available n": int(len(reference) + len(case)),
+            }
+        )
+    effects = pd.DataFrame(effect_rows)
+    candidates = candidates.drop(columns=["Available n"]).merge(
+        effects,
+        on="Features",
+        how="left",
+    )
+    candidates = _add_representative_sort_columns(candidates)
+
+    output_rows = []
+    for cluster, rows in candidates.groupby("Redundancy cluster", sort=True):
+        representative = rows.sort_values(
+            [
+                "Absolute effect",
+                "Available n",
+                "_aggregation_preference",
+                "_normalized_preference",
+                "adj p",
+                "Features",
+            ],
+            ascending=[False, False, True, True, True, True],
+        ).iloc[0]
+        cluster_members = family_map.loc[
+            family_map["Redundancy cluster"] == cluster,
+            "Features",
+        ].sort_values().tolist()
+        effect = representative["Rank-biserial effect"]
+        direction = (
+            f"{scenario['reference_label']} higher"
+            if effect > 0
+            else f"{scenario['case_label']} higher"
+            if effect < 0
+            else "no direction"
+        )
+        output_rows.append(
+            {
+                "Feature family": representative["Feature family"],
+                "Redundancy cluster": cluster,
+                "Representative feature": representative["Features"],
+                "Cluster members": "; ".join(cluster_members),
+                "Member count": len(cluster_members),
+                "Significant member count": int(len(rows)),
+                f"median ({scenario['reference_label']})": representative[
+                    f"median ({scenario['reference_label']})"
+                ],
+                f"median ({scenario['case_label']})": representative[
+                    f"median ({scenario['case_label']})"
+                ],
+                "Rank-biserial effect": effect,
+                "Absolute effect": representative["Absolute effect"],
+                "Effect direction": direction,
+                "Available n": int(representative["Available n"]),
+                "FDR p": representative["adj p"],
+                "Selection basis": (
+                    "Largest absolute group effect in the redundancy cluster; "
+                    "ties favor completeness, robust summary, raw source, then FDR p"
+                ),
+            }
+        )
+    return pd.DataFrame(output_rows, columns=columns).sort_values(
+        ["Absolute effect", "FDR p"],
+        ascending=[False, True],
+    ).reset_index(drop=True)
+
+
+def _select_correlation_family_candidates(correlations_df, family_map):
+    significant = correlations_df[
+        pd.to_numeric(correlations_df["adj p"], errors="coerce") < ALPHA
+        ].copy()
+    columns = [
+        "Clinical outcome",
+        "Feature family",
+        "Redundancy cluster",
+        "Representative feature",
+        "Cluster members",
+        "Member count",
+        "Significant member count",
+        "n",
+        "Spearman rho",
+        "Absolute rho",
+        "Direction",
+        "p",
+        "FDR p",
+        "Selection basis",
+    ]
+    if significant.empty:
+        return pd.DataFrame(columns=columns)
+
+    candidates = significant.merge(family_map, on="Features", how="left")
+    candidates["Absolute rho"] = candidates["Spearman rho"].abs()
+    candidates = _add_representative_sort_columns(candidates)
+    output_rows = []
+    for (outcome, cluster), rows in candidates.groupby(
+            ["Clinical outcome", "Redundancy cluster"],
+            sort=True,
+    ):
+        representative = rows.sort_values(
+            [
+                "Absolute rho",
+                "n",
+                "_aggregation_preference",
+                "_normalized_preference",
+                "adj p",
+                "Features",
+            ],
+            ascending=[False, False, True, True, True, True],
+        ).iloc[0]
+        cluster_members = family_map.loc[
+            family_map["Redundancy cluster"] == cluster,
+            "Features",
+        ].sort_values().tolist()
+        rho = representative["Spearman rho"]
+        output_rows.append(
+            {
+                "Clinical outcome": outcome,
+                "Feature family": representative["Feature family"],
+                "Redundancy cluster": cluster,
+                "Representative feature": representative["Features"],
+                "Cluster members": "; ".join(cluster_members),
+                "Member count": len(cluster_members),
+                "Significant member count": int(len(rows)),
+                "n": int(representative["n"]),
+                "Spearman rho": rho,
+                "Absolute rho": abs(rho),
+                "Direction": "positive" if rho > 0 else "negative",
+                "p": representative["p"],
+                "FDR p": representative["adj p"],
+                "Selection basis": (
+                    "Largest absolute rho in the outcome-specific redundancy "
+                    "cluster; ties favor completeness, robust summary, raw source, "
+                    "then FDR p"
+                ),
+            }
+        )
+    return pd.DataFrame(output_rows, columns=columns).sort_values(
+        ["Clinical outcome", "Absolute rho", "FDR p"],
+        ascending=[True, False, True],
+    ).reset_index(drop=True)
+
+
+def _summarize_family_candidates(
+        group_results_df,
+        correlations_df,
+        family_map,
+        group_candidates,
+        correlation_candidates,
+):
+    rows = []
+    significant_group = group_results_df[
+        pd.to_numeric(group_results_df["adj p"], errors="coerce") < ALPHA
+        ].merge(family_map, on="Features", how="left")
+    for family, family_rows in significant_group.groupby(
+            "Feature family",
+            sort=True,
+    ):
+        selected = group_candidates[
+            group_candidates["Feature family"] == family
+            ]
+        rows.append(
+            {
+                "Analysis": "Group difference",
+                "Clinical outcome": "",
+                "Feature family": family,
+                "Significant variants": int(len(family_rows)),
+                "Redundancy clusters": int(
+                    family_rows["Redundancy cluster"].nunique()
+                ),
+                "Candidate representatives": int(len(selected)),
+            }
+        )
+
+    significant_correlations = correlations_df[
+        pd.to_numeric(correlations_df["adj p"], errors="coerce") < ALPHA
+        ].merge(family_map, on="Features", how="left")
+    for (outcome, family), family_rows in significant_correlations.groupby(
+            ["Clinical outcome", "Feature family"],
+            sort=True,
+    ):
+        selected = correlation_candidates[
+            (correlation_candidates["Clinical outcome"] == outcome)
+            & (correlation_candidates["Feature family"] == family)
+            ]
+        rows.append(
+            {
+                "Analysis": "Clinical correlation",
+                "Clinical outcome": outcome,
+                "Feature family": family,
+                "Significant variants": int(len(family_rows)),
+                "Redundancy clusters": int(
+                    family_rows["Redundancy cluster"].nunique()
+                ),
+                "Candidate representatives": int(len(selected)),
+            }
+        )
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "Analysis",
+            "Clinical outcome",
+            "Feature family",
+            "Significant variants",
+            "Redundancy clusters",
+            "Candidate representatives",
+        ],
+    )
+
+
+def _add_representative_sort_columns(df):
+    ranked = df.copy()
+    ranked["_aggregation_preference"] = ranked["Nightly summary"].map(
+        AGGREGATION_PREFERENCE
+    ).fillna(9)
+    ranked["_normalized_preference"] = ranked["Normalized source"].astype(int)
+    return ranked
+
+
+def _rank_biserial_effect(reference, case):
+    if not len(reference) or not len(case):
+        return None
+    try:
+        statistic, _ = mannwhitneyu(
+            reference,
+            case,
+            alternative="two-sided",
+            method="auto",
+        )
+    except ValueError:
+        return None
+    return _safe_float(
+        (2.0 * statistic / (len(reference) * len(case))) - 1.0
+    )
+
+
+def _slugify(value):
+    slug = re.sub(r"[^a-z0-9]+", "-", str(value).lower()).strip("-")
+    return slug or "family"
 
 
 def _numeric_values(series):
@@ -648,6 +1226,51 @@ def _style_workbook(workbook):
             if isinstance(value, (int, float)) and value < ALPHA:
                 worksheet.cell(row, 6).fill = significant_fill
                 worksheet.cell(row, 6).font = Font(bold=True)
+
+    family_map = workbook["family_map"]
+    family_map.freeze_panes = "A2"
+    family_widths = (48, 38, 34, 12, 18, 18, 38, 18, 12, 24)
+    for column, width in enumerate(family_widths, start=1):
+        family_map.column_dimensions[get_column_letter(column)].width = width
+
+    family_summary = workbook["family_summary"]
+    summary_widths = (22, 18, 38, 20, 20, 24)
+    for column, width in enumerate(summary_widths, start=1):
+        family_summary.column_dimensions[get_column_letter(column)].width = width
+
+    group_candidates = workbook["group_family_candidates"]
+    group_candidates.freeze_panes = "A2"
+    group_candidate_widths = (
+        38, 34, 48, 70, 14, 18, 16, 16, 16, 16, 16, 12, 14, 58,
+    )
+    for column, width in enumerate(group_candidate_widths, start=1):
+        group_candidates.column_dimensions[
+            get_column_letter(column)
+        ].width = width
+    for row in range(2, group_candidates.max_row + 1):
+        for column in range(1, group_candidates.max_column + 1):
+            group_candidates.cell(row, column).alignment = Alignment(
+                wrap_text=column in (3, 4, 14),
+                vertical="top",
+            )
+        group_candidates.row_dimensions[row].height = 58
+
+    correlation_candidates = workbook["corr_family_candidates"]
+    correlation_candidates.freeze_panes = "A2"
+    correlation_candidate_widths = (
+        18, 38, 34, 48, 70, 14, 18, 10, 16, 16, 12, 14, 14, 58,
+    )
+    for column, width in enumerate(correlation_candidate_widths, start=1):
+        correlation_candidates.column_dimensions[
+            get_column_letter(column)
+        ].width = width
+    for row in range(2, correlation_candidates.max_row + 1):
+        for column in range(1, correlation_candidates.max_column + 1):
+            correlation_candidates.cell(row, column).alignment = Alignment(
+                wrap_text=column in (4, 5, 14),
+                vertical="top",
+            )
+        correlation_candidates.row_dimensions[row].height = 72
 
     settings = workbook["settings"]
     settings.column_dimensions["A"].width = 42
