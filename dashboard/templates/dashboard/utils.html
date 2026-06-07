@@ -38,6 +38,66 @@
                 <h3><img src="{% static 'dashboard/images/fail.png' %}" alt="" class="image-icon"/>
                     {{ fail }}</h3>
             {% endif %}
+            {% if covariate_verification %}
+                {% for result in covariate_verification %}
+                    <h3>{{ result.source }}</h3>
+                    <p>
+                        Subject-level screening at alpha={{ result.alpha }}.
+                        Covariates recommended for control:
+                        <strong>
+                            {% if result.selected_covariates %}
+                                {{ result.selected_covariates|join:", " }}
+                            {% else %}
+                                none
+                            {% endif %}
+                        </strong>.
+                        Full report: {{ result.output_path }}
+                    </p>
+                    <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
+                        <thead>
+                        <tr>
+                            <th style="padding: 0.5em; text-align: left;">Scenario</th>
+                            <th style="padding: 0.5em; text-align: left;">Covariate</th>
+                            <th style="padding: 0.5em; text-align: left;">Test</th>
+                            <th style="padding: 0.5em; text-align: right;">Negative n</th>
+                            <th style="padding: 0.5em; text-align: right;">Positive n</th>
+                            <th style="padding: 0.5em; text-align: right;">Statistic</th>
+                            <th style="padding: 0.5em; text-align: right;">p-value</th>
+                            <th style="padding: 0.5em; text-align: left;">Decision</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for test in result.tests %}
+                            <tr>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd;">{{ test.scenario }}</td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd;">{{ test.covariate }}</td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd;">{{ test.test }}</td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                    {{ test.negative_n }}
+                                </td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                    {{ test.positive_n }}
+                                </td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                    {{ test.statistic|floatformat:4 }}
+                                </td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                    {{ test.p_value|floatformat:6 }}
+                                </td>
+                                <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                    {% if test.control_recommended %}
+                                        Control
+                                    {% else %}
+                                        Do not control
+                                    {% endif %}
+                                    {% if test.note %}<br/>{{ test.note }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endfor %}
+            {% endif %}
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
 
@@ -175,14 +235,20 @@
                class="button button-small button-fix-width">Validate</a>
         </div>
         <div class="small-column">
+            <h3>Verify covariates</h3>
+            <p>Test age, gender, and education between each planned diagnostic comparison.</p>
+            <a href="{% url 'dashboard:utils' 'verify-covariates' %}"
+               class="button button-small button-fix-width">Verify</a>
+        </div>
+        <div class="small-column">
             <h3>Calculate covariates</h3>
-            <p>Calculate covariates from dataset-clinical for age and gender</p>
+            <p>Control only age, gender, and education variables selected by verification.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical' %}"
                class="button button-small button-fix-width">Calculate</a>
         </div>
         <div class="small-column">
             <h3>Calculate covariates with activity</h3>
-            <p>Calculate covariates from dataset-clinical-acc for age and gender</p>
+            <p>Control only verified covariates in dataset-clinical-acc.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical-acc' %}"
                class="button button-small button-fix-width">Calculate</a>
         </div>

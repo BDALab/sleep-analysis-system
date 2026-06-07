@@ -62,7 +62,7 @@ CLASSIFICATION_RESULTS_WITH_COVARIATES_ROOT = (
         Path(MEDIA_ROOT) / "classification" / "grouped-statistics-with-covariates"
 )
 ABLATION_RESULTS_ROOT = Path(MEDIA_ROOT) / "classification" / "grouped-statistics-ablation"
-IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
+IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Education", "#Disease")
 TARGET_COLUMN = "#DiseaseNew"
 TARGET_LABEL_COLUMN = "#DiseaseNewLabel"
 STATS_PREFIXES = (

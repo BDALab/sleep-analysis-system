@@ -32,6 +32,7 @@ from dashboard.logic.classification_grouped_statistics_strict import (
 from dashboard.logic.covariates import (
     calculate_covariates_dataset_clinical,
     calculate_covariates_dataset_clinical_acc_dreamt,
+    verify_all_covariate_datasets,
 )
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.group_data import group_all_covariate_datasets
@@ -382,12 +383,33 @@ def utils(request, action=None):
             context = {
                 'ok': 'Validation against Dreamt data completed'
             }
+        elif action == 'verify-covariates':
+            logger.info('Run exploratory covariate verification')
+            results = verify_all_covariate_datasets()
+            selected = sorted(
+                {
+                    covariate
+                    for result in results
+                    for covariate in result["selected_covariates"]
+                }
+            )
+            selected_text = ", ".join(selected) if selected else "none"
+            logger.info(f'Covariate verification completed; selected: {selected_text}')
+            context = {
+                'ok': f'Covariate verification completed; control: {selected_text}',
+                'covariate_verification': results,
+            }
         elif action == 'covariates-clinical':
             logger.info('Calculate covariates for dataset-clinical.xlsx')
             result = calculate_covariates_dataset_clinical()
             logger.info(f'Covariates for dataset-clinical.xlsx completed: {result["data_dir"]}')
             context = {
-                'ok': f'Covariates for dataset-clinical.xlsx completed: {result["data_dir"]}'
+                'ok': (
+                    f'Covariates for dataset-clinical.xlsx completed using '
+                    f'{", ".join(result["selected_covariates"]) or "no covariates"}: '
+                    f'{result["data_dir"]}'
+                ),
+                'covariate_verification': [result["verification"]],
             }
         elif action == 'covariates-clinical-acc':
             logger.info('Calculate covariates for dataset-clinical-acc.xlsx')
@@ -398,9 +420,11 @@ def utils(request, action=None):
             )
             context = {
                 'ok': (
-                    'Covariates for dataset-clinical-acc-dreamt.xlsx completed: '
+                    'Covariates for dataset-clinical-acc.xlsx completed using '
+                    f'{", ".join(result["selected_covariates"]) or "no covariates"}: '
                     f'{result["data_dir"]}'
-                )
+                ),
+                'covariate_verification': [result["verification"]],
             }
         elif action == 'group-clinical-data':
             logger.info('Group clinical data by subject and calculate grouped statistics')

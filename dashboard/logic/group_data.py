@@ -14,7 +14,7 @@ DATASET_CLINICAL_PATH = (
 DATASET_CLINICAL_ACC_PATH = (
         Path(MEDIA_ROOT) / "covariates" / "dataset-clinical-acc" / "data" / "clinical_data.xlsx"
 )
-IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Disease")
+IDENTITY_COLUMNS = ("#Subject", "#Gender", "#Age", "#Education", "#Disease")
 MIN_NIGHTS_PER_SUBJECT = 5
 
 

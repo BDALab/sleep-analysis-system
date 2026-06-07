@@ -16,6 +16,7 @@ def export_all_features_clinic_activity_index():
                '#Date',
                '#Age',
                '#Gender',
+               '#Education',
                '#Disease',
                'actigraphy.Time in bed',
                'actigraphy.Sleep onset latency',
@@ -121,6 +122,7 @@ def _create_rows(export_list, sleep_nights, subject):
             night.date,
             subject.age,
             subject.sex,
+            subject.education_years,
             subject.get_diagnosis_display(),
 
             getattr(night, 'tib'),

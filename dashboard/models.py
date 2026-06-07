@@ -56,6 +56,7 @@ class Subject(models.Model):
     visuospatial = models.FloatField('Visuospatial', blank=True, null=True)
     attention = models.FloatField('Attention', blank=True, null=True)
     executive = models.FloatField('Executive', blank=True, null=True)
+    education_years = models.FloatField('Education (years)', blank=True, null=True)
 
     def __str__(self):
         return self.code
