@@ -245,6 +245,24 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
             ].any()
         )
     ]
+    scenario_covariates = [
+        {
+            "scenario": scenario_label,
+            "selected_covariates": [
+                covariate
+                for covariate in CANDIDATE_COVARIATES
+                if bool(
+                    tests_df.loc[
+                        (tests_df["scenario"] == scenario_label)
+                        & (tests_df["covariate"] == covariate)
+                        & (tests_df["control_recommended"]),
+                        "control_recommended",
+                    ].any()
+                )
+            ],
+        }
+        for scenario_label in tests_df["scenario"].drop_duplicates().tolist()
+    ]
 
     if output_dir is None:
         output_dir = Path(MEDIA_ROOT) / "covariates" / source_path.stem / "results"
@@ -256,11 +274,23 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
         groups_df.to_excel(writer, sheet_name="group_descriptives", index=False)
         pd.DataFrame(
             {
-                "setting": ["alpha", "selection_rule", "selected_covariates"],
+                "setting": [
+                    "alpha",
+                    "selection_rule",
+                    "selected_covariates_union",
+                    *[
+                        f"selected_covariates_{item['scenario']}"
+                        for item in scenario_covariates
+                    ],
+                ],
                 "value": [
                     alpha,
-                    "Control when p < alpha in at least one planned scenario",
+                    "Control separately within each scenario when p < alpha",
                     ", ".join(selected_covariates) or "none",
+                    *[
+                        ", ".join(item["selected_covariates"]) or "none"
+                        for item in scenario_covariates
+                    ],
                 ],
             }
         ).to_excel(writer, sheet_name="settings", index=False)
@@ -271,6 +301,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
         "alpha": alpha,
         "subject_count": int(subject_df["#Subject"].nunique()) if not subject_df.empty else 0,
         "selected_covariates": selected_covariates,
+        "scenario_covariates": scenario_covariates,
         "tests": tests_df.replace({np.nan: None}).to_dict("records"),
         "group_descriptives": groups_df.replace({np.nan: None}).to_dict("records"),
     }

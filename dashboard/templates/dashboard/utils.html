@@ -160,16 +160,22 @@
                     <h3>{{ result.source }}</h3>
                     <p>
                         Subject-level screening at alpha={{ result.alpha }}.
-                        Covariates recommended for control:
-                        <strong>
-                            {% if result.selected_covariates %}
-                                {{ result.selected_covariates|join:", " }}
-                            {% else %}
-                                none
-                            {% endif %}
-                        </strong>.
+                        Covariates are selected separately for each diagnostic scenario.
                         Full report: {{ result.output_path }}
                     </p>
+                    {% if result.scenario_covariates %}
+                        <p>
+                            {% for scenario in result.scenario_covariates %}
+                                <strong>{{ scenario.scenario }}:</strong>
+                                {% if scenario.selected_covariates %}
+                                    {{ scenario.selected_covariates|join:", " }}
+                                {% else %}
+                                    none
+                                {% endif %}
+                                {% if not forloop.last %}<br/>{% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
                     <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
                         <thead>
                         <tr>
@@ -442,8 +448,8 @@
             <section class="utils-section">
                 <div class="utils-section-header">
                     <h2>Statistical Workflow</h2>
-                    <p>Verify covariates, prepare adjusted datasets, aggregate subjects, and run exploratory
-                        analyses.</p>
+                    <p>Covariates are selected per scenario; correlation analysis prepares fresh adjusted data
+                        first.</p>
                 </div>
                 <div class="utils-grid">
         <div class="small-column">
@@ -459,22 +465,22 @@
                class="button button-small button-fix-width">Analyze</a>
         </div>
         <div class="small-column">
-            <h3>Calculate covariates</h3>
-            <p>Control only age, gender, and education variables selected by verification.</p>
+            <h3>Prepare clinical dataset</h3>
+            <p>Create scenario-specific adjusted and raw grouped data for all downstream analyses.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical' %}"
-               class="button button-small button-fix-width">Calculate</a>
+               class="button button-small button-fix-width">Prepare</a>
         </div>
         <div class="small-column">
-            <h3>Calculate covariates with activity</h3>
-            <p>Control only verified covariates in dataset-clinical-acc.</p>
+            <h3>Prepare activity dataset</h3>
+            <p>Create scenario-specific adjusted and raw grouped data for dataset-clinical-acc.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical-acc' %}"
-               class="button button-small button-fix-width">Calculate</a>
+               class="button button-small button-fix-width">Prepare</a>
         </div>
         <div class="small-column">
-            <h3>Group clinical data</h3>
-            <p>Group covariate-adjusted clinical data by subject and calculate grouped statistics.</p>
+            <h3>Prepare both datasets</h3>
+            <p>Run verification, scenario adjustment, raw grouping, and adjusted grouping for both datasets.</p>
             <a href="{% url 'dashboard:utils' 'group-clinical-data' %}"
-               class="button button-small button-fix-width">Group</a>
+               class="button button-small button-fix-width">Prepare all</a>
         </div>
                 </div>
             </section>
@@ -482,7 +488,7 @@
             <section class="utils-section">
                 <div class="utils-section-header">
                     <h2>Classification Experiments</h2>
-                    <p>Choose a model family, then expand only the experiment set you need.</p>
+                    <p>Every run prepares raw grouped data and adjusts covariates inside each CV training fold.</p>
                 </div>
                 <details class="utils-subgroup" open>
                     <summary>Standard and feature-selection models</summary>

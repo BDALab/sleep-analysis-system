@@ -10,7 +10,9 @@ from sklearn.base import clone
 from sklearn.metrics import auc, average_precision_score, precision_recall_curve, roc_curve
 from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedKFold, cross_val_predict
 
+from dashboard.logic.analysis_preparation import prepare_analysis_dataset
 from dashboard.logic.classification_grouped_statistics import (
+    ADJUSTMENT_COVARIATE_COLUMNS,
     DIARY_COVARIATE_COLUMNS,
     FEATURE_COVERAGE_THRESHOLD,
     FEATURE_BLOCK_ALL,
@@ -19,8 +21,6 @@ from dashboard.logic.classification_grouped_statistics import (
     FEATURE_SELECTOR_MODE_KBEST,
     FEATURE_SELECTOR_MODE_RFE,
     FEATURE_SELECTOR_MODES,
-    GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
-    GROUPED_STATS_DATASET_CLINICAL_PATH,
     LABEL_MAPPING,
     SCENARIOS,
     SEARCH_SETTINGS,
@@ -68,32 +68,32 @@ STRICT_RFE_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_RFE
 
 
 def classification_grouped_statistics_strict_dataset_clinical():
-    return run_classification_grouped_statistics_strict(GROUPED_STATS_DATASET_CLINICAL_PATH)
+    return _run_prepared_strict_classification("dataset-clinical")
 
 
 def classification_grouped_statistics_strict_dataset_clinical_acc():
-    return run_classification_grouped_statistics_strict(GROUPED_STATS_DATASET_CLINICAL_ACC_PATH)
+    return _run_prepared_strict_classification("dataset-clinical-acc")
 
 
 def classification_grouped_statistics_strict_with_covariates_dataset_clinical():
-    return run_classification_grouped_statistics_strict(
-        GROUPED_STATS_DATASET_CLINICAL_PATH,
+    return _run_prepared_strict_classification(
+        "dataset-clinical",
         include_diary_covariates=True,
         results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
     )
 
 
 def classification_grouped_statistics_strict_with_covariates_dataset_clinical_acc():
-    return run_classification_grouped_statistics_strict(
-        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+    return _run_prepared_strict_classification(
+        "dataset-clinical-acc",
         include_diary_covariates=True,
         results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
     )
 
 
 def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical():
-    return run_classification_grouped_statistics_strict(
-        GROUPED_STATS_DATASET_CLINICAL_PATH,
+    return _run_prepared_strict_classification(
+        "dataset-clinical",
         include_diary_covariates=True,
         results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
         feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
@@ -101,11 +101,29 @@ def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinica
 
 
 def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc():
-    return run_classification_grouped_statistics_strict(
-        GROUPED_STATS_DATASET_CLINICAL_ACC_PATH,
+    return _run_prepared_strict_classification(
+        "dataset-clinical-acc",
         include_diary_covariates=True,
         results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
         feature_selector_mode=FEATURE_SELECTOR_MODE_RFE,
+    )
+
+
+def _run_prepared_strict_classification(dataset_name, **kwargs):
+    preparation = prepare_analysis_dataset(dataset_name)
+    scenario_covariates = {
+        (
+            tuple(scenario["positive_codes"]),
+            tuple(scenario["negative_codes"]),
+        ): tuple(scenario["selected_covariates"])
+        for scenario in preparation["scenarios"]
+    }
+    return run_classification_grouped_statistics_strict(
+        preparation["raw_grouped_stats_path"],
+        dataset_name=dataset_name,
+        scenario_covariates=scenario_covariates,
+        preparation_manifest=preparation,
+        **kwargs,
     )
 
 
@@ -114,6 +132,9 @@ def run_classification_grouped_statistics_strict(
         include_diary_covariates=False,
         results_root=STRICT_RESULTS_ROOT,
         feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        dataset_name=None,
+        scenario_covariates=None,
+        preparation_manifest=None,
 ):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
@@ -127,7 +148,8 @@ def run_classification_grouped_statistics_strict(
             f"Available: {', '.join(FEATURE_SELECTOR_MODES)}"
         )
 
-    dataset_name = grouped_stats_path.parents[1].name
+    dataset_name = dataset_name or grouped_stats_path.parents[1].name
+    scenario_covariates = scenario_covariates or {}
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_dir = dataset_name if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST else f"{dataset_name}-{feature_selector_mode}"
     run_dir = results_root / mode_dir / run_label
@@ -164,6 +186,19 @@ def run_classification_grouped_statistics_strict(
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
             "feature_selector_mode": feature_selector_mode,
             "feature_selection": _feature_selection_metadata(feature_selector_mode),
+            "covariate_adjustment": {
+                "strategy": "foldwise linear residualization fitted on training folds only",
+                "scenario_covariates": {
+                    _scenario_label(positive_codes, negative_codes): list(
+                        scenario_covariates.get(
+                            (tuple(positive_codes), tuple(negative_codes)),
+                            (),
+                        )
+                    )
+                    for positive_codes, negative_codes in SCENARIOS
+                },
+            },
+            "preparation_manifest": _json_ready_dict(preparation_manifest or {}),
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
             "strict_search_iterations": (
                 STRICT_DEFAULT_SEARCH_ITER
@@ -200,6 +235,10 @@ def run_classification_grouped_statistics_strict(
             negative_codes=negative_codes,
             run_dir=run_dir,
             feature_selector_mode=feature_selector_mode,
+            selected_covariates=scenario_covariates.get(
+                (tuple(positive_codes), tuple(negative_codes)),
+                (),
+            ),
         )
         default_summary_rows.append(scenario_result["default_summary"])
         tuned_summary_rows.append(scenario_result["tuned_summary"])
@@ -231,6 +270,7 @@ def _run_strict_scenario_analysis(
         negative_codes,
         run_dir,
         feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        selected_covariates=(),
 ):
     scenario_label = _scenario_label(positive_codes, negative_codes)
     scenario_dir = run_dir / scenario_label
@@ -255,6 +295,7 @@ def _run_strict_scenario_analysis(
             "#Subject",
             "#Age",
             "#Gender",
+            "#Education",
             "#Disease",
             TARGET_COLUMN,
             TARGET_LABEL_COLUMN,
@@ -324,6 +365,7 @@ def _run_strict_scenario_analysis(
             "#Subject",
             "#Age",
             "#Gender",
+            "#Education",
             "#Disease",
             TARGET_COLUMN,
             TARGET_LABEL_COLUMN,
@@ -341,11 +383,26 @@ def _run_strict_scenario_analysis(
             "tuned_summary": tuned_summary,
         }
 
-    X = filtered_df[feature_columns].apply(pd.to_numeric, errors="coerce").values
+    adjustment_columns = [
+        ADJUSTMENT_COVARIATE_COLUMNS[covariate]
+        for covariate in selected_covariates
+        if ADJUSTMENT_COVARIATE_COLUMNS.get(covariate) in filtered_df.columns
+    ]
+    X = filtered_df[feature_columns + adjustment_columns].apply(
+        pd.to_numeric,
+        errors="coerce",
+    ).values
     y = filtered_df["binary_target"].astype(int).values
     subjects = filtered_df["#Subject"].astype(str).tolist()
 
-    _save_json({"feature_labels": feature_columns}, scenario_dir / "feature_labels.json")
+    _save_json(
+        {
+            "feature_labels": feature_columns,
+            "foldwise_adjustment_covariates": list(selected_covariates),
+            "foldwise_adjustment_columns": adjustment_columns,
+        },
+        scenario_dir / "feature_labels.json",
+    )
     np.save(scenario_dir / "X_original.npy", X)
     np.save(scenario_dir / "y_original.npy", y)
 
@@ -355,6 +412,7 @@ def _run_strict_scenario_analysis(
         subjects=subjects,
         scenario_dir=scenario_dir,
         feature_selector_mode=feature_selector_mode,
+        n_covariates=len(adjustment_columns),
     )
     nested_results["outer_fold_details"].to_excel(scenario_dir / "outer_fold_details.xlsx", index=False)
     nested_results["subject_predictions"].to_excel(scenario_dir / "subject_predictions.xlsx", index=False)
@@ -423,6 +481,7 @@ def _run_strict_scenario_analysis(
         output_dir=final_model_dir,
         title=scenario_label,
         feature_selector_mode=feature_selector_mode,
+        n_covariates=len(adjustment_columns),
     )
 
     top_feature_string = ", ".join(
@@ -471,6 +530,7 @@ def _run_nested_leave_one_out(
         subjects,
         scenario_dir,
         feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        n_covariates=0,
 ):
     outer_cv = LeaveOneOut()
     y_true_buffer = []
@@ -491,6 +551,7 @@ def _run_nested_leave_one_out(
             y=y_train,
             cv=inner_cv,
             feature_selector_mode=feature_selector_mode,
+            n_covariates=n_covariates,
         )
         tuned_threshold = _estimate_threshold_from_training(
             estimator=best_estimator,
@@ -554,6 +615,7 @@ def _fit_final_interpretation_model(
         output_dir,
         title,
         feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        n_covariates=0,
 ):
     inner_cv = _build_inner_cv(y)
     final_estimator, random_search = _run_search_with_cv(
@@ -561,6 +623,7 @@ def _fit_final_interpretation_model(
         y=y,
         cv=inner_cv,
         feature_selector_mode=feature_selector_mode,
+        n_covariates=n_covariates,
     )
     final_estimator = _fit_with_device_fallback(final_estimator, X, y)
 
@@ -606,10 +669,19 @@ def _fit_final_interpretation_model(
     }
 
 
-def _run_search_with_cv(X, y, cv, feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST):
+def _run_search_with_cv(
+        X,
+        y,
+        cv,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        n_covariates=0,
+):
     search_settings = _search_settings_for_selector_mode(feature_selector_mode)
     search = RandomizedSearchCV(
-        estimator=_build_pipeline_with_selector(feature_selector_mode),
+        estimator=_build_pipeline_with_selector(
+            feature_selector_mode,
+            n_covariates=n_covariates,
+        ),
         cv=cv,
         **search_settings,
     )

@@ -9,6 +9,10 @@ from django.shortcuts import render, get_object_or_404
 from django.template import loader
 
 from dashboard.export.export_hilev import export_all_features
+from dashboard.logic.analysis_preparation import (
+    prepare_all_analysis_datasets,
+    prepare_analysis_dataset,
+)
 from dashboard.logic.classification_grouped_statistics import (
     classification_grouped_statistics_ablation_dataset_clinical,
     classification_grouped_statistics_ablation_dataset_clinical_acc,
@@ -30,13 +34,10 @@ from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc,
 )
 from dashboard.logic.covariates import (
-    calculate_covariates_dataset_clinical,
-    calculate_covariates_dataset_clinical_acc_dreamt,
     verify_all_covariate_datasets,
 )
 from dashboard.logic.feature_correlation_analysis import analyze_all_feature_datasets
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
-from dashboard.logic.group_data import group_all_covariate_datasets
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .conversion.convert_dreamt import convert_64hz_dreamt
 from .export.export_actions import export_all, export_subject
@@ -387,17 +388,9 @@ def utils(request, action=None):
         elif action == 'verify-covariates':
             logger.info('Run exploratory covariate verification')
             results = verify_all_covariate_datasets()
-            selected = sorted(
-                {
-                    covariate
-                    for result in results
-                    for covariate in result["selected_covariates"]
-                }
-            )
-            selected_text = ", ".join(selected) if selected else "none"
-            logger.info(f'Covariate verification completed; selected: {selected_text}')
+            logger.info('Covariate verification completed with scenario-specific selections')
             context = {
-                'ok': f'Covariate verification completed; control: {selected_text}',
+                'ok': 'Covariate verification completed; control variables selected per scenario',
                 'covariate_verification': results,
             }
         elif action == 'feature-correlation-analysis':
@@ -409,45 +402,29 @@ def utils(request, action=None):
                 'feature_correlation_results': results,
             }
         elif action == 'covariates-clinical':
-            logger.info('Calculate covariates for dataset-clinical.xlsx')
-            result = calculate_covariates_dataset_clinical()
-            logger.info(f'Covariates for dataset-clinical.xlsx completed: {result["data_dir"]}')
+            logger.info('Prepare scenario-specific analysis data for dataset-clinical')
+            result = prepare_analysis_dataset('dataset-clinical')
             context = {
                 'ok': (
-                    f'Covariates for dataset-clinical.xlsx completed using '
-                    f'{", ".join(result["selected_covariates"]) or "no covariates"}: '
-                    f'{result["data_dir"]}'
+                    'Scenario-specific preparation for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
                 ),
-                'covariate_verification': [result["verification"]],
             }
         elif action == 'covariates-clinical-acc':
-            logger.info('Calculate covariates for dataset-clinical-acc.xlsx')
-            result = calculate_covariates_dataset_clinical_acc_dreamt()
-            logger.info(
-                'Covariates for dataset-clinical-acc.xlsx completed: '
-                f'{result["data_dir"]}'
-            )
+            logger.info('Prepare scenario-specific analysis data for dataset-clinical-acc')
+            result = prepare_analysis_dataset('dataset-clinical-acc')
             context = {
                 'ok': (
-                    'Covariates for dataset-clinical-acc.xlsx completed using '
-                    f'{", ".join(result["selected_covariates"]) or "no covariates"}: '
-                    f'{result["data_dir"]}'
+                    'Scenario-specific preparation for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
                 ),
-                'covariate_verification': [result["verification"]],
             }
         elif action == 'group-clinical-data':
-            logger.info('Group clinical data by subject and calculate grouped statistics')
-            results = group_all_covariate_datasets()
-            output_paths = ', '.join(
-                f'{result["output_path"]} | {result["stats_output_path"]}'
-                for result in results
-            )
-            logger.info(
-                'Grouped clinical data and statistics completed: '
-                f'{output_paths}'
-            )
+            logger.info('Prepare all scenario-specific analysis datasets')
+            results = prepare_all_analysis_datasets()
+            output_paths = ', '.join(result["run_dir"] for result in results)
             context = {
-                'ok': f'Grouped clinical data and statistics completed: {output_paths}'
+                'ok': f'All scenario-specific analysis data prepared: {output_paths}'
             }
         elif action == 'classification-grouped-stats-clinical':
             logger.info('Run grouped-statistics classification for dataset-clinical')

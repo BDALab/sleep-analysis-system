@@ -7,6 +7,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from scipy.stats import mannwhitneyu, shapiro, spearmanr
 
+from dashboard.logic.analysis_preparation import prepare_all_analysis_datasets
 from dashboard.models import Subject
 from mysite.settings import MEDIA_ROOT
 
@@ -90,16 +91,25 @@ CORRELATION_COLUMNS = (
 
 def analyze_all_feature_datasets():
     results = []
-    for source_path, dataset_name in (
-            (GROUPED_DATASET_CLINICAL_PATH, "dataset-clinical"),
-            (GROUPED_DATASET_CLINICAL_ACC_PATH, "dataset-clinical-acc"),
-    ):
-        for scenario in ANALYSIS_SCENARIOS:
+    preparations = prepare_all_analysis_datasets()
+    scenarios_by_key = {
+        scenario["key"]: scenario for scenario in ANALYSIS_SCENARIOS
+    }
+    for preparation in preparations:
+        for prepared_scenario in preparation["scenarios"]:
+            scenario = scenarios_by_key[prepared_scenario["scenario_key"]]
+            output_path = (
+                    Path(prepared_scenario["grouped_stats_path"]).parent.parent
+                    / "correlation"
+                    / "feature_clinical_correlation_matrix.xlsx"
+            )
             results.append(
                 analyze_feature_dataset(
-                    source_path,
-                    dataset_name=dataset_name,
+                    prepared_scenario["grouped_stats_path"],
+                    dataset_name=preparation["dataset_name"],
                     scenario=scenario,
+                    output_path=output_path,
+                    selected_covariates=prepared_scenario["selected_covariates"],
                 )
             )
     return results
@@ -110,6 +120,7 @@ def analyze_feature_dataset(
         dataset_name=None,
         scenario=None,
         output_path=None,
+        selected_covariates=(),
 ):
     source_path = Path(source_path)
     if not source_path.exists():
@@ -184,6 +195,10 @@ def analyze_feature_dataset(
         [
             {"setting": "source", "value": str(source_path)},
             {"setting": "scenario", "value": scenario["label"]},
+            {
+                "setting": "controlled_covariates",
+                "value": ", ".join(selected_covariates) or "none",
+            },
             {
                 "setting": "cohort",
                 "value": (
