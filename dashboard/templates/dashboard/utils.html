@@ -5,6 +5,123 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'dashboard/default.css' %}" media="all">
 <link rel="stylesheet" type="text/css" href="{% static 'dashboard/fonts.css' %}" media="all">
+<style>
+    .utils-actions {
+        --utils-blue: #174f80;
+        --utils-blue-soft: #eaf2f7;
+        --utils-gold: #fdc601;
+        --utils-ink: #263746;
+        clear: both;
+        display: grid;
+        gap: 2rem;
+        margin-top: 2rem;
+        text-align: left;
+    }
+
+    .utils-section {
+        overflow: hidden;
+        border: 1px solid #dbe4eb;
+        border-radius: 14px;
+        background: linear-gradient(145deg, #ffffff 0%, #f5f8fa 100%);
+        box-shadow: 0 10px 30px rgba(23, 79, 128, 0.08);
+    }
+
+    .utils-section-header {
+        padding: 1.4rem 1.6rem 1.2rem;
+        border-left: 6px solid var(--utils-gold);
+        background: linear-gradient(90deg, var(--utils-blue-soft), #ffffff);
+    }
+
+    .utils-section-header h2 {
+        margin: 0 0 0.25rem;
+        color: var(--utils-blue);
+        font-size: 1.55rem;
+        letter-spacing: 0.02em;
+    }
+
+    .utils-section-header p {
+        margin: 0;
+        color: #617383;
+    }
+
+    .utils-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1px;
+        background: #dbe4eb;
+    }
+
+    .utils-grid .small-column {
+        box-sizing: border-box;
+        display: flex;
+        float: none;
+        flex-direction: column;
+        width: auto;
+        min-height: 210px;
+        margin: 0;
+        padding: 1.4rem;
+        background: #ffffff;
+    }
+
+    .utils-grid .small-column h3 {
+        margin: 0 0 0.6rem;
+        color: var(--utils-ink);
+        font-size: 1.2rem;
+        text-transform: none;
+    }
+
+    .utils-grid .small-column p {
+        flex: 1;
+        margin: 0 0 1rem;
+        color: #667786;
+        line-height: 1.55;
+    }
+
+    .utils-grid .button {
+        box-sizing: border-box;
+        width: 100%;
+        margin: auto 0 0;
+        padding: 0.75rem 1rem;
+        transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .utils-grid .button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(23, 79, 128, 0.16);
+    }
+
+    .utils-subgroup {
+        border-top: 1px solid #dbe4eb;
+        background: #ffffff;
+    }
+
+    .utils-subgroup summary {
+        padding: 1rem 1.5rem;
+        cursor: pointer;
+        color: var(--utils-blue);
+        font-size: 1.15rem;
+        font-weight: 700;
+        list-style-position: inside;
+    }
+
+    .utils-subgroup summary:hover {
+        background: var(--utils-blue-soft);
+    }
+
+    @media screen and (max-width: 640px) {
+        .utils-actions {
+            gap: 1.25rem;
+        }
+
+        .utils-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .utils-grid .small-column {
+            min-height: 0;
+        }
+    }
+</style>
 
 <body>
 <div id="header-wrapper">
@@ -162,6 +279,13 @@
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
 
+        <div class="utils-actions">
+            <section class="utils-section">
+                <div class="utils-section-header">
+                    <h2>Core Processing</h2>
+                    <p>Prepare signals, extract features, train models, and cache predictions.</p>
+                </div>
+                <div class="utils-grid">
         <div class="small-column">
             <h3>Extract features</h3>
             <p>Preprocess data and extract features from data.</p>
@@ -191,7 +315,15 @@
             <p>Perform data cache, features extract and model training.</p>
             <a href="{% url 'dashboard:utils' 'all' %}" class="button button-small button-fix-width">All</a>
         </div>
+                </div>
+            </section>
 
+            <section class="utils-section">
+                <div class="utils-section-header">
+                    <h2>Data Management &amp; Exports</h2>
+                    <p>Maintain metadata, validate diaries, and build research-ready exports.</p>
+                </div>
+                <div class="utils-grid">
         <div class="small-column">
             <h3>Read metadata</h3>
             <p>Read metadata from metadata.xlsx file.</p>
@@ -247,6 +379,15 @@
             <a href="{% url 'dashboard:utils' 'parkinson_fnusa' %}"
                class="button button-small button-fix-width">Train</a>
         </div>
+                </div>
+            </section>
+
+            <section class="utils-section">
+                <div class="utils-section-header">
+                    <h2>SleepPy &amp; External Data</h2>
+                    <p>Run the SleepPy workflow and handle DREAMT-format conversion and validation.</p>
+                </div>
+                <div class="utils-grid">
         <div class="small-column">
             <h3>SleepPy</h3>
             <p>Run SleepPy package extraction</p>
@@ -295,6 +436,16 @@
             <a href="{% url 'dashboard:utils' 'validate-against-dreamt' %}"
                class="button button-small button-fix-width">Validate</a>
         </div>
+                </div>
+            </section>
+
+            <section class="utils-section">
+                <div class="utils-section-header">
+                    <h2>Statistical Workflow</h2>
+                    <p>Verify covariates, prepare adjusted datasets, aggregate subjects, and run exploratory
+                        analyses.</p>
+                </div>
+                <div class="utils-grid">
         <div class="small-column">
             <h3>Verify covariates</h3>
             <p>Test age, gender, and education between each planned diagnostic comparison.</p>
@@ -325,6 +476,17 @@
             <a href="{% url 'dashboard:utils' 'group-clinical-data' %}"
                class="button button-small button-fix-width">Group</a>
         </div>
+                </div>
+            </section>
+
+            <section class="utils-section">
+                <div class="utils-section-header">
+                    <h2>Classification Experiments</h2>
+                    <p>Choose a model family, then expand only the experiment set you need.</p>
+                </div>
+                <details class="utils-subgroup" open>
+                    <summary>Standard and feature-selection models</summary>
+                    <div class="utils-grid">
         <div class="small-column">
             <h3>Classify grouped stats</h3>
             <p>Run the final grouped-statistics classification for dataset-clinical.</p>
@@ -373,6 +535,11 @@
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-rfe-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
+                    </div>
+                </details>
+                <details class="utils-subgroup">
+                    <summary>Ablation studies</summary>
+                    <div class="utils-grid">
         <div class="small-column">
             <h3>Ablate grouped stats</h3>
             <p>Compare diary-only, actigraphy-only, norm-only, level-only, trend-only, and variability-only blocks.</p>
@@ -385,6 +552,11 @@
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-ablation-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
+                    </div>
+                </details>
+                <details class="utils-subgroup">
+                    <summary>Strict publication models</summary>
+                    <div class="utils-grid">
         <div class="small-column">
             <h3>Strict grouped stats</h3>
             <p>Run the stricter nested-CV publication variant for dataset-clinical.</p>
@@ -421,6 +593,10 @@
                 RFE.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
+        </div>
+                    </div>
+                </details>
+            </section>
         </div>
     </div>
 </div>
