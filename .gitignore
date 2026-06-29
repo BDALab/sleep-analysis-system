@@ -15,9 +15,11 @@
 *.bin
 *.sqlite3
 *.log
+._*
 
 
 venv/*
+.venv*/
 .idea/
 __pycache__/
 
