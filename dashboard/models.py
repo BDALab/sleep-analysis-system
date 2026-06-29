@@ -15,7 +15,7 @@ import pytz
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from dashboard.logic.features_extraction.norms import sol, awk5plus, waso, se
+from dashboard.logic.features_extraction.norms import sol, awk5plus, waso, waso_seconds, se
 from dashboard.logic.features_extraction.utils import safe_div
 from mysite.settings import MEDIA_ROOT
 
@@ -289,7 +289,7 @@ class SleepDiaryDay(models.Model):
 
     @property
     def waso_norm(self):
-        return waso(self.subject.age, self.waso)
+        return waso_seconds(self.subject.age, self.waso)
 
     @property
     def se_norm(self):
@@ -421,7 +421,7 @@ class SleepNight(models.Model):
 
     @property
     def waso_norm(self):
-        return waso(self.subject.age, self.waso)
+        return waso_seconds(self.subject.age, self.waso)
 
     @property
     def se_norm(self):

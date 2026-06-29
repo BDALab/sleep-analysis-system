@@ -33,6 +33,14 @@ from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical,
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc,
 )
+from dashboard.logic.clinical_scale_regression import (
+    clinical_scale_regression_dataset_clinical,
+    clinical_scale_regression_dataset_clinical_acc,
+    clinical_scale_regression_hc_predlb_core_dataset_clinical,
+    clinical_scale_regression_hc_predlb_core_dataset_clinical_acc,
+    clinical_scale_regression_hc_predlb_extended_dataset_clinical,
+    clinical_scale_regression_hc_predlb_extended_dataset_clinical_acc,
+)
 from dashboard.logic.covariates import (
     verify_all_covariate_datasets,
 )
@@ -425,6 +433,84 @@ def utils(request, action=None):
             output_paths = ', '.join(result["run_dir"] for result in results)
             context = {
                 'ok': f'All scenario-specific analysis data prepared: {output_paths}'
+            }
+        elif action == 'clinical-scale-regression-clinical':
+            logger.info('Run clinical-scale regression for dataset-clinical')
+            result = clinical_scale_regression_dataset_clinical()
+            logger.info(
+                'Clinical-scale regression for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Clinical-scale regression for dataset-clinical completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'clinical-scale-regression-clinical-acc':
+            logger.info('Run clinical-scale regression for dataset-clinical-acc')
+            result = clinical_scale_regression_dataset_clinical_acc()
+            logger.info(
+                'Clinical-scale regression for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Clinical-scale regression for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'clinical-scale-regression-hc-predlb-core-clinical':
+            logger.info('Run HC vs preDLB core clinical-scale regression for dataset-clinical')
+            result = clinical_scale_regression_hc_predlb_core_dataset_clinical()
+            logger.info(
+                'HC vs preDLB core clinical-scale regression for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC vs preDLB core clinical-scale regression for dataset-clinical completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'clinical-scale-regression-hc-predlb-extended-clinical':
+            logger.info('Run HC vs preDLB extended clinical-scale regression for dataset-clinical')
+            result = clinical_scale_regression_hc_predlb_extended_dataset_clinical()
+            logger.info(
+                'HC vs preDLB extended clinical-scale regression for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC vs preDLB extended clinical-scale regression for dataset-clinical completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'clinical-scale-regression-hc-predlb-core-clinical-acc':
+            logger.info('Run HC vs preDLB core clinical-scale regression for dataset-clinical-acc')
+            result = clinical_scale_regression_hc_predlb_core_dataset_clinical_acc()
+            logger.info(
+                'HC vs preDLB core clinical-scale regression for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC vs preDLB core clinical-scale regression for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
+            }
+        elif action == 'clinical-scale-regression-hc-predlb-extended-clinical-acc':
+            logger.info('Run HC vs preDLB extended clinical-scale regression for dataset-clinical-acc')
+            result = clinical_scale_regression_hc_predlb_extended_dataset_clinical_acc()
+            logger.info(
+                'HC vs preDLB extended clinical-scale regression for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC vs preDLB extended clinical-scale regression for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                )
             }
         elif action == 'classification-grouped-stats-clinical':
             logger.info('Run grouped-statistics classification for dataset-clinical')

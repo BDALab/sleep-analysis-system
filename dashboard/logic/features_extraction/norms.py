@@ -114,6 +114,10 @@ def waso(age, value):
         return NORM.INAPPROPRIATE
 
 
+def waso_seconds(age, value):
+    return waso(age, value / 60)
+
+
 def waso_appropriate(age):
     if age >= AGE.OLDER_ADULT:
         return '0-30 mins'

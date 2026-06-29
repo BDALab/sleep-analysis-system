@@ -11,6 +11,9 @@ from scipy.spatial.distance import squareform
 from scipy.stats import mannwhitneyu, shapiro, spearmanr
 
 from dashboard.logic.analysis_preparation import prepare_all_analysis_datasets
+from dashboard.logic.feature_family_followup_analysis import (
+    analyze_family_followup,
+)
 from dashboard.models import Subject
 from mysite.settings import MEDIA_ROOT
 
@@ -119,15 +122,25 @@ def analyze_all_feature_datasets():
                     / "correlation"
                     / "feature_clinical_correlation_matrix.xlsx"
             )
-            results.append(
-                analyze_feature_dataset(
-                    prepared_scenario["grouped_stats_path"],
-                    dataset_name=preparation["dataset_name"],
-                    scenario=scenario,
-                    output_path=output_path,
-                    selected_covariates=prepared_scenario["selected_covariates"],
-                )
+            result = analyze_feature_dataset(
+                prepared_scenario["grouped_stats_path"],
+                dataset_name=preparation["dataset_name"],
+                scenario=scenario,
+                output_path=output_path,
+                selected_covariates=prepared_scenario["selected_covariates"],
             )
+            followup = analyze_family_followup(
+                raw_grouped_path=preparation["raw_grouped_stats_path"],
+                family_workbook_path=output_path,
+                output_path=(
+                        output_path.parent
+                        / "feature_family_followup_analysis.xlsx"
+                ),
+                dataset_name=preparation["dataset_name"],
+                scenario=scenario,
+                selected_covariates=prepared_scenario["selected_covariates"],
+            )
+            results.append({**result, **followup})
     return results
 
 
@@ -591,9 +604,10 @@ def _cluster_feature_families(
             ).abs()
             distances = 1.0 - correlations
             distances = distances.fillna(1.0).clip(lower=0.0, upper=1.0)
-            np.fill_diagonal(distances.values, 0.0)
+            distance_values = distances.to_numpy(dtype=float, copy=True)
+            np.fill_diagonal(distance_values, 0.0)
             tree = linkage(
-                squareform(distances.values, checks=False),
+                squareform(distance_values, checks=False),
                 method="complete",
             )
             labels = fcluster(

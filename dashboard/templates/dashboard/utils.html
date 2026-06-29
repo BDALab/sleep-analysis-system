@@ -229,7 +229,8 @@
                     Mann-Whitney U tests, and feature-by-clinical-outcome
                     Spearman correlations with Benjamini-Hochberg FDR correction.
                     Significant variants are also reduced into interpretable feature
-                    families using within-family redundancy clustering.
+                    families using within-family redundancy clustering, then tested
+                    within diagnoses and in diagnosis-adjusted GEE models.
                 </p>
                 <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
                     <thead>
@@ -245,7 +246,9 @@
                         <th style="padding: 0.5em; text-align: right;">Group family candidates</th>
                         <th style="padding: 0.5em; text-align: right;">Clinical correlations FDR &lt; 0.05</th>
                         <th style="padding: 0.5em; text-align: right;">Correlation family candidates</th>
-                        <th style="padding: 0.5em; text-align: left;">Output</th>
+                        <th style="padding: 0.5em; text-align: right;">Adjusted GEE models</th>
+                        <th style="padding: 0.5em; text-align: left;">Correlation output</th>
+                        <th style="padding: 0.5em; text-align: left;">Follow-up output</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -284,8 +287,14 @@
                             <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
                                 {{ result.correlation_family_candidate_count }}
                             </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ result.adjusted_result_count }}
+                            </td>
                             <td style="padding: 0.5em; border-top: 1px solid #ddd;">
                                 {{ result.output_path }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ result.followup_output_path }}
                             </td>
                         </tr>
                     {% endfor %}
@@ -470,7 +479,10 @@
         </div>
         <div class="small-column">
             <h3>Feature correlations</h3>
-            <p>Run all diagnostic scenarios and correlate calculated features with all clinical outcomes.</p>
+            <p>
+                Run pooled correlations, reduce redundant feature families,
+                then test within-diagnosis and diagnosis-adjusted GEE models.
+            </p>
             <a href="{% url 'dashboard:utils' 'feature-correlation-analysis' %}"
                class="button button-small button-fix-width">Analyze</a>
         </div>
@@ -497,21 +509,76 @@
 
             <section class="utils-section">
                 <div class="utils-section-header">
+                    <h2>Clinical Scale Regression</h2>
+                    <p>
+                        Predict RBDq, UPDRS, MFS, visuospatial, attention, and executive scores from grouped
+                        features. Runs group-aware nested CV, controls age, gender, and education inside training
+                        folds, and reports MAE, RMSE, and MAE divided by observed scale size.
+                    </p>
+                </div>
+                <div class="utils-grid">
+                    <div class="small-column">
+                        <h3>Clinical scale regression</h3>
+                        <p>Run regression for all clinical outcomes using dataset-clinical grouped features.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-clinical' %}"
+                           class="button button-small button-fix-width">Run</a>
+                    </div>
+                    <div class="small-column">
+                        <h3>Clinical scale regression + acc</h3>
+                        <p>Run the same clinical-scale regression workflow for dataset-clinical-acc.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-clinical-acc' %}"
+                           class="button button-small button-fix-width">Run</a>
+                    </div>
+                    <div class="small-column">
+                        <h3>HC vs preDLB regression</h3>
+                        <p>Focused HC-versus-preDLB regression using the core grouped sleep/diary features.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-hc-predlb-core-clinical' %}"
+                           class="button button-small button-fix-width">Run core</a>
+                    </div>
+                    <div class="small-column">
+                        <h3>HC vs preDLB + diary predictors</h3>
+                        <p>Add lifestyle diary predictors such as alcohol and caffeine timing to the focused run.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-hc-predlb-extended-clinical' %}"
+                           class="button button-small button-fix-width">Run extended</a>
+                    </div>
+                    <div class="small-column">
+                        <h3>HC vs preDLB regression + acc</h3>
+                        <p>Focused HC-versus-preDLB regression using the core grouped sleep/diary/activity features.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-hc-predlb-core-clinical-acc' %}"
+                           class="button button-small button-fix-width">Run core</a>
+                    </div>
+                    <div class="small-column">
+                        <h3>HC vs preDLB + acc + diary predictors</h3>
+                        <p>Add alcohol/caffeine timing and other diary predictors to the focused activity-feature
+                            run.</p>
+                        <a href="{% url 'dashboard:utils' 'clinical-scale-regression-hc-predlb-extended-clinical-acc' %}"
+                           class="button button-small button-fix-width">Run extended</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="utils-section">
+                <div class="utils-section-header">
                     <h2>Classification Experiments</h2>
-                    <p>Every run prepares raw grouped data and adjusts covariates inside each CV training fold.</p>
+                    <p>
+                        Every standard and strict run verifies age, gender, and education separately for each
+                        diagnostic scenario, then adjusts only the selected variables inside each CV training fold.
+                        Buttons mentioning diary data add diary-derived predictors; they do not change the
+                        demographic adjustment rule.
+                    </p>
                 </div>
                 <details class="utils-subgroup" open>
-                    <summary>Standard and feature-selection models</summary>
+                    <summary>Standard (simple) and feature-selection models</summary>
                     <div class="utils-grid">
         <div class="small-column">
-            <h3>Classify grouped stats</h3>
-            <p>Run the final grouped-statistics classification for dataset-clinical.</p>
+            <h3>Standard classifier</h3>
+            <p>Run dataset-clinical with scenario-specific foldwise demographic adjustment.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Classify grouped stats + acc</h3>
-            <p>Run the final grouped-statistics classification for dataset-clinical-acc.</p>
+            <h3>Standard classifier + acc</h3>
+            <p>Run dataset-clinical-acc with scenario-specific foldwise demographic adjustment.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
@@ -528,26 +595,26 @@
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Classify + covariates</h3>
-            <p>Run grouped-stats classification for dataset-clinical with diary covariates.</p>
+            <h3>Standard + diary predictors</h3>
+            <p>Add diary-derived predictor features; scenario-specific demographic adjustment remains foldwise.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Classify + covariates + acc</h3>
-            <p>Run grouped-stats classification for dataset-clinical-acc with diary covariates.</p>
+            <h3>Standard + diary predictors + acc</h3>
+            <p>Add diary-derived predictors to dataset-clinical-acc with the same foldwise adjustment.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Classify + covariates + RFE</h3>
-            <p>Run grouped-stats classification for dataset-clinical with diary covariates and XGBoost RFE.</p>
+            <h3>Standard + diary predictors + RFE</h3>
+            <p>Add diary-derived predictors and XGBoost RFE to dataset-clinical.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-rfe-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Classify + covariates + RFE + acc</h3>
-            <p>Run grouped-stats classification for dataset-clinical-acc with diary covariates and XGBoost RFE.</p>
+            <h3>Standard + diary predictors + RFE + acc</h3>
+            <p>Add diary-derived predictors and XGBoost RFE to dataset-clinical-acc.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-covariates-rfe-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
@@ -575,38 +642,37 @@
                     <div class="utils-grid">
         <div class="small-column">
             <h3>Strict grouped stats</h3>
-            <p>Run the stricter nested-CV publication variant for dataset-clinical.</p>
+            <p>Run nested CV with scenario-specific demographic adjustment fitted inside every training fold.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
             <h3>Strict grouped stats + acc</h3>
-            <p>Run the stricter nested-CV publication variant for dataset-clinical-acc.</p>
+            <p>Run the same nested-CV pipeline for dataset-clinical-acc.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Strict + covariates</h3>
-            <p>Run strict grouped-stats classification for dataset-clinical with diary covariates.</p>
+            <h3>Strict + diary predictors</h3>
+            <p>Add diary-derived predictors to the strict nested-CV pipeline.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Strict + covariates + acc</h3>
-            <p>Run strict grouped-stats classification for dataset-clinical-acc with diary covariates.</p>
+            <h3>Strict + diary predictors + acc</h3>
+            <p>Add diary-derived predictors to the strict dataset-clinical-acc pipeline.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Strict + covariates + RFE</h3>
-            <p>Run strict grouped-stats classification for dataset-clinical with diary covariates and XGBoost RFE.</p>
+            <h3>Strict + diary predictors + RFE</h3>
+            <p>Add diary-derived predictors and XGBoost RFE to the strict pipeline.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
         <div class="small-column">
-            <h3>Strict + covariates + RFE + acc</h3>
-            <p>Run strict grouped-stats classification for dataset-clinical-acc with diary covariates and XGBoost
-                RFE.</p>
+            <h3>Strict + diary predictors + RFE + acc</h3>
+            <p>Add diary-derived predictors and XGBoost RFE to the strict dataset-clinical-acc pipeline.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>

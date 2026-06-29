@@ -21,6 +21,10 @@ from dashboard.logic.machine_learning.classification_metrics import scoring, sen
 from dashboard.logic.machine_learning.settings import scale_name, model_params, search_settings, model_name
 from dashboard.logic.machine_learning.visualisation import plot_fi, df_into_to_sting, \
     plot_logloss_and_error, plot_cross_validation, shap_summary_plot, shap_beeswarm_plot
+from dashboard.logic.xgboost_runtime import (
+    configure_xgboost_core_params,
+    configure_xgboost_params,
+)
 from dashboard.models import CsvData
 from mysite.settings import ML_DIR, HYPER_PARAMS_PATH, DATASET_PATH, DATASET_PARQUET_PATH, TRAINED_MODEL_PATH, \
     BEST_ESTIMATOR_PATH, CV_RESULTS_PATH, TRAINED_MODEL_EXPORT_PATH
@@ -68,6 +72,7 @@ def learn():
     if os.path.exists(TRAINED_MODEL_PATH):
         logger.info('Load model')
         model = load_obj(TRAINED_MODEL_PATH)
+        model.set_params(**configure_xgboost_params(model.get_params()))
     else:
         if os.path.exists(HYPER_PARAMS_PATH):
             params = load_obj(HYPER_PARAMS_PATH)
@@ -75,8 +80,8 @@ def learn():
             logger.info('Hyper-parameters tuning')
             params = _search_best_hyper_parameters(x_train, y_train, groups_train)
 
-        # Ensure GPU-friendly params and class imbalance handling
-        params = _ensure_gpu_params(params)
+        # Apply the current platform runtime and class imbalance handling.
+        params = configure_xgboost_params({**model_params, **params})
         spw = _compute_scale_pos_weight(y_train)
         if spw is not None:
             params["scale_pos_weight"] = spw
@@ -88,7 +93,7 @@ def learn():
         # Tune best number of boosting rounds using xgb.cv with group-aware folds
         dtrain = xgb.DMatrix(x_train, label=y_train)
         folds = list(GroupKFold(n_splits=10).split(x_train, y_train, groups_train))
-        cv_params = dict(params)
+        cv_params = configure_xgboost_core_params(params)
         # Remove sklearn-only params
         cv_params.pop('n_estimators', None)
         # Ensure eval metrics are set
@@ -268,8 +273,7 @@ def load_data():
 def _search_best_hyper_parameters(x, y, groups=None):
     start = datetime.now()
     # Create the classifier
-    # Ensure GPU params for search
-    base_params = _ensure_gpu_params(dict(model_params))
+    base_params = configure_xgboost_params(model_params)
     spw = _compute_scale_pos_weight(y)
     if spw is not None:
         base_params["scale_pos_weight"] = spw
@@ -295,18 +299,6 @@ def _search_best_hyper_parameters(x, y, groups=None):
     save_obj(random_search.best_estimator_, BEST_ESTIMATOR_PATH)
     end = datetime.now()
     logger.info(f'Best hyper parameters found and cached in {end - start}')
-    return params
-
-
-def _ensure_gpu_params(params: dict) -> dict:
-    # Force GPU-backed training where available
-    params = dict(params)
-    # XGBoost 2.x style GPU config
-    params["tree_method"] = "hist"
-    params["device"] = "cuda"
-    # Remove deprecated/unused keys if present
-    params.pop("gpu_id", None)
-    params.pop("predictor", None)
     return params
 
 

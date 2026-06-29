@@ -16,6 +16,7 @@ from dashboard.logic.machine_learning.learn import evaluate_cross_validation, re
 from dashboard.logic.machine_learning.settings import model_params, search_settings
 from dashboard.logic.machine_learning.visualisation import plot_cross_validation, plot_fi, plot_logloss_and_error, \
     shap_beeswarm_plot, shap_summary_plot
+from dashboard.logic.xgboost_runtime import configure_xgboost_params
 from dashboard.models import Subject
 from mysite.settings import HILEV_FNUSA, HILEV_CV_RESULTS_PATH, HILEV_DIR, HILEV_TRAINED_MODEL_PATH
 
@@ -195,7 +196,8 @@ def learn_model(x, y, names):
 
     logger.info('Cross-validation of params')
     y_train = y_train.ravel()
-    model = xgboost.sklearn.XGBClassifier(**params, use_label_encoder=False)
+    params = configure_xgboost_params({**model_params, **params})
+    model = xgboost.sklearn.XGBClassifier(**params)
     cv_results = evaluate_cross_validation(
         model=model,
         x_train=x_train,
@@ -247,7 +249,9 @@ def log_data_info(y_train):
 def _search_best_hyper_parameters(x, y):
     start = datetime.now()
     # Create the classifier
-    model = xgboost.sklearn.XGBClassifier(**model_params, use_label_encoder=False)
+    model = xgboost.sklearn.XGBClassifier(
+        **configure_xgboost_params(model_params)
+    )
 
     # Get the cross-validation indices
     kfolds = StratifiedKFold(n_splits=10, shuffle=True)

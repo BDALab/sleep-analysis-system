@@ -11,6 +11,10 @@ from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 from sklearn.model_selection import LeaveOneOut, RandomizedSearchCV, StratifiedKFold, cross_val_predict
 
 from dashboard.logic.analysis_preparation import prepare_analysis_dataset
+from dashboard.logic.classification_covariates import (
+    resolve_adjustment_columns,
+    validate_scenario_covariate_mapping,
+)
 from dashboard.logic.classification_grouped_statistics import (
     ADJUSTMENT_COVARIATE_COLUMNS,
     DIARY_COVARIATE_COLUMNS,
@@ -51,9 +55,11 @@ from dashboard.logic.classification_grouped_statistics import (
     _save_selected_feature_scores,
     _save_shap_outputs,
     _scenario_label,
+    _scenario_covariate_mapping,
     _selected_feature_columns,
     _tune_threshold,
 )
+from dashboard.logic.xgboost_runtime import xgboost_runtime_metadata
 from mysite.settings import MEDIA_ROOT
 
 logger = logging.getLogger(__name__)
@@ -111,13 +117,7 @@ def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinica
 
 def _run_prepared_strict_classification(dataset_name, **kwargs):
     preparation = prepare_analysis_dataset(dataset_name)
-    scenario_covariates = {
-        (
-            tuple(scenario["positive_codes"]),
-            tuple(scenario["negative_codes"]),
-        ): tuple(scenario["selected_covariates"])
-        for scenario in preparation["scenarios"]
-    }
+    scenario_covariates = _scenario_covariate_mapping(preparation)
     return run_classification_grouped_statistics_strict(
         preparation["raw_grouped_stats_path"],
         dataset_name=dataset_name,
@@ -149,7 +149,10 @@ def run_classification_grouped_statistics_strict(
         )
 
     dataset_name = dataset_name or grouped_stats_path.parents[1].name
-    scenario_covariates = scenario_covariates or {}
+    scenario_covariates = validate_scenario_covariate_mapping(
+        scenario_covariates,
+        SCENARIOS,
+    )
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_dir = dataset_name if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST else f"{dataset_name}-{feature_selector_mode}"
     run_dir = results_root / mode_dir / run_label
@@ -199,6 +202,7 @@ def run_classification_grouped_statistics_strict(
                 },
             },
             "preparation_manifest": _json_ready_dict(preparation_manifest or {}),
+            "xgboost_runtime": xgboost_runtime_metadata(),
             "label_mapping": {str(key): value for key, value in LABEL_MAPPING.items()},
             "strict_search_iterations": (
                 STRICT_DEFAULT_SEARCH_ITER
@@ -383,11 +387,11 @@ def _run_strict_scenario_analysis(
             "tuned_summary": tuned_summary,
         }
 
-    adjustment_columns = [
-        ADJUSTMENT_COVARIATE_COLUMNS[covariate]
-        for covariate in selected_covariates
-        if ADJUSTMENT_COVARIATE_COLUMNS.get(covariate) in filtered_df.columns
-    ]
+    adjustment_columns = resolve_adjustment_columns(
+        selected_covariates=selected_covariates,
+        available_columns=filtered_df.columns,
+        covariate_columns=ADJUSTMENT_COVARIATE_COLUMNS,
+    )
     X = filtered_df[feature_columns + adjustment_columns].apply(
         pd.to_numeric,
         errors="coerce",
@@ -400,9 +404,19 @@ def _run_strict_scenario_analysis(
             "feature_labels": feature_columns,
             "foldwise_adjustment_covariates": list(selected_covariates),
             "foldwise_adjustment_columns": adjustment_columns,
+            "adjustment_fit_scope": "inner/outer training fold only",
+            "adjusted_data_source": "raw grouped statistics",
         },
         scenario_dir / "feature_labels.json",
     )
+    adjustment_label = ", ".join(selected_covariates) if selected_covariates else "none"
+    for summary in (default_summary, tuned_summary):
+        summary.update(
+            {
+                "selected_adjustment_covariates": adjustment_label,
+                "adjustment_fit_scope": "inner/outer training fold only",
+            }
+        )
     np.save(scenario_dir / "X_original.npy", X)
     np.save(scenario_dir / "y_original.npy", y)
 

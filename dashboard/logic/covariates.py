@@ -40,6 +40,7 @@ class CovariateController(BaseEstimator, TransformerMixin):
         self.inline = inline
         self.regressors = {}
         self.covariates = None
+        self.constant_features = set()
 
     def fit(self, X, y, **params):
         assert isinstance(X, pd.DataFrame), f"X must be pandas dataframe, got {type(X)}"
@@ -50,6 +51,11 @@ class CovariateController(BaseEstimator, TransformerMixin):
             column: LinearRegression(**params).fit(y.values, X[column].values)
             for column in X.columns
         }
+        self.constant_features = {
+            column
+            for column in X.columns
+            if X[column].nunique(dropna=True) <= 1
+        }
         self.covariates = y
         return self
 
@@ -58,10 +64,13 @@ class CovariateController(BaseEstimator, TransformerMixin):
 
         transformed = X if self.inline else X.copy()
         for column in transformed.columns:
-            transformed[column] = (
-                    transformed[column].values
-                    - self.regressors[column].predict(self.covariates.values)
-            )
+            if column in self.constant_features:
+                transformed[column] = 0.0
+            else:
+                transformed[column] = (
+                        transformed[column].values
+                        - self.regressors[column].predict(self.covariates.values)
+                )
         return transformed
 
 

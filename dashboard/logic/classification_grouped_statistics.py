@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import pickle
-import shutil
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +34,16 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from dashboard.logic.analysis_preparation import prepare_analysis_dataset
+from dashboard.logic.classification_covariates import (
+    build_scenario_covariate_mapping,
+    resolve_adjustment_columns,
+    validate_scenario_covariate_mapping,
+)
+from dashboard.logic.xgboost_runtime import (
+    configure_xgboost_params,
+    is_xgboost_device_error,
+    xgboost_runtime_metadata,
+)
 from dashboard.models import SleepDiaryDay, Subject
 from mysite.settings import MEDIA_ROOT
 
@@ -151,32 +160,34 @@ ADJUSTMENT_COVARIATE_COLUMNS = {
     "education": "#Education",
 }
 MODEL_PARAMS = {
-    "booster": "dart",
+    "booster": "gbtree",
     "verbosity": 0,
-    "n_jobs": -1,
     "objective": "binary:logistic",
     "eval_metric": "auc",
-    "seed": SEED,
-    "n_estimators": 100,
-    "learning_rate": 0.20,
-    "gamma": 1.0,
-    "max_depth": 10,
-    "subsample": 1.0,
+    "random_state": SEED,
+    "n_estimators": 300,
+    "learning_rate": 0.05,
+    "gamma": 0.0,
+    "max_depth": 4,
+    "subsample": 0.8,
     "colsample_bylevel": 1.0,
-    "colsample_bytree": 1.0,
-    "min_child_weight": 5.0,
-    "tree_method": "hist",
-    "device": None,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 3.0,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
 }
 PARAM_GRID = {
     "feature_selector__k": list(FEATURE_SELECTION_K_OPTIONS),
-    "clf__learning_rate": [0.001, 0.01, 0.1, 0.15, 0.2, 0.3],
-    "clf__gamma": [0, 0.025, 0.05, 0.10, 0.20, 0.25, 0.30],
-    "clf__max_depth": [10, 11, 12, 13],
-    "clf__subsample": [0.1, 0.2, 0.4, 0.5, 0.6, 0.8, 0.9, 1.0],
-    "clf__colsample_bylevel": [0.1, 0.2, 0.4, 0.5, 0.6, 0.8, 0.9, 1.0],
-    "clf__colsample_bytree": [0.1, 0.2, 0.4, 0.5, 0.6, 0.8, 0.9, 1.0],
-    "clf__min_child_weight": [0.125, 0.25, 0.5, 1.0, 3.0, 5.0, 7.0],
+    "clf__n_estimators": [150, 300, 500],
+    "clf__learning_rate": [0.01, 0.03, 0.05, 0.1, 0.2],
+    "clf__gamma": [0, 0.05, 0.1, 0.25, 0.5],
+    "clf__max_depth": [2, 3, 4, 5, 6],
+    "clf__subsample": [0.6, 0.8, 1.0],
+    "clf__colsample_bylevel": [0.6, 0.8, 1.0],
+    "clf__colsample_bytree": [0.5, 0.7, 0.9, 1.0],
+    "clf__min_child_weight": [1.0, 3.0, 5.0, 10.0],
+    "clf__reg_alpha": [0.0, 0.01, 0.1, 1.0],
+    "clf__reg_lambda": [0.5, 1.0, 2.0, 5.0],
     "clf__scale_pos_weight": [1, 2, 3, 4, 5],
 }
 SEARCH_SETTINGS = {
@@ -282,6 +293,7 @@ class FoldwiseCovariateResidualizer(BaseEstimator, TransformerMixin):
         self.feature_medians_ = None
         self.covariate_medians_ = None
         self.coefficients_ = None
+        self.constant_features_ = None
 
     def fit(self, X, y=None):
         values = np.asarray(X, dtype=float)
@@ -292,6 +304,12 @@ class FoldwiseCovariateResidualizer(BaseEstimator, TransformerMixin):
         features = values[:, :self.feature_count_]
         self.feature_medians_ = _nan_medians(features)
         features = _fill_nan_columns(features, self.feature_medians_)
+        self.constant_features_ = np.isclose(
+            np.nanmax(features, axis=0),
+            np.nanmin(features, axis=0),
+            rtol=0.0,
+            atol=1e-12,
+        )
         if not self.n_covariates:
             return self
 
@@ -316,7 +334,9 @@ class FoldwiseCovariateResidualizer(BaseEstimator, TransformerMixin):
             self.covariate_medians_,
         )
         design = np.column_stack([np.ones(len(covariates)), covariates])
-        return features - design @ self.coefficients_
+        residuals = features - design @ self.coefficients_
+        residuals[:, self.constant_features_] = 0.0
+        return residuals
 
 
 def _nan_medians(values):
@@ -417,13 +437,7 @@ def _run_prepared_classification(dataset_name, **kwargs):
 
 
 def _scenario_covariate_mapping(preparation):
-    return {
-        (
-            tuple(scenario["positive_codes"]),
-            tuple(scenario["negative_codes"]),
-        ): tuple(scenario["selected_covariates"])
-        for scenario in preparation["scenarios"]
-    }
+    return build_scenario_covariate_mapping(preparation, SCENARIOS)
 
 
 def run_classification_grouped_statistics(
@@ -455,7 +469,10 @@ def run_classification_grouped_statistics(
         )
 
     dataset_name = dataset_name or grouped_stats_path.parents[1].name
-    scenario_covariates = scenario_covariates or {}
+    scenario_covariates = validate_scenario_covariate_mapping(
+        scenario_covariates,
+        SCENARIOS,
+    )
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_dataset_name = (
         dataset_name
@@ -529,6 +546,7 @@ def run_classification_grouped_statistics(
                 for positive_codes, negative_codes in SCENARIOS
             ],
             "model_params": _json_ready_dict(_resolved_model_params()),
+            "xgboost_runtime": xgboost_runtime_metadata(),
             "search_settings": _json_ready_dict(_search_settings_for_selector_mode(feature_selector_mode)),
         },
         run_dir / "analysis_metadata.json",
@@ -1088,11 +1106,11 @@ def _run_scenario_analysis(
             "tuned_summary": tuned_summary,
         }
 
-    adjustment_columns = [
-        ADJUSTMENT_COVARIATE_COLUMNS[covariate]
-        for covariate in selected_covariates
-        if ADJUSTMENT_COVARIATE_COLUMNS.get(covariate) in filtered_df.columns
-    ]
+    adjustment_columns = resolve_adjustment_columns(
+        selected_covariates=selected_covariates,
+        available_columns=filtered_df.columns,
+        covariate_columns=ADJUSTMENT_COVARIATE_COLUMNS,
+    )
     X = filtered_df[feature_columns + adjustment_columns].apply(
         pd.to_numeric,
         errors="coerce",
@@ -1105,9 +1123,19 @@ def _run_scenario_analysis(
             "candidate_feature_labels": feature_columns,
             "foldwise_adjustment_covariates": list(selected_covariates),
             "foldwise_adjustment_columns": adjustment_columns,
+            "adjustment_fit_scope": "training fold only",
+            "adjusted_data_source": "raw grouped statistics",
         },
         scenario_dir / "candidate_feature_labels.json",
     )
+    adjustment_label = ", ".join(selected_covariates) if selected_covariates else "none"
+    for summary in (default_summary, tuned_summary):
+        summary.update(
+            {
+                "selected_adjustment_covariates": adjustment_label,
+                "adjustment_fit_scope": "training fold only",
+            }
+        )
     np.save(scenario_dir / "X_original.npy", X)
     np.save(scenario_dir / "y_original.npy", y)
 
@@ -1542,9 +1570,7 @@ def _build_pipeline_with_selector(
 
 
 def _resolved_model_params():
-    params = MODEL_PARAMS.copy()
-    params["device"] = _default_xgb_device()
-    return params
+    return configure_xgboost_params(MODEL_PARAMS)
 
 
 def _build_rfe_estimator():
@@ -1562,13 +1588,6 @@ def _build_rfe_estimator():
         }
     )
     return xgb.XGBClassifier(**ranking_params)
-
-
-def _default_xgb_device():
-    requested = os.environ.get("GENEACTIV_XGB_DEVICE")
-    if requested:
-        return requested
-    return "cuda" if shutil.which("nvidia-smi") else "cpu"
 
 
 def _scenario_label(positive_codes, negative_codes):
@@ -2000,5 +2019,4 @@ def _json_ready_dict(data):
 
 
 def _is_gpu_error(exc):
-    message = str(exc).lower()
-    return any(keyword in message for keyword in ("cuda", "gpu", "device"))
+    return is_xgboost_device_error(exc)
