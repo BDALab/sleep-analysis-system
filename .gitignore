@@ -13,6 +13,7 @@
 *.csv
 *.xlsx
 *.bin
+*.pkl
 *.sqlite3
 *.log
 ._*
