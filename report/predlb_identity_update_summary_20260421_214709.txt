@@ -1,0 +1,11 @@
+Timestamp: 20260421_214709
+Backup CSV: E:\geneactiv-processing-data\doc\predlb_identity_db_backup_before_update_20260421_214709.csv
+Changes CSV: E:\geneactiv-processing-data\doc\predlb_identity_diagnosis_code_changes_20260421_214709.csv
+Rollback SQL: E:\geneactiv-processing-data\doc\predlb_identity_rollback_20260421_214709.sql
+
+Relevant DB rows: 169
+Relevant Excel rows: 165
+Mapped rows considered for update: 168
+Rows changed: 47
+Post-update mapped mismatches: 0
+Post-update mapped rows with null diagnosis_code: 9

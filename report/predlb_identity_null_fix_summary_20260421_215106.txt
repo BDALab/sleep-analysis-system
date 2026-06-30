@@ -1,0 +1,5 @@
+Timestamp: 20260421_215106
+Changes CSV: E:\geneactiv-processing-data\doc\predlb_identity_null_fix_changes_20260421_215106.csv
+Rollback SQL: E:\geneactiv-processing-data\doc\predlb_identity_null_fix_rollback_20260421_215106.sql
+Rows changed in null-fix pass: 9
+Post-update mapped mismatches (null-aware): 0

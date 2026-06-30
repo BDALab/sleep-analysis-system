@@ -1,0 +1,13 @@
+Timestamp: 20260422_194835
+Current backup CSV: E:\geneactiv-processing-data\doc\psyraw_db_backup_before_update_20260422_194835.csv
+Changes CSV: E:\geneactiv-processing-data\doc\psyraw_diagnosis_code_changes_20260422_194835.csv
+Rollback SQL: E:\geneactiv-processing-data\doc\psyraw_rollback_20260422_194835.sql
+Comparison CSV: E:\geneactiv-processing-data\doc\psyraw_comparison_vs_original_20260422_194835.csv
+
+Relevant DB rows: 169
+PSY_RAW valid canonical IDs: 155
+Rows updated now: 48
+Post-update mismatches vs PSY_RAW baseline: 0
+
+Rows differing from original snapshot BEFORE this PSY update: 47
+Rows differing from original snapshot AFTER this PSY update: 0
