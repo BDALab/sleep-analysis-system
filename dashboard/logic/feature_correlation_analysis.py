@@ -11,6 +11,10 @@ from scipy.spatial.distance import squareform
 from scipy.stats import mannwhitneyu, shapiro, spearmanr
 
 from dashboard.logic.analysis_preparation import prepare_all_analysis_datasets
+from dashboard.logic.feature_families import (
+    feature_family_label,
+    feature_family_metadata,
+)
 from dashboard.logic.feature_family_followup_analysis import (
     analyze_family_followup,
 )
@@ -589,7 +593,7 @@ def _cluster_feature_families(
         [_feature_metadata(feature) for feature in feature_columns]
     )
     cluster_labels = {}
-    for family, family_rows in metadata.groupby("Feature family", sort=True):
+    for family_id, family_rows in metadata.groupby("Feature family ID", sort=True):
         features = family_rows["Features"].sort_values().tolist()
         if len(features) == 1:
             labels = np.array([1], dtype=int)
@@ -630,7 +634,7 @@ def _cluster_feature_families(
                 start=1,
             )
         }
-        family_slug = _slugify(family)
+        family_slug = _slugify(family_id)
         for feature, label in zip(features, labels):
             cluster_labels[feature] = (
                 f"{family_slug}-C{ordered_clusters[label]:02d}"
@@ -652,7 +656,10 @@ def _cluster_feature_families(
     return metadata[
         [
             "Features",
+            "Feature family ID",
             "Feature family",
+            "Feature family domain",
+            "Feature family role",
             "Redundancy cluster",
             "Cluster size",
             "Source",
@@ -668,98 +675,22 @@ def _cluster_feature_families(
 
 
 def _feature_metadata(feature):
-    parts = str(feature).split(".", 2)
-    aggregation = parts[0] if parts else ""
-    source = parts[1] if len(parts) > 1 else "unknown"
-    measurement = parts[2] if len(parts) > 2 else str(feature)
+    metadata = feature_family_metadata(feature)
     return {
-        "Features": feature,
-        "Feature family": _feature_family(source, measurement),
-        "Source": source,
-        "Nightly summary": aggregation,
-        "Measurement": measurement,
-        "Normalized source": source.endswith("_norm"),
+        "Features": metadata["Features"],
+        "Feature family ID": metadata["Feature family ID"],
+        "Feature family": metadata["Feature family"],
+        "Feature family domain": metadata["Feature family domain"],
+        "Feature family role": metadata["Feature family role"],
+        "Source": metadata["Source"],
+        "Nightly summary": metadata["Nightly summary"],
+        "Measurement": metadata["Measurement"],
+        "Normalized source": metadata["Normalized source"],
     }
 
 
 def _feature_family(source, measurement):
-    source_lower = source.lower()
-    measurement_lower = measurement.lower()
-    if source_lower.startswith(("actigraphy", "diary")):
-        rules = (
-            ("sleep onset latency", "Sleep timing: onset latency"),
-            ("wake after sleep onset", "Nocturnal wakefulness"),
-            ("wake after sleep offset", "Post-sleep wakefulness"),
-            ("awakening > 5 minutes", "Awakenings"),
-            ("wake bouts", "Awakenings"),
-            ("sleep efficiency", "Sleep efficiency"),
-            ("sleep fragmentation", "Sleep fragmentation"),
-            ("total sleep time", "Sleep duration"),
-            ("time in bed", "Time in bed"),
-        )
-        for keyword, family in rules:
-            if keyword in measurement_lower:
-                return family
-        return "Other sleep measures"
-
-    if source_lower == "activity":
-        if re.search(r"\b(1st|5th|10th|20th) percentile\b", measurement_lower):
-            return "Activity level: lower distribution"
-        if re.search(r"\b(80th|90th|95th|99th) percentile\b", measurement_lower):
-            return "Activity level: upper distribution"
-        if any(
-                keyword in measurement_lower
-                for keyword in (
-                        "standard deviation",
-                        "variance",
-                        "median absolute deviation",
-                        "index of dispersion",
-                        "range",
-                        "interquartile",
-                        "interpercentile",
-                        "interdencile",
-                        "modulation",
-                )
-        ):
-            return "Activity variability and dispersion"
-        if any(
-                keyword in measurement_lower
-                for keyword in (
-                        "skewness",
-                        "kurtosis",
-                )
-        ):
-            return "Activity distribution shape"
-        if any(
-                keyword in measurement_lower
-                for keyword in (
-                        "entropy",
-                        "teager kaiser",
-                )
-        ):
-            return "Activity complexity and energy"
-        if any(
-                keyword in measurement_lower
-                for keyword in (
-                        "relative position",
-                        "max",
-                        "min",
-                )
-        ):
-            return "Activity extrema and timing"
-        if any(
-                keyword in measurement_lower
-                for keyword in (
-                        "mean",
-                        "median",
-                        "mode",
-                        "harmonic mean",
-                )
-        ):
-            return "Activity level: central tendency"
-        return "Other activity measures"
-
-    return "Other measures"
+    return feature_family_label(source, measurement)
 
 
 def _select_group_family_candidates(
@@ -1243,7 +1174,9 @@ def _style_workbook(workbook):
 
     family_map = workbook["family_map"]
     family_map.freeze_panes = "A2"
-    family_widths = (48, 38, 34, 12, 18, 18, 38, 18, 12, 24)
+    family_widths = (
+        48, 24, 38, 18, 28, 34, 12, 18, 18, 38, 18, 12, 24,
+    )
     for column, width in enumerate(family_widths, start=1):
         family_map.column_dimensions[get_column_letter(column)].width = width
 

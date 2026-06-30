@@ -7,25 +7,30 @@ from dashboard.logic.feature_correlation_analysis import (
     _cluster_feature_families,
     _feature_family,
 )
+from dashboard.logic.feature_families import (
+    feature_family_label_for_feature,
+    parse_feature_name,
+)
 
 
 class FeatureFamilyTest(unittest.TestCase):
     def test_project_feature_taxonomy(self):
         cases = {
-            ("actigraphy", "Sleep onset latency"): "Sleep timing: onset latency",
-            ("diary_norm", "Wake after sleep onset"): "Nocturnal wakefulness",
-            ("actigraphy", "Awakening > 5 minutes"): "Awakenings",
+            ("actigraphy", "Sleep onset latency"): "Sleep onset latency",
+            ("diary_norm", "Wake after sleep onset"): "Wake after sleep onset",
+            ("actigraphy", "Awakening > 5 minutes"): "Long awakenings",
+            ("diary", "Wake bouts"): "Wake-bout frequency",
             ("activity", "Median Absolute Deviation"): (
-                "Activity variability and dispersion"
+                "Activity variability/dispersion"
             ),
             ("activity", "Mean Excluding Outliers (30)"): (
-                "Activity level: central tendency"
+                "Activity level/intensity"
             ),
             ("activity", "95th Percentile"): (
-                "Activity level: upper distribution"
+                "Activity level/intensity"
             ),
             ("activity", "Teager Kaiser Energy Operator Max"): (
-                "Activity complexity and energy"
+                "Activity shape/complexity"
             ),
         }
         for (source, measurement), expected in cases.items():
@@ -34,6 +39,47 @@ class FeatureFamilyTest(unittest.TestCase):
                     _feature_family(source, measurement),
                     expected,
                 )
+
+    def test_mapper_supports_classifier_and_lifestyle_names(self):
+        cases = {
+            "actigraphy.Awakening > 5 minutes (Median)": "Long awakenings",
+            "diary_norm.Wake after sleep onset (MAD)": "Wake after sleep onset",
+            "activity.Relative Interquartile Range (Mean)": (
+                "Activity variability/dispersion"
+            ),
+            "activity.Teager Kaiser Energy Operator Max (Mean)": (
+                "Activity shape/complexity"
+            ),
+            "rest_quality_mean": "Subjective sleep/rest quality",
+            "alcohol_time_mean": "Alcohol exposure/timing",
+            "caffeine_time_std": "Caffeine exposure/timing",
+            "sleeping_pill_rate": "Sleeping-pill use",
+            "day_sleep_count_mean": "Day sleep / naps",
+        }
+        for feature, expected in cases.items():
+            with self.subTest(feature=feature):
+                self.assertEqual(feature_family_label_for_feature(feature), expected)
+
+    def test_parse_feature_name_supports_both_export_styles(self):
+        correlation_feature = parse_feature_name(
+            "Mean.actigraphy.Wake after sleep onset"
+        )
+        self.assertEqual(correlation_feature.aggregation, "Mean")
+        self.assertEqual(correlation_feature.source, "actigraphy")
+        self.assertEqual(
+            correlation_feature.measurement,
+            "Wake after sleep onset",
+        )
+
+        classifier_feature = parse_feature_name(
+            "actigraphy.Wake after sleep onset (IQR)"
+        )
+        self.assertEqual(classifier_feature.aggregation, "IQR")
+        self.assertEqual(classifier_feature.source, "actigraphy")
+        self.assertEqual(
+            classifier_feature.measurement,
+            "Wake after sleep onset",
+        )
 
     def test_redundant_variants_cluster_within_family(self):
         features = [
