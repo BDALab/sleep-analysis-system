@@ -45,6 +45,9 @@ from dashboard.logic.covariates import (
     verify_all_covariate_datasets,
 )
 from dashboard.logic.feature_correlation_analysis import analyze_all_feature_datasets
+from dashboard.logic.feature_family_stability import (
+    analyze_hc_vs_predlb_feature_family_stability,
+)
 from dashboard.logic.features_extraction.count_hilev import hilev_all, hilev
 from dashboard.logic.preprocessing.preprocess_data import preprocess_all_data
 from .conversion.convert_dreamt import convert_64hz_dreamt
@@ -408,6 +411,20 @@ def utils(request, action=None):
             context = {
                 'ok': 'Feature correlation analysis completed',
                 'feature_correlation_results': results,
+            }
+        elif action == 'feature-family-stability-hc-predlb':
+            logger.info('Run HC-vs-preDLB feature-family stability analysis')
+            result = analyze_hc_vs_predlb_feature_family_stability()
+            logger.info(
+                'HC-vs-preDLB feature-family stability analysis completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC-vs-preDLB feature-family stability analysis completed: '
+                    f'{result["run_dir"]}'
+                ),
+                'feature_family_stability': result,
             }
         elif action == 'covariates-clinical':
             logger.info('Prepare scenario-specific analysis data for dataset-clinical')

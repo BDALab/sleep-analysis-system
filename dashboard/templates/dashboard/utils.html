@@ -487,6 +487,15 @@
                class="button button-small button-fix-width">Analyze</a>
         </div>
         <div class="small-column">
+            <h3>HC vs preDLB family stability</h3>
+            <p>
+                Aggregate strict classification, non-strict classification,
+                correlation, and GEE evidence into fixed feature families.
+            </p>
+            <a href="{% url 'dashboard:utils' 'feature-family-stability-hc-predlb' %}"
+               class="button button-small button-fix-width">Analyze</a>
+        </div>
+                    <div class="small-column">
             <h3>Prepare clinical dataset</h3>
             <p>Create scenario-specific adjusted and raw grouped data for all downstream analyses.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical' %}"
