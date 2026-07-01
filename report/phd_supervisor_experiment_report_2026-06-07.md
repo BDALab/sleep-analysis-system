@@ -1,7 +1,7 @@
 # GeneActiv / preDLB Project Update Report
 
 Prepared: 2026-06-07  
-Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, official HC-versus-preDLB feature-family stability analysis, and stable-family restricted HC-versus-preDLB association follow-up  
+Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, official HC-versus-preDLB feature-family stability analysis, stable-family restricted HC-versus-preDLB association follow-up, and strict stable-family HC-versus-preDLB classification  
 Project path: `/Volumes/Portable/geneactiv-processing-data`
 
 This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers clinical-variable integration, education harmonization, scenario-specific covariate verification, feature-family reduction, the diagnosis-adjusted follow-up of exploratory feature-outcome associations, strict classification, and first-pass regression prediction of clinical scores.
@@ -89,7 +89,12 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     Most visuospatial and sleep-onset-latency pooled findings weaken after
     diagnosis/covariate adjustment or cannot be estimated from the raw grouped
     feature.
-18. The WASO-corrected all-diagnosis clinical-scale regression remains
+18. Corrected strict stable-family HC-versus-preDLB classifiers preserve a
+    moderate signal but do not improve diagnostic performance over the broader
+    strict RFE model. Primary sleep families give ROC AUC `0.691` and balanced
+    accuracy `0.664`; primary sleep plus activity variability gives ROC AUC
+    `0.690` and balanced accuracy `0.650`.
+19. The WASO-corrected all-diagnosis clinical-scale regression remains
     exploratory prediction, not a ready clinical estimator. In the sleep/diary
     plus lifestyle dataset, only visuospatial and executive scores improved
     over a foldwise median baseline. RBDq, UPDRS, MFS, and attention had worse
@@ -97,7 +102,7 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     strongest point estimate was visuospatial performance (`R2 = 0.147`,
     Pearson `r = 0.392`), followed by executive performance (`R2 = 0.061`,
     Pearson `r = 0.255`).
-19. The WASO-corrected focused HC-versus-preDLB regression reruns keep
+20. The WASO-corrected focused HC-versus-preDLB regression reruns keep
     the same main conclusion: individual clinical-scale prediction remains
     exploratory. The strongest corrected focused result is visuospatial
     performance in the clinical-core model (`MAE = 0.71`, `R2 = 0.177`,
@@ -1267,19 +1272,60 @@ Interpretation:
   evidence table, but the restricted GEE follow-up does not support it as the
   strongest confirmed HC-versus-preDLB clinical association.
 
-Implementation note:
+### 9.13 Strict stable-family HC-vs-preDLB classification
 
-The utils page now also contains prepared strict nested-CV actions for the next
-classification sensitivity run:
+The strict nested-CV stable-family classifiers were then run using the same
+fixed family definitions. These models are a classification sensitivity
+analysis: they ask whether the smaller, interpretable family set preserves the
+HC-versus-preDLB discrimination seen in the broader strict RFE classifier.
 
-- `Strict stable families`: HC versus preDLB, primary sleep families only;
-- `Strict stable families + acc`: HC versus preDLB, primary sleep families plus
-  activity variability.
+Only the corrected runs below should be interpreted:
 
-These actions filter feature columns using `dashboard/logic/feature_families.py`
-before nested-CV feature selection. They have been prepared but not run yet, so
-no classifier performance numbers are reported for the restricted strict
-family models in this update.
+- primary sleep families:
+  `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-stable-primary-sleep-hc-predlb/20260701_120433/`
+- primary sleep + activity variability:
+  `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-acc-stable-primary-sleep-activity-hc-predlb/20260701_125206/`
+
+An earlier same-day exploratory rerun was discarded because excluded feature
+columns were still present as dataframe metadata and could re-enter the model.
+The code was corrected to drop all non-allowed feature columns before coverage
+filtering and nested-CV feature selection. The corrected output feature maps
+contain only the intended families:
+
+- primary sleep run: `178` retained mapped features after coverage filtering;
+- activity-enhanced run: `338` retained mapped features after coverage
+  filtering;
+- no retained feature outside the intended family set was detected.
+
+Corrected strict nested-CV results:
+
+| Model | n | Features/families | ROC AUC | PR AUC | Default BACC | Sensitivity | Specificity | Default confusion matrix |
+|---|---:|---|---:|---:|---:|---:|---:|---|
+| Stable primary sleep | 132 | long awakenings, sleep-onset latency, sleep efficiency, wake-bout frequency, WASO | 0.691 | 0.661 | 0.664 | 0.712 | 0.616 | TN 45, FP 28, FN 17, TP 42 |
+| Stable primary sleep + activity variability | 129 | primary sleep families plus activity variability | 0.690 | 0.600 | 0.650 | 0.702 | 0.597 | TN 43, FP 29, FN 17, TP 40 |
+
+Tuned-threshold results:
+
+| Model | Tuned BACC | Tuned sensitivity | Tuned specificity | Tuned confusion matrix |
+|---|---:|---:|---:|---|
+| Stable primary sleep | 0.656 | 0.627 | 0.685 | TN 50, FP 23, FN 22, TP 37 |
+| Stable primary sleep + activity variability | 0.630 | 0.649 | 0.611 | TN 44, FP 28, FN 20, TP 37 |
+
+Interpretation:
+
+- The stable-family classifiers preserve a moderate HC-versus-preDLB signal,
+  but they do not outperform the broader strict RFE run (`ROC AUC = 0.764`,
+  `BACC = 0.668`).
+- The primary sleep model is the cleaner classifier sensitivity result. It
+  uses only interpretable sleep-continuity families and reaches almost the
+  same balanced accuracy as the broader strict RFE run, but with lower ROC AUC.
+- Adding activity variability does not improve strict classification in this
+  restricted setting. This differs from the association analyses, where
+  activity variability remains important for UPDRS and attention. The practical
+  interpretation is that activity variability is useful for clinical-outcome
+  association, but not necessarily for a smaller strict diagnostic classifier.
+- Inner-CV threshold tuning again does not improve the result. The default
+  `0.5` threshold remains the primary classification summary.
 
 
 ## 10) Clinical-Scale Regression
@@ -1624,10 +1670,9 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
 
 1. Treat the 2026-06-29 WASO-corrected correlation outputs as canonical and exclude the retired normalized-WASO/MFS candidate from the primary interpretation.
 2. Use the retained focused plots and effect estimates to define a short, clinically interpretable candidate list.
-3. Run the two prepared strict stable-family HC-versus-preDLB classification
-   actions and compare them against the broader strict RFE classifier. This
-   tests whether the interpretable family restriction preserves enough
-   discrimination.
+3. Treat the strict stable-family classifiers as interpretability sensitivity
+   analyses, not as improved diagnostic models. The primary next classifier
+   step is person-grouped and cohort-sensitive validation.
 4. Fit prespecified sensitivity models with age, gender, and education regardless of preliminary covariate-test significance.
 5. Compare the current GEE results with alternative working correlations and, where appropriate, mixed-effects models.
 6. Replace visit-level nested leave-one-out classification with person-grouped
@@ -1694,6 +1739,10 @@ The updated runs are:
   `media/feature-family-stability/hc-vs-predlb/20260630_135657/`
 - stable-family restricted HC-vs-preDLB association follow-up:
   `media/feature-family-restricted-analysis/hc-vs-predlb/20260701_094747/`
+- corrected strict stable-family HC-vs-preDLB classifier, primary sleep:
+  `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-stable-primary-sleep-hc-predlb/20260701_120433/`
+- corrected strict stable-family HC-vs-preDLB classifier, primary sleep + activity variability:
+  `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-acc-stable-primary-sleep-activity-hc-predlb/20260701_125206/`
 - WASO-corrected strict nested-CV classification with diary covariates, non-RFE comparison:
   `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical/20260629_145843/`
 - WASO-corrected all-diagnosis clinical-scale regression:
@@ -1758,6 +1807,13 @@ This is better and more interpretable than the non-RFE strict run, but it is
 not strong enough to claim diagnostic performance. The combined and isolated
 MCI-AD models also show moderate point estimates, with limited specificity or
 sensitivity depending on the scenario.
+
+The corrected strict stable-family HC-versus-preDLB classifiers preserve part
+of this signal but do not improve diagnostic performance. The primary sleep
+family classifier gives ROC AUC `0.691` and balanced accuracy `0.664`; the
+sleep-plus-activity-variability classifier gives ROC AUC `0.690` and balanced
+accuracy `0.650`. These results support the stable families as interpretable
+signal carriers, but not as a superior diagnostic classifier.
 
 The new HC-versus-preDLB probability diagnostics clarify this classification
 result. The model separates the probability distributions in the expected

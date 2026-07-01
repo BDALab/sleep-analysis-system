@@ -461,12 +461,21 @@ def _run_strict_scenario_analysis(
 
     stats_columns = [column for column in scenario_df.columns if str(column).startswith(STATS_PREFIXES)]
     covariate_columns = [column for column in DIARY_COVARIATE_COLUMNS if column in scenario_df.columns]
+    excluded_family_feature_columns = []
     if allowed_feature_family_ids:
+        candidate_feature_columns = list(dict.fromkeys(stats_columns + covariate_columns))
         stats_columns, covariate_columns, family_filter_df = _filter_columns_by_feature_family(
             stats_columns=stats_columns,
             additional_feature_columns=covariate_columns,
             allowed_feature_family_ids=allowed_feature_family_ids,
         )
+        kept_family_feature_columns = set(stats_columns + covariate_columns)
+        excluded_family_feature_columns = [
+            column
+            for column in candidate_feature_columns
+            if column not in kept_family_feature_columns
+        ]
+        scenario_df = scenario_df.drop(columns=excluded_family_feature_columns)
         family_filter_df.to_excel(scenario_dir / "feature_family_filter.xlsx", index=False)
 
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
@@ -519,6 +528,7 @@ def _run_strict_scenario_analysis(
         {
             "feature_labels": feature_columns,
             "allowed_feature_family_ids": sorted(allowed_feature_family_ids),
+            "excluded_by_feature_family_filter": excluded_family_feature_columns,
             "foldwise_adjustment_covariates": list(selected_covariates),
             "foldwise_adjustment_columns": adjustment_columns,
             "adjustment_fit_scope": "inner/outer training fold only",
