@@ -28,6 +28,8 @@ from dashboard.logic.classification_grouped_statistics import (
 from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_dataset_clinical,
     classification_grouped_statistics_strict_dataset_clinical_acc,
+    classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical,
+    classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical_acc,
     classification_grouped_statistics_strict_with_covariates_dataset_clinical,
     classification_grouped_statistics_strict_with_covariates_dataset_clinical_acc,
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical,
@@ -45,6 +47,9 @@ from dashboard.logic.covariates import (
     verify_all_covariate_datasets,
 )
 from dashboard.logic.feature_correlation_analysis import analyze_all_feature_datasets
+from dashboard.logic.feature_family_restricted_analysis import (
+    run_hc_vs_predlb_feature_family_restricted_analysis,
+)
 from dashboard.logic.feature_family_stability import (
     analyze_hc_vs_predlb_feature_family_stability,
 )
@@ -426,6 +431,20 @@ def utils(request, action=None):
                 ),
                 'feature_family_stability': result,
             }
+        elif action == 'feature-family-restricted-hc-predlb':
+            logger.info('Run HC-vs-preDLB stable-family restricted association analysis')
+            result = run_hc_vs_predlb_feature_family_restricted_analysis()
+            logger.info(
+                'HC-vs-preDLB stable-family restricted association analysis completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC-vs-preDLB stable-family restricted association analysis completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]}'
+                ),
+                'feature_family_restricted_analysis': result,
+            }
         elif action == 'covariates-clinical':
             logger.info('Prepare scenario-specific analysis data for dataset-clinical')
             result = prepare_analysis_dataset('dataset-clinical')
@@ -710,6 +729,32 @@ def utils(request, action=None):
             context = {
                 'ok': (
                     'Strict grouped-statistics classification with diary covariates + RFE for dataset-clinical-acc completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-stable-family-hc-predlb-clinical':
+            logger.info('Run strict HC-vs-preDLB stable-family classification for dataset-clinical')
+            result = classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical()
+            logger.info(
+                'Strict HC-vs-preDLB stable-family classification for dataset-clinical completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict HC-vs-preDLB stable-family classification for dataset-clinical completed: '
+                    f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-grouped-stats-strict-stable-family-hc-predlb-clinical-acc':
+            logger.info('Run strict HC-vs-preDLB stable-family classification for dataset-clinical-acc')
+            result = classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical_acc()
+            logger.info(
+                'Strict HC-vs-preDLB stable-family classification for dataset-clinical-acc completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'Strict HC-vs-preDLB stable-family classification for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
                 )
             }

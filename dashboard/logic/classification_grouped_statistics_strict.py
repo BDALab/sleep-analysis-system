@@ -59,6 +59,11 @@ from dashboard.logic.classification_grouped_statistics import (
     _selected_feature_columns,
     _tune_threshold,
 )
+from dashboard.logic.feature_families import (
+    ACTIVITY_EXTENSION_STABLE_FAMILY_IDS,
+    feature_family_metadata,
+    PRIMARY_SLEEP_STABLE_FAMILY_IDS,
+)
 from dashboard.logic.xgboost_runtime import xgboost_runtime_metadata
 from mysite.settings import MEDIA_ROOT
 
@@ -71,6 +76,7 @@ STRICT_RESULTS_WITH_COVARIATES_ROOT = (
 STRICT_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_SEARCH_ITER", "20")))
 STRICT_MAX_INNER_CV_SPLITS = max(2, int(os.environ.get("GENEACTIV_STRICT_INNER_CV_SPLITS", "5")))
 STRICT_RFE_DEFAULT_SEARCH_ITER = max(1, int(os.environ.get("GENEACTIV_STRICT_RFE_SEARCH_ITER", "12")))
+HC_VS_PREDLB_SCENARIO_FILTER = (((3,), (0,)),)
 
 
 def classification_grouped_statistics_strict_dataset_clinical():
@@ -115,12 +121,45 @@ def classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinica
     )
 
 
-def _run_prepared_strict_classification(dataset_name, **kwargs):
+def classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical():
+    return _run_prepared_strict_classification(
+        "dataset-clinical",
+        output_dataset_name="dataset-clinical-stable-primary-sleep-hc-predlb",
+        include_diary_covariates=False,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        allowed_feature_family_ids=PRIMARY_SLEEP_STABLE_FAMILY_IDS,
+        scenario_filter=HC_VS_PREDLB_SCENARIO_FILTER,
+        analysis_notes=(
+            "Stable-family strict confirmation: HC vs preDLB only, primary sleep families only.",
+        ),
+    )
+
+
+def classification_grouped_statistics_strict_stable_families_hc_predlb_dataset_clinical_acc():
+    return _run_prepared_strict_classification(
+        "dataset-clinical-acc",
+        output_dataset_name="dataset-clinical-acc-stable-primary-sleep-activity-hc-predlb",
+        include_diary_covariates=False,
+        results_root=STRICT_RESULTS_WITH_COVARIATES_ROOT,
+        feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
+        allowed_feature_family_ids=(
+                PRIMARY_SLEEP_STABLE_FAMILY_IDS
+                | ACTIVITY_EXTENSION_STABLE_FAMILY_IDS
+        ),
+        scenario_filter=HC_VS_PREDLB_SCENARIO_FILTER,
+        analysis_notes=(
+            "Stable-family strict confirmation: HC vs preDLB only, primary sleep families plus activity variability.",
+        ),
+    )
+
+
+def _run_prepared_strict_classification(dataset_name, output_dataset_name=None, **kwargs):
     preparation = prepare_analysis_dataset(dataset_name)
     scenario_covariates = _scenario_covariate_mapping(preparation)
     return run_classification_grouped_statistics_strict(
         preparation["raw_grouped_stats_path"],
-        dataset_name=dataset_name,
+        dataset_name=output_dataset_name or dataset_name,
         scenario_covariates=scenario_covariates,
         preparation_manifest=preparation,
         **kwargs,
@@ -135,6 +174,9 @@ def run_classification_grouped_statistics_strict(
         dataset_name=None,
         scenario_covariates=None,
         preparation_manifest=None,
+        allowed_feature_family_ids=None,
+        scenario_filter=None,
+        analysis_notes=(),
 ):
     grouped_stats_path = Path(grouped_stats_path)
     if not grouped_stats_path.exists():
@@ -152,6 +194,12 @@ def run_classification_grouped_statistics_strict(
     scenario_covariates = validate_scenario_covariate_mapping(
         scenario_covariates,
         SCENARIOS,
+    )
+    scenario_list = _filtered_scenarios(scenario_filter)
+    allowed_feature_family_ids = (
+        frozenset(allowed_feature_family_ids)
+        if allowed_feature_family_ids
+        else frozenset()
     )
     run_label = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_dir = dataset_name if feature_selector_mode == FEATURE_SELECTOR_MODE_KBEST else f"{dataset_name}-{feature_selector_mode}"
@@ -185,6 +233,11 @@ def run_classification_grouped_statistics_strict(
             "seed": SEED,
             "include_diary_covariates": bool(include_diary_covariates),
             "diary_covariates": _json_ready_dict(covariate_info),
+            "feature_family_filter": {
+                "enabled": bool(allowed_feature_family_ids),
+                "allowed_family_ids": sorted(allowed_feature_family_ids),
+                "scope": "statistics features and diary-derived predictor columns before coverage filtering",
+            },
             "stats_prefixes": list(STATS_PREFIXES),
             "feature_coverage_threshold": FEATURE_COVERAGE_THRESHOLD,
             "feature_selector_mode": feature_selector_mode,
@@ -198,7 +251,7 @@ def run_classification_grouped_statistics_strict(
                             (),
                         )
                     )
-                    for positive_codes, negative_codes in SCENARIOS
+                    for positive_codes, negative_codes in scenario_list
                 },
             },
             "preparation_manifest": _json_ready_dict(preparation_manifest or {}),
@@ -214,7 +267,8 @@ def run_classification_grouped_statistics_strict(
                 "Outer evaluation uses Leave-One-Out cross-validation.",
                 "Hyperparameters are tuned inside each outer training fold only.",
                 "Tuned-threshold predictions use a threshold selected from inner CV predictions on the training fold only.",
-                "SHAP and final feature importances are computed on a final model fit on the full scenario dataset after evaluation."
+                "SHAP and final feature importances are computed on a final model fit on the full scenario dataset after evaluation.",
+                *analysis_notes,
             ],
             "scenarios": [
                 {
@@ -223,7 +277,7 @@ def run_classification_grouped_statistics_strict(
                     "negative_codes": list(negative_codes),
                     "negative_labels": [LABEL_MAPPING[code] for code in negative_codes],
                 }
-                for positive_codes, negative_codes in SCENARIOS
+                for positive_codes, negative_codes in scenario_list
             ],
         },
         run_dir / "analysis_metadata.json",
@@ -232,13 +286,14 @@ def run_classification_grouped_statistics_strict(
     default_summary_rows = []
     tuned_summary_rows = []
 
-    for positive_codes, negative_codes in SCENARIOS:
+    for positive_codes, negative_codes in scenario_list:
         scenario_result = _run_strict_scenario_analysis(
             prepared_df=prepared_df,
             positive_codes=positive_codes,
             negative_codes=negative_codes,
             run_dir=run_dir,
             feature_selector_mode=feature_selector_mode,
+            allowed_feature_family_ids=allowed_feature_family_ids,
             selected_covariates=scenario_covariates.get(
                 (tuple(positive_codes), tuple(negative_codes)),
                 (),
@@ -268,6 +323,58 @@ def run_classification_grouped_statistics_strict(
     }
 
 
+def _filtered_scenarios(scenario_filter):
+    if not scenario_filter:
+        return list(SCENARIOS)
+
+    requested = {
+        (tuple(positive_codes), tuple(negative_codes))
+        for positive_codes, negative_codes in scenario_filter
+    }
+    return [
+        (positive_codes, negative_codes)
+        for positive_codes, negative_codes in SCENARIOS
+        if (tuple(positive_codes), tuple(negative_codes)) in requested
+    ]
+
+
+def _filter_columns_by_feature_family(
+        stats_columns,
+        additional_feature_columns,
+        allowed_feature_family_ids,
+):
+    allowed_feature_family_ids = frozenset(allowed_feature_family_ids)
+    filter_rows = []
+    kept_stats_columns = []
+    kept_additional_columns = []
+
+    for column, source in (
+            [(column, "statistics") for column in stats_columns]
+            + [(column, "diary_predictor") for column in additional_feature_columns]
+    ):
+        metadata = feature_family_metadata(column)
+        family_id = metadata["Feature family ID"]
+        kept = family_id in allowed_feature_family_ids
+        filter_rows.append(
+            {
+                **metadata,
+                "Classifier feature source": source,
+                "Allowed family IDs": ", ".join(sorted(allowed_feature_family_ids)),
+                "Kept by stable-family filter": kept,
+            }
+        )
+        if kept and source == "statistics":
+            kept_stats_columns.append(column)
+        elif kept and source == "diary_predictor":
+            kept_additional_columns.append(column)
+
+    return (
+        kept_stats_columns,
+        kept_additional_columns,
+        pd.DataFrame(filter_rows),
+    )
+
+
 def _run_strict_scenario_analysis(
         prepared_df,
         positive_codes,
@@ -275,6 +382,7 @@ def _run_strict_scenario_analysis(
         run_dir,
         feature_selector_mode=FEATURE_SELECTOR_MODE_KBEST,
         selected_covariates=(),
+        allowed_feature_family_ids=frozenset(),
 ):
     scenario_label = _scenario_label(positive_codes, negative_codes)
     scenario_dir = run_dir / scenario_label
@@ -353,6 +461,14 @@ def _run_strict_scenario_analysis(
 
     stats_columns = [column for column in scenario_df.columns if str(column).startswith(STATS_PREFIXES)]
     covariate_columns = [column for column in DIARY_COVARIATE_COLUMNS if column in scenario_df.columns]
+    if allowed_feature_family_ids:
+        stats_columns, covariate_columns, family_filter_df = _filter_columns_by_feature_family(
+            stats_columns=stats_columns,
+            additional_feature_columns=covariate_columns,
+            allowed_feature_family_ids=allowed_feature_family_ids,
+        )
+        family_filter_df.to_excel(scenario_dir / "feature_family_filter.xlsx", index=False)
+
     filtered_df, feature_mapping_df, feature_coverage_df = _prepare_scenario_features(
         scenario_df,
         stats_columns=stats_columns,
@@ -402,6 +518,7 @@ def _run_strict_scenario_analysis(
     _save_json(
         {
             "feature_labels": feature_columns,
+            "allowed_feature_family_ids": sorted(allowed_feature_family_ids),
             "foldwise_adjustment_covariates": list(selected_covariates),
             "foldwise_adjustment_columns": adjustment_columns,
             "adjustment_fit_scope": "inner/outer training fold only",

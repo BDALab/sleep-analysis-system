@@ -189,6 +189,26 @@ FEATURE_FAMILIES = {
     ),
 }
 
+PRIMARY_SLEEP_STABLE_FAMILY_IDS = frozenset(
+    {
+        "long_awakenings",
+        "sleep_onset_latency",
+        "sleep_efficiency",
+        "wake_bouts",
+        "waso",
+    }
+)
+ACTIVITY_EXTENSION_STABLE_FAMILY_IDS = frozenset({"activity_variability"})
+SECONDARY_LIFESTYLE_FAMILY_IDS = frozenset(
+    {
+        "diary_sleep_quality",
+        "alcohol",
+        "caffeine",
+        "sleeping_pills",
+        "day_sleep",
+    }
+)
+
 
 def list_feature_families():
     return list(FEATURE_FAMILIES.values())

@@ -1,7 +1,7 @@
 # GeneActiv / preDLB Project Update Report
 
 Prepared: 2026-06-07  
-Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, and official HC-versus-preDLB feature-family stability analysis  
+Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, official HC-versus-preDLB feature-family stability analysis, and stable-family restricted HC-versus-preDLB association follow-up  
 Project path: `/Volumes/Portable/geneactiv-processing-data`
 
 This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers clinical-variable integration, education harmonization, scenario-specific covariate verification, feature-family reduction, the diagnosis-adjusted follow-up of exploratory feature-outcome associations, strict classification, and first-pass regression prediction of clinical scores.
@@ -80,7 +80,16 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     analysis stream. Alcohol, caffeine, rest quality, day sleep, and
     sleeping-pill variables are retained as secondary, confounding-sensitive
     predictors.
-17. The WASO-corrected all-diagnosis clinical-scale regression remains
+17. Stable-family restricted HC-versus-preDLB confirmation was run on
+    2026-07-01 using only the fixed families above. In the sleep-only primary
+    family set, retained adjusted associations are concentrated in executive
+    performance and long-awakening variability. In the sleep-plus-activity
+    set, activity variability adds retained associations with UPDRS and
+    attention, supporting its role as a separate activity-enhanced extension.
+    Most visuospatial and sleep-onset-latency pooled findings weaken after
+    diagnosis/covariate adjustment or cannot be estimated from the raw grouped
+    feature.
+18. The WASO-corrected all-diagnosis clinical-scale regression remains
     exploratory prediction, not a ready clinical estimator. In the sleep/diary
     plus lifestyle dataset, only visuospatial and executive scores improved
     over a foldwise median baseline. RBDq, UPDRS, MFS, and attention had worse
@@ -88,7 +97,7 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     strongest point estimate was visuospatial performance (`R2 = 0.147`,
     Pearson `r = 0.392`), followed by executive performance (`R2 = 0.061`,
     Pearson `r = 0.255`).
-18. The WASO-corrected focused HC-versus-preDLB regression reruns keep
+19. The WASO-corrected focused HC-versus-preDLB regression reruns keep
     the same main conclusion: individual clinical-scale prediction remains
     exploratory. The strongest corrected focused result is visuospatial
     performance in the clinical-core model (`MAE = 0.71`, `R2 = 0.177`,
@@ -1198,6 +1207,80 @@ Interpretation:
   would save selected families inside each outer fold and report selection
   frequency.
 
+### 9.12 Stable-family restricted HC-vs-preDLB confirmation
+
+After defining the fixed feature families, a restricted confirmation analysis
+was run for HC versus preDLB only. The purpose was to test whether the
+previous conclusions survive when the feature space is reduced to
+pre-specified interpretable families before the association workflow.
+
+The run output is:
+
+`media/feature-family-restricted-analysis/hc-vs-predlb/20260701_094747/`
+
+The summary workbook is:
+
+`media/feature-family-restricted-analysis/hc-vs-predlb/20260701_094747/feature_family_restricted_analysis_summary.xlsx`
+
+Design:
+
+- source data: the two canonical WASO-corrected analysis-preparation runs from
+  2026-06-29;
+- scenario: HC versus preDLB only;
+- controlled covariates: gender and education;
+- primary sleep families: long awakenings, sleep-onset latency, sleep
+  efficiency, wake-bout frequency, and corrected WASO;
+- activity-enhanced extension: the same primary sleep families plus activity
+  variability/dispersion;
+- statistics: Mann-Whitney/FDR group comparison, Spearman/FDR clinical
+  correlations, and diagnosis/covariate-adjusted GEE follow-up.
+
+Summary:
+
+| Restricted analysis | Features tested | Group FDR < 0.05 | Correlation FDR < 0.05 | Follow-up candidates | Adjusted GEE models |
+|---|---:|---:|---:|---:|---:|
+| Primary sleep families | 180 | 19 | 22 | 15 | 15 |
+| Primary sleep + activity variability | 340 | 25 | 50 | 27 | 27 |
+
+Main retained findings:
+
+| Feature family | Clinical outcome | Restricted stream | Interpretation |
+|---|---|---|---|
+| Long awakenings | Executive | primary sleep | Several long-awakening variability summaries remain associated with executive score after diagnosis, gender, and education adjustment. Adjusted FDR values are approximately `0.019` to `0.027`; one representative is also supported within preDLB. |
+| Long awakenings | Executive | primary sleep + activity | The same executive/awakening pattern remains present after adding activity features, supporting it as a sleep-continuity signal rather than only an activity-feature artifact. |
+| Activity variability/dispersion | UPDRS | primary sleep + activity | Activity variability is the clearest activity-enhanced signal. Representative activity-dispersion features show pooled Spearman `rho` about `0.315` to `0.344` and adjusted FDR values from `<0.001` to `0.030`. Higher activity variability is associated with higher motor score. |
+| Activity variability/dispersion | Attention | primary sleep + activity | Several activity-variability measures remain associated with attention after adjustment. The sign depends on the exact variability metric, so the family-level interpretation should be "activity-distribution variability relates to attention" rather than a single directional statement for every metric. |
+| Activity variability/dispersion | Visuospatial | primary sleep + activity | Some visuospatial associations are supported within HC or preDLB separately, but the common adjusted effect is not retained. This should remain secondary. |
+| Sleep onset latency | Visuospatial | both streams | The strong pooled sleep-onset-latency/visuospatial association weakens after diagnosis/covariate adjustment or is not estimable from the raw grouped feature. It should not be used as a primary retained result. |
+
+Interpretation:
+
+- The stable-family restriction makes the primary story narrower and more
+  defensible. The strongest retained sleep-only finding is long-awakening
+  variability versus executive performance.
+- Activity variability adds a distinct and stronger signal for UPDRS and
+  attention. This supports reporting an activity-enhanced extension rather
+  than mixing activity features into the primary sleep-continuity claim.
+- Corrected WASO remains part of the stable family set, but it does not restore
+  the old normalized-WASO/MFS candidate. The MFS/WASO finding remains retired.
+- Sleep-onset latency remains useful as a stable family in the broader
+  evidence table, but the restricted GEE follow-up does not support it as the
+  strongest confirmed HC-versus-preDLB clinical association.
+
+Implementation note:
+
+The utils page now also contains prepared strict nested-CV actions for the next
+classification sensitivity run:
+
+- `Strict stable families`: HC versus preDLB, primary sleep families only;
+- `Strict stable families + acc`: HC versus preDLB, primary sleep families plus
+  activity variability.
+
+These actions filter feature columns using `dashboard/logic/feature_families.py`
+before nested-CV feature selection. They have been prepared but not run yet, so
+no classifier performance numbers are reported for the restricted strict
+family models in this update.
+
 
 ## 10) Clinical-Scale Regression
 
@@ -1541,37 +1624,41 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
 
 1. Treat the 2026-06-29 WASO-corrected correlation outputs as canonical and exclude the retired normalized-WASO/MFS candidate from the primary interpretation.
 2. Use the retained focused plots and effect estimates to define a short, clinically interpretable candidate list.
-3. Fit prespecified sensitivity models with age, gender, and education regardless of preliminary covariate-test significance.
-4. Compare the current GEE results with alternative working correlations and, where appropriate, mixed-effects models.
-5. Replace visit-level nested leave-one-out classification with person-grouped
+3. Run the two prepared strict stable-family HC-versus-preDLB classification
+   actions and compare them against the broader strict RFE classifier. This
+   tests whether the interpretable family restriction preserves enough
+   discrimination.
+4. Fit prespecified sensitivity models with age, gender, and education regardless of preliminary covariate-test significance.
+5. Compare the current GEE results with alternative working correlations and, where appropriate, mixed-effects models.
+6. Replace visit-level nested leave-one-out classification with person-grouped
    nested cross-validation so all visits from one person remain in the same
    outer and inner folds.
-6. Add source-cohort sensitivity analyses: leave-one-cohort-out validation,
+7. Add source-cohort sensitivity analyses: leave-one-cohort-out validation,
    within-cohort evaluation where sample size permits, and a model using cohort
    alone as a negative-control benchmark.
-7. Compare actigraphy-only, diary-only, and combined classifiers. A signal
+8. Compare actigraphy-only, diary-only, and combined classifiers. A signal
    confined to diary variables would be especially vulnerable to reporting
    and protocol differences.
-8. If activity-enhanced all-diagnosis regression remains relevant, rerun that
+9. If activity-enhanced all-diagnosis regression remains relevant, rerun that
    broader activity analysis using the WASO-corrected source exports. The
    all-diagnosis clinical regression and four focused HC-versus-preDLB
    regression variants have already been regenerated.
-9. Keep alcohol/caffeine and other diary-lifestyle predictors as a secondary
+10. Keep alcohol/caffeine and other diary-lifestyle predictors as a secondary
    extended feature set and report their incremental value against the core
    model.
-10. For RBDq, test diagnosis-stratified or interaction-aware regression models
+11. For RBDq, test diagnosis-stratified or interaction-aware regression models
    rather than relying on a single pooled score predictor.
-11. For UPDRS and MFS, prioritize association and effect-estimation analyses
+12. For UPDRS and MFS, prioritize association and effect-estimation analyses
     over individual-level regression until a model beats the foldwise median
     baseline.
-12. Report regression results only together with the foldwise median baseline,
+13. Report regression results only together with the foldwise median baseline,
     because several outcomes show non-zero prediction correlation without
     improving MAE.
-13. Estimate feature-selection stability across grouped resamples before
+14. Estimate feature-selection stability across grouped resamples before
     identifying classifier biomarkers.
-14. Treat all present effects as hypothesis-generating until confirmed in
+15. Treat all present effects as hypothesis-generating until confirmed in
     held-out or external data.
-15. Consider bootstrap stability analysis for feature-family selection and
+16. Consider bootstrap stability analysis for feature-family selection and
     effect estimates.
 
 ## 14) Reproducibility
@@ -1605,6 +1692,8 @@ The updated runs are:
   `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-rfe/20260629_173137/scenario-preDLB_vs_HC/diagnostic_plots/`
 - official HC-vs-preDLB feature-family stability analysis:
   `media/feature-family-stability/hc-vs-predlb/20260630_135657/`
+- stable-family restricted HC-vs-preDLB association follow-up:
+  `media/feature-family-restricted-analysis/hc-vs-predlb/20260701_094747/`
 - WASO-corrected strict nested-CV classification with diary covariates, non-RFE comparison:
   `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical/20260629_145843/`
 - WASO-corrected all-diagnosis clinical-scale regression:
@@ -1687,6 +1776,15 @@ candidate. Activity variability is supported in the activity-enhanced stream
 and should be reported as a separate secondary extension. Lifestyle variables
 remain useful sensitivity predictors but are not primary physiological
 claims.
+
+The stable-family restricted HC-versus-preDLB confirmation makes this more
+specific. When the analysis is limited to the primary sleep families, the
+retained adjusted clinical signal is mainly long-awakening variability versus
+executive performance. When activity variability is added, the clearest
+additional signals are activity variability versus UPDRS and attention.
+Visuospatial and sleep-onset-latency findings remain exploratory because they
+weaken after diagnosis/covariate adjustment or are not estimable in the raw
+GEE follow-up.
 
 Relative to the previous global-covariate classifier runs, corrected
 scenario-specific handling plus RFE strengthens all three strict comparisons,

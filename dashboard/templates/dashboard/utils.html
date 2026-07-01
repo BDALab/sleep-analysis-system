@@ -301,6 +301,53 @@
                     </tbody>
                 </table>
             {% endif %}
+            {% if feature_family_restricted_analysis %}
+                <h3>Stable-family restricted HC vs preDLB analysis</h3>
+                <p>
+                    Output: {{ feature_family_restricted_analysis.run_dir }}<br/>
+                    Summary: {{ feature_family_restricted_analysis.summary_path }}
+                </p>
+                <table style="width: 100%; margin-bottom: 2em; border-collapse: collapse;">
+                    <thead>
+                    <tr>
+                        <th style="padding: 0.5em; text-align: left;">Analysis</th>
+                        <th style="padding: 0.5em; text-align: left;">Dataset</th>
+                        <th style="padding: 0.5em; text-align: right;">Features</th>
+                        <th style="padding: 0.5em; text-align: right;">Group FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: right;">Correlation FDR &lt; 0.05</th>
+                        <th style="padding: 0.5em; text-align: right;">Follow-up candidates</th>
+                        <th style="padding: 0.5em; text-align: left;">Follow-up output</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for analysis in feature_family_restricted_analysis.analyses %}
+                        <tr>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ analysis.analysis_label }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ analysis.dataset_name }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ analysis.feature_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ analysis.significant_group_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ analysis.significant_correlation_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd; text-align: right;">
+                                {{ analysis.followup_candidate_count }}
+                            </td>
+                            <td style="padding: 0.5em; border-top: 1px solid #ddd;">
+                                {{ analysis.followup_path }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
             <p><a href="{% url 'dashboard:subjects' %}" class="button button-small">Back to dashboard</a></p>
         </div>
 
@@ -496,6 +543,15 @@
                class="button button-small button-fix-width">Analyze</a>
         </div>
                     <div class="small-column">
+                        <h3>HC vs preDLB stable families</h3>
+                        <p>
+                            Filter canonical WASO-corrected datasets to stable families,
+                            then rerun correlation and GEE association follow-up.
+                        </p>
+                        <a href="{% url 'dashboard:utils' 'feature-family-restricted-hc-predlb' %}"
+                           class="button button-small button-fix-width">Confirm</a>
+                    </div>
+                    <div class="small-column">
             <h3>Prepare clinical dataset</h3>
             <p>Create scenario-specific adjusted and raw grouped data for all downstream analyses.</p>
             <a href="{% url 'dashboard:utils' 'covariates-clinical' %}"
@@ -683,6 +739,19 @@
             <h3>Strict + diary predictors + RFE + acc</h3>
             <p>Add diary-derived predictors and XGBoost RFE to the strict dataset-clinical-acc pipeline.</p>
             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
+               class="button button-small button-fix-width">Run</a>
+        </div>
+                        <div class="small-column">
+                            <h3>Strict stable families</h3>
+                            <p>HC vs preDLB only; use fixed primary sleep families before nested CV feature
+                                selection.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-stable-family-hc-predlb-clinical' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict stable families + acc</h3>
+                            <p>HC vs preDLB only; add activity variability to the fixed primary sleep family set.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-stable-family-hc-predlb-clinical-acc' %}"
                class="button button-small button-fix-width">Run</a>
         </div>
                     </div>
