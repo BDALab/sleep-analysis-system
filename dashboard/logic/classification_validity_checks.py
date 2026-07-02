@@ -130,27 +130,42 @@ def run_hc_vs_predlb_classification_validity_checks(output_dir=None):
 
 def subject_person_id(subject_code):
     code = str(subject_code).strip()
-    hc_match = re.match(r"^HC(?P<visit>2)?-(?P<person>.+)$", code, flags=re.IGNORECASE)
+    hc_match = re.match(
+        r"^HC(?P<visit>[23])?(?P<sep>[-_])(?P<person>.+)$",
+        code,
+        flags=re.IGNORECASE,
+    )
     if hc_match:
-        return f"HC-{hc_match.group('person')}"
+        return f"HC{hc_match.group('sep')}{hc_match.group('person')}"
 
     predlb_match = re.match(
-        r"^pre[-_]?LBD(?P<visit>2)?-(?P<person>.+)$",
+        r"^(?P<base>pre[-_]?(?:LBD|DLB))(?P<visit>[23])?(?P<sep>[-_])(?P<person>.+)$",
         code,
         flags=re.IGNORECASE,
     )
     if predlb_match:
-        return f"pre-LBD-{predlb_match.group('person')}"
+        return (
+            f"{predlb_match.group('base')}"
+            f"{predlb_match.group('sep')}"
+            f"{predlb_match.group('person')}"
+        )
 
     return code
 
 
 def subject_visit_index(subject_code):
     code = str(subject_code).strip()
-    if re.match(r"^HC2-", code, flags=re.IGNORECASE):
-        return 2
-    if re.match(r"^pre[-_]?LBD2-", code, flags=re.IGNORECASE):
-        return 2
+    visit_match = re.match(r"^HC(?P<visit>[23])[-_]", code, flags=re.IGNORECASE)
+    if visit_match:
+        return int(visit_match.group("visit"))
+
+    visit_match = re.match(
+        r"^pre[-_]?(?:LBD|DLB)(?P<visit>[23])[-_]",
+        code,
+        flags=re.IGNORECASE,
+    )
+    if visit_match:
+        return int(visit_match.group("visit"))
     return 1
 
 
@@ -158,9 +173,9 @@ def subject_source_cohort(subject_code):
     code = str(subject_code).strip()
     if re.match(r"^COBEN-", code, flags=re.IGNORECASE):
         return "COBEN"
-    if re.match(r"^HC2?-", code, flags=re.IGNORECASE):
+    if re.match(r"^HC[23]?[-_]", code, flags=re.IGNORECASE):
         return "HC/HC2"
-    if re.match(r"^pre[-_]?LBD2?-", code, flags=re.IGNORECASE):
+    if re.match(r"^pre[-_]?(?:LBD|DLB)[23]?[-_]", code, flags=re.IGNORECASE):
         return "pre-LBD/pre-LBD2"
     if re.match(r"^MY-HC-", code, flags=re.IGNORECASE):
         return "MY-HC"
