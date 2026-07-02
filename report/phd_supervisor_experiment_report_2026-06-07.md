@@ -1,10 +1,10 @@
 # GeneActiv / preDLB Project Update Report
 
-Prepared: 2026-06-07  
-Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, official HC-versus-preDLB feature-family stability analysis, stable-family restricted HC-versus-preDLB association follow-up, strict stable-family HC-versus-preDLB classification, and HC-versus-preDLB classification validity checks  
+Prepared: 2026-06-07
+Updated after feature-family reduction, diagnosis-adjusted GEE follow-up, HC-versus-preDLB focused visualization, dual reporting of correlation and adjusted effect estimates, strict nested-CV classification, comparison with the previous global-covariate classifier runs, all-diagnosis clinical-scale regression, focused HC-versus-preDLB regression on 2026-06-27, WASO-corrected correlation, strict RFE classification, focused HC-versus-preDLB regression, all-diagnosis clinical regression reruns on 2026-06-29, non-strict classification sensitivity runs on 2026-06-30, strict RFE probability diagnostic plots, official HC-versus-preDLB feature-family stability analysis, stable-family restricted HC-versus-preDLB association follow-up, strict stable-family HC-versus-preDLB classification, HC-versus-preDLB classification validity checks, and thesis-level person-grouped HC-versus-preDLB classification
 Project path: `/Volumes/Portable/geneactiv-processing-data`
 
-This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers clinical-variable integration, education harmonization, scenario-specific covariate verification, feature-family reduction, the diagnosis-adjusted follow-up of exploratory feature-outcome associations, strict classification, classification validity checks, and first-pass regression prediction of clinical scores.
+This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers clinical-variable integration, education harmonization, scenario-specific covariate verification, feature-family reduction, the diagnosis-adjusted follow-up of exploratory feature-outcome associations, strict classification, classification validity checks, thesis-level person-grouped classifier validation, and first-pass regression prediction of clinical scores.
 
 ## 1) Executive Summary
 
@@ -44,11 +44,11 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     changed MCI-AD only slightly. Because thresholds were unstable across
     outer folds, the default probability threshold of `0.5` remains the more
     defensible primary result.
-12. Two validation risks remain. Repeated visits are currently separated by
-    database subject code rather than underlying person, and diagnostic group
-    remains associated with source cohort. The next classification analysis
-    must use person-grouped nested validation and cohort-robust sensitivity
-    analyses.
+12. Two validation risks were identified for diagnostic classification:
+    repeated visits can be separated by database subject code rather than
+    underlying person, and diagnostic group is strongly associated with source
+    cohort. These risks are now explicitly tested in the 2026-07-01 audit and
+    2026-07-02 person-grouped thesis validation.
 13. Compared with the previous global-covariate strict classifier, the
     WASO-corrected RFE run improves all three scenarios in balanced accuracy,
     but the practical interpretation remains conservative. MCI-AD vs HC
@@ -109,7 +109,21 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     current diagnostic classifier should be treated as exploratory and
     secondary; the association and regression analyses remain more defensible
     for publication than diagnostic classification performance claims.
-21. The WASO-corrected all-diagnosis clinical-scale regression remains
+21. A full thesis-level person-grouped nested-CV HC-versus-preDLB validation
+    was run on 2026-07-02. The broad RFE model preserved moderate ranking
+    signal (`AUC = 0.746`, default `BACC = 0.649`, tuned `BACC = 0.666`), but
+    the source-only negative-control model remained stronger (`AUC = 0.814`,
+    `BACC = 0.840`). Stable primary sleep families gave similar balanced
+    accuracy (`AUC = 0.706`, `BACC = 0.663`), while adding activity variability
+    weakened diagnostic classification (`AUC = 0.620`, `BACC = 0.604`).
+22. Cohort-sensitive validation confirms that current diagnostic
+    classification should not be presented as source-robust. Within-cohort
+    nested CV was near chance in COBEN and pre-LBD/pre-LBD2, and HC/HC2 could
+    not be estimated because it contained only one preDLB subject. This is a
+    useful thesis result because it demonstrates the methodological boundary
+    clearly, but it argues against article-level diagnostic classifier claims
+    without a better balanced external or multi-source validation set.
+23. The WASO-corrected all-diagnosis clinical-scale regression remains
     exploratory prediction, not a ready clinical estimator. In the sleep/diary
     plus lifestyle dataset, only visuospatial and executive scores improved
     over a foldwise median baseline. RBDq, UPDRS, MFS, and attention had worse
@@ -117,7 +131,7 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     strongest point estimate was visuospatial performance (`R2 = 0.147`,
     Pearson `r = 0.392`), followed by executive performance (`R2 = 0.061`,
     Pearson `r = 0.255`).
-22. The WASO-corrected focused HC-versus-preDLB regression reruns keep
+24. The WASO-corrected focused HC-versus-preDLB regression reruns keep
     the same main conclusion: individual clinical-scale prediction remains
     exploratory. The strongest corrected focused result is visuospatial
     performance in the clinical-core model (`MAE = 0.71`, `R2 = 0.177`,
@@ -664,7 +678,8 @@ cause generated the long wake periods.
 
 #### Retired normalized-WASO/MFS candidate
 
-The previous HC-versus-preDLB figure for `MFS ~ Range.actigraphy_norm.Wake
+**Retired Figure 5.** The previous HC-versus-preDLB figure for
+`MFS ~ Range.actigraphy_norm.Wake
 after sleep onset` has been removed from the canonical figure set. After
 correcting WASO normalization from seconds to minutes, regenerating
 `dataset-clinical.xlsx` and `dataset-clinical-acc.xlsx`, and rerunning the
@@ -1407,6 +1422,112 @@ Interpretation:
   visuospatial, and executive outcomes, with diagnosis/covariate-adjusted
   estimates.
 
+### 9.15 Thesis-level person-grouped HC-vs-preDLB classification
+
+The full person-grouped thesis validation was then run on 2026-07-02. This
+analysis retrains the HC-versus-preDLB classifiers with true person-grouped
+outer and inner cross-validation, so repeated visits such as `HC2-*` and
+`pre-LBD2-*` cannot be split between training and test folds.
+
+The run output is:
+
+`media/classification/person-grouped-thesis/hc-vs-predlb/20260702_111118/`
+
+The summary workbook is:
+
+`media/classification/person-grouped-thesis/hc-vs-predlb/20260702_111118/hc_vs_predlb_person_grouped_classification_summary.xlsx`
+
+Design:
+
+- scenario: HC versus preDLB only;
+- outer validation: `5`-fold `StratifiedGroupKFold` by underlying person;
+- inner tuning: `5`-fold `StratifiedGroupKFold` by underlying person;
+- covariates residualized inside training folds: gender and education;
+- model variants: broad RFE, stable primary sleep families, and stable primary
+  sleep plus activity variability;
+- sensitivity outputs: first-visit-only metrics, cohort-stratified
+  performance, source-only negative control, leave-one-cohort-out validation,
+  and within-cohort nested CV where sample size allowed.
+
+Main person-grouped nested-CV results:
+
+| Model | n / persons | AUC | PR AUC | Default BACC | Tuned BACC | First-visit AUC | First-visit BACC | Source-only AUC | Source-only BACC |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Broad strict RFE | 132 / 118 | 0.746 | 0.744 | 0.649 | 0.666 | 0.740 | 0.648 | 0.814 | 0.840 |
+| Stable primary sleep | 132 / 118 | 0.706 | 0.634 | 0.663 | 0.642 | 0.677 | 0.644 | 0.814 | 0.840 |
+| Stable primary sleep + activity variability | 129 / 116 | 0.620 | 0.575 | 0.604 | 0.620 | 0.589 | 0.586 | 0.814 | 0.845 |
+
+Interpretation of the main table:
+
+- Person grouping does not fully remove the broad RFE signal. The broad model
+  still ranks HC and preDLB above chance (`AUC = 0.746`) and reaches tuned
+  balanced accuracy `0.666`.
+- The result is slightly weaker than the earlier visit-level strict RFE
+  classifier (`AUC = 0.764`, default `BACC = 0.668`), which supports the
+  previous conclusion that repeated visits inflated performance modestly, not
+  catastrophically.
+- The stable primary sleep family model remains close to the broad model in
+  balanced accuracy (`0.663`) despite lower AUC (`0.706`). This is useful for
+  thesis interpretation because it shows that interpretable sleep-continuity
+  families preserve some diagnostic signal.
+- Adding activity variability weakens strict diagnostic classification in this
+  person-grouped validation. This does not contradict the association results
+  where activity variability relates to UPDRS and attention. It means activity
+  variability is more convincing as a clinical-outcome association family than
+  as a diagnostic classifier feature family.
+- The source-only negative-control classifier remains stronger than all
+  actigraphy/diary classifiers. This is the decisive limitation: source cohort
+  alone gives BACC approximately `0.84`.
+
+Cohort composition remained highly imbalanced:
+
+| Source cohort | HC | preDLB | Interpretation |
+|---|---:|---:|---|
+| COBEN | 46 | 9 | mostly HC |
+| HC/HC2 | 16 | 1 | almost entirely HC; within-cohort classifier not estimable |
+| pre-LBD/pre-LBD2 | 11 | 49 | mostly preDLB |
+
+Within-cohort nested-CV results:
+
+| Model | Cohort | Status | AUC | BACC | Sensitivity | Specificity | Interpretation |
+|---|---|---|---:|---:|---:|---:|---|
+| Broad strict RFE | COBEN | completed | 0.579 | 0.557 | 0.222 | 0.891 | near chance; detects few preDLB subjects |
+| Broad strict RFE | pre-LBD/pre-LBD2 | completed | 0.501 | 0.469 | 0.939 | 0.000 | near chance; predicts almost everyone as preDLB |
+| Stable primary sleep | COBEN | completed | 0.522 | 0.524 | 0.222 | 0.826 | near chance |
+| Stable primary sleep | pre-LBD/pre-LBD2 | completed | 0.510 | 0.490 | 0.980 | 0.000 | near chance; poor HC recognition |
+| Stable sleep + activity | COBEN | completed | 0.471 | 0.463 | 0.125 | 0.800 | below chance |
+| Stable sleep + activity | pre-LBD/pre-LBD2 | completed | 0.383 | 0.469 | 0.938 | 0.000 | below chance ranking; poor HC recognition |
+| All models | HC/HC2 | skipped | - | - | - | - | only one preDLB subject, so grouped CV is not estimable |
+
+Leave-one-cohort-out validation was also informative:
+
+- When COBEN was held out, balanced accuracy was only moderate (`0.595` to
+  `0.626`), with low precision for preDLB because COBEN contains few preDLB
+  subjects.
+- When pre-LBD/pre-LBD2 was held out, AUC looked moderate to good (`0.638` to
+  `0.718`), but default-threshold sensitivity was very low (`0.143` to
+  `0.208`). The models mostly failed to label the held-out pre-LBD/pre-LBD2
+  preDLB subjects as preDLB.
+- HC/HC2 leave-one-cohort-out results are not clinically stable because this
+  cohort contains only one preDLB subject.
+
+Overall interpretation:
+
+- This is a useful thesis-level validation result, even though it is not a
+  strong classifier result. It demonstrates that careful person grouping and
+  cohort sensitivity analysis are necessary and materially change the
+  interpretation.
+- The broad RFE and stable sleep-family models show a moderate internal
+  signal, but the source-only negative control and within-cohort analyses show
+  that the signal is not source-robust.
+- The thesis can present this as a methodological finding: diagnostic
+  classification from the current pooled dataset is vulnerable to cohort
+  composition, while feature-outcome association analyses remain the more
+  defensible primary scientific output.
+- For an article, the diagnostic classifier should be omitted or kept as a
+  short exploratory supplement unless an external or better balanced cohort is
+  available.
+
 
 ## 10) Clinical-Scale Regression
 
@@ -1715,18 +1836,20 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
     Excel exports plus correlation/follow-up analyses were regenerated on
     2026-06-29. Historical results using the old
     `actigraphy_norm.Wake after sleep onset` values should not be interpreted.
-13. **Strict classification is nested but not yet person-grouped in the saved
-    prediction files.** All preprocessing and tuning are contained within
-    training folds, but visits belonging to one underlying person can still be
-    split between training and testing. The 2026-07-01 validity audit found
-    that first-visit-only evaluation lowers HC-versus-preDLB performance in
-    all current strict classifiers.
+13. **Earlier strict classification prediction files were visit-level, but the
+    thesis validation is now person-grouped.** The 2026-07-01 validity audit
+    found that first-visit-only evaluation lowered HC-versus-preDLB
+    performance. The 2026-07-02 thesis validation then retrained the models
+    with person-grouped outer and inner CV, so repeated visits no longer leak
+    across folds in that run.
 14. **Cohort-source confounding is confirmed for HC-versus-preDLB
-    classification.** Diagnostic composition differs substantially among
-    COBEN, HC/HC2, and pre-LBD source cohorts. A source-only negative-control
-    classifier reached balanced accuracy around `0.84`, so diagnostic
-    classification performance cannot currently be interpreted independently
-    of cohort/source differences.
+    classification and remains after person-grouped retraining.** Diagnostic
+    composition differs substantially among COBEN, HC/HC2, and pre-LBD source
+    cohorts. In the person-grouped thesis run, source cohort alone reached
+    balanced accuracy around `0.84`, and within-cohort nested CV was near
+    chance or not estimable. Diagnostic classification performance therefore
+    cannot currently be interpreted independently of cohort/source
+    differences.
 15. **Clinical-scale regression is internally person-grouped but still not
     externally validated.** The regression folds keep repeated visits from the
     same person together, but this does not solve source-cohort confounding or
@@ -1754,18 +1877,18 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
 
 1. Treat the 2026-06-29 WASO-corrected correlation outputs as canonical and exclude the retired normalized-WASO/MFS candidate from the primary interpretation.
 2. Use the retained focused plots and effect estimates to define a short, clinically interpretable candidate list.
-3. Treat the strict stable-family classifiers as interpretability sensitivity
-   analyses, not as improved diagnostic models. The 2026-07-01 validity audit
-   confirms that classification is vulnerable to source-cohort confounding.
+3. Treat the strict and person-grouped classifiers as exploratory thesis
+   analyses, not as diagnostic models. The 2026-07-02 person-grouped run
+   confirms moderate internal signal but poor source-robustness.
 4. Fit prespecified sensitivity models with age, gender, and education regardless of preliminary covariate-test significance.
 5. Compare the current GEE results with alternative working correlations and, where appropriate, mixed-effects models.
-6. If diagnostic classification remains part of the article, replace
-   visit-level nested leave-one-out classification with person-grouped nested
-   cross-validation so all visits from one person remain in the same outer and
-   inner folds.
-7. Treat source-cohort sensitivity as mandatory for any diagnostic classifier:
-   leave-one-cohort-out validation, within-cohort evaluation where sample size
-   permits, and reporting against the source-only negative-control benchmark.
+6. Do not spend more effort tuning the current diagnostic classifier unless a
+   better balanced validation design is available. Person-grouped validation
+   has already been run and shows that cohort/source effects dominate.
+7. If classification is included in the thesis, present the full validation
+   ladder: visit-level strict model, first-visit audit, person-grouped nested
+   CV, source-only negative control, leave-one-cohort-out, and within-cohort
+   nested CV.
 8. Compare actigraphy-only, diary-only, and combined classifiers. A signal
    confined to diary variables would be especially vulnerable to reporting
    and protocol differences.
@@ -1784,11 +1907,14 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
 13. Report regression results only together with the foldwise median baseline,
     because several outcomes show non-zero prediction correlation without
     improving MAE.
-14. Estimate feature-selection stability across grouped resamples before
+14. For the article, prioritize the association/GEE/regression story over
+    diagnostic classification. Classification can be mentioned as exploratory
+    or reserved for the thesis methodology chapter.
+15. Estimate feature-selection stability across grouped resamples before
     identifying classifier biomarkers.
-15. Treat all present effects as hypothesis-generating until confirmed in
+16. Treat all present effects as hypothesis-generating until confirmed in
     held-out or external data.
-16. Consider bootstrap stability analysis for feature-family selection and
+17. Consider bootstrap stability analysis for feature-family selection and
     effect estimates.
 
 ## 14) Reproducibility
@@ -1830,6 +1956,8 @@ The updated runs are:
   `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical-acc-stable-primary-sleep-activity-hc-predlb/20260701_125206/`
 - HC-vs-preDLB classification validity checks:
   `media/classification/validity-checks/hc-vs-predlb/20260701_180935/`
+- thesis-level person-grouped HC-vs-preDLB classification and cohort sensitivity:
+  `media/classification/person-grouped-thesis/hc-vs-predlb/20260702_111118/`
 - WASO-corrected strict nested-CV classification with diary covariates, non-RFE comparison:
   `media/classification/grouped-statistics-strict-with-covariates/dataset-clinical/20260629_145843/`
 - WASO-corrected all-diagnosis clinical-scale regression:
@@ -1885,7 +2013,11 @@ stronger in HC.
 
 The previously strongest pooled sleep-onset-latency result cannot be estimated from the corresponding raw grouped feature and is therefore downgraded from the main conclusion.
 
-No FDR-significant candidate was detected for MCI-AD vs HC alone. Focused visualization is now complete. The next priority is prespecified sensitivity modeling and person-grouped validation of a much smaller set of clinically interpretable feature families.
+No FDR-significant candidate was detected for MCI-AD vs HC alone. Focused
+visualization is now complete. Person-grouped thesis validation of the
+HC-versus-preDLB classifiers has also been completed and confirms the same
+practical boundary: diagnostic classification contains moderate internal
+signal but is not robust to cohort/source sensitivity checks.
 
 WASO-corrected strict nested classification with RFE confirms a moderate
 internal signal but still produces conservative results. The primary
@@ -1970,7 +2102,9 @@ than actigraphy/sleep-continuity features because they may reflect behavior,
 reporting, or cohort differences rather than disease-specific physiology.
 
 The classification findings should remain secondary to the current
-association analyses until validation is grouped by underlying person and
-tested for transportability across source cohorts. The most important next
-step is therefore not additional hyperparameter tuning, but restructuring the
-validation design around person and cohort.
+association analyses. The 2026-07-02 thesis validation has now grouped
+validation by underlying person and tested cohort/source transportability; it
+shows moderate internal signal but poor source robustness. The most important
+next step is therefore not additional hyperparameter tuning, but either
+acquiring a better balanced validation cohort or focusing the article on the
+association, GEE, and regression evidence.
