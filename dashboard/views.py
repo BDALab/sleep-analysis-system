@@ -35,6 +35,9 @@ from dashboard.logic.classification_grouped_statistics_strict import (
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical,
     classification_grouped_statistics_strict_with_covariates_rfe_dataset_clinical_acc,
 )
+from dashboard.logic.classification_validity_checks import (
+    run_hc_vs_predlb_classification_validity_checks,
+)
 from dashboard.logic.clinical_scale_regression import (
     clinical_scale_regression_dataset_clinical,
     clinical_scale_regression_dataset_clinical_acc,
@@ -756,6 +759,19 @@ def utils(request, action=None):
                 'ok': (
                     'Strict HC-vs-preDLB stable-family classification for dataset-clinical-acc completed: '
                     f'{result["run_dir"]}'
+                )
+            }
+        elif action == 'classification-validity-hc-predlb':
+            logger.info('Run HC-vs-preDLB classification validity checks')
+            result = run_hc_vs_predlb_classification_validity_checks()
+            logger.info(
+                'HC-vs-preDLB classification validity checks completed: '
+                f'{result["run_dir"]}'
+            )
+            context = {
+                'ok': (
+                    'HC-vs-preDLB classification validity checks completed: '
+                    f'{result["run_dir"]} | {result["output_path"]}'
                 )
             }
         elif action == 'classification-grouped-stats-ablation-clinical':

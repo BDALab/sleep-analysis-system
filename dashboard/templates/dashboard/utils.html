@@ -705,42 +705,44 @@
                 <details class="utils-subgroup">
                     <summary>Strict publication models</summary>
                     <div class="utils-grid">
-        <div class="small-column">
-            <h3>Strict grouped stats</h3>
-            <p>Run nested CV with scenario-specific demographic adjustment fitted inside every training fold.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
-        <div class="small-column">
-            <h3>Strict grouped stats + acc</h3>
-            <p>Run the same nested-CV pipeline for dataset-clinical-acc.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical-acc' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
-        <div class="small-column">
-            <h3>Strict + diary predictors</h3>
-            <p>Add diary-derived predictors to the strict nested-CV pipeline.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
-        <div class="small-column">
-            <h3>Strict + diary predictors + acc</h3>
-            <p>Add diary-derived predictors to the strict dataset-clinical-acc pipeline.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical-acc' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
-        <div class="small-column">
-            <h3>Strict + diary predictors + RFE</h3>
-            <p>Add diary-derived predictors and XGBoost RFE to the strict pipeline.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
-        <div class="small-column">
-            <h3>Strict + diary predictors + RFE + acc</h3>
-            <p>Add diary-derived predictors and XGBoost RFE to the strict dataset-clinical-acc pipeline.</p>
-            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
+                        <div class="small-column">
+                            <h3>Strict grouped stats</h3>
+                            <p>Run nested CV with scenario-specific demographic adjustment fitted inside every training
+                                fold.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict grouped stats + acc</h3>
+                            <p>Run the same nested-CV pipeline for dataset-clinical-acc.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-clinical-acc' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict + diary predictors</h3>
+                            <p>Add diary-derived predictors to the strict nested-CV pipeline.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict + diary predictors + acc</h3>
+                            <p>Add diary-derived predictors to the strict dataset-clinical-acc pipeline.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-clinical-acc' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict + diary predictors + RFE</h3>
+                            <p>Add diary-derived predictors and XGBoost RFE to the strict pipeline.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>Strict + diary predictors + RFE + acc</h3>
+                            <p>Add diary-derived predictors and XGBoost RFE to the strict dataset-clinical-acc
+                                pipeline.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-covariates-rfe-clinical-acc' %}"
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
                         <div class="small-column">
                             <h3>Strict stable families</h3>
                             <p>HC vs preDLB only; use fixed primary sleep families before nested CV feature
@@ -752,8 +754,15 @@
                             <h3>Strict stable families + acc</h3>
                             <p>HC vs preDLB only; add activity variability to the fixed primary sleep family set.</p>
                             <a href="{% url 'dashboard:utils' 'classification-grouped-stats-strict-stable-family-hc-predlb-clinical-acc' %}"
-               class="button button-small button-fix-width">Run</a>
-        </div>
+                               class="button button-small button-fix-width">Run</a>
+                        </div>
+                        <div class="small-column">
+                            <h3>HC vs preDLB validity checks</h3>
+                            <p>Audit repeated-person leakage, first-visit-only metrics, and cohort/source
+                                confounding.</p>
+                            <a href="{% url 'dashboard:utils' 'classification-validity-hc-predlb' %}"
+                               class="button button-small button-fix-width">Audit</a>
+                        </div>
                     </div>
                 </details>
             </section>
