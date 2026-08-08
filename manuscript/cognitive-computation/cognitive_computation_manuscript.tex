@@ -1,0 +1,195 @@
+% Cognitive Computation manuscript starter
+% Based on the Springer Nature LaTeX authoring template, version 3.1
+% (December 2024), adapted to the journal's current submission guidelines.
+%
+% Compile with:
+%   latexmk -pdf cognitive_computation_manuscript.tex
+%
+% The referee option enables double spacing for review. Remove it only if the
+% editorial office requests a different presentation.
+\documentclass[referee,pdflatex,sn-vancouver-num]{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\raggedbottom
+
+\begin{document}
+
+\title[Short running title]{Full Informative Title of the GENEActiv Study}
+
+% Mark the corresponding author with an asterisk.
+% Add further authors by repeating \author and linking affiliation numbers.
+\author*[1]{\fnm{Given Name} \sur{Family Name}}\email{corresponding.author@example.org}
+\author[1]{\fnm{Given Name} \sur{Family Name}}
+
+\affil*[1]{\orgdiv{Department}, \orgname{Institution},
+  \orgaddress{\street{Street address}, \city{City}, \postcode{Postal code},
+  \country{Country}}}
+
+% The journal requires a structured abstract of 150--250 words using these
+% four headings. Do not cite references or use undefined abbreviations here.
+\abstract{%
+\textbf{Background / introduction:} State the clinical or computational problem,
+the knowledge gap, and the objective of the study.
+
+\textbf{Methods:} Summarize the cohort, GENEActiv recording protocol, feature
+extraction, outcomes, statistical or machine-learning analysis, validation
+strategy, and primary evaluation metrics.
+
+\textbf{Results:} Report the main quantitative findings with uncertainty where
+appropriate. Distinguish prespecified analyses from exploratory analyses.
+
+\textbf{Conclusions:} Explain the principal interpretation, relevance to
+cognitive computation, and the main limitation or implication.}
+
+% Supply 4--6 indexing terms (the journal page is inconsistent in one place,
+% saying 3--6, but its detailed preparation instructions specify 4--6).
+\keywords{GENEActiv, actigraphy, wearable sensors, cognitive computation}
+
+\maketitle
+
+\section{Introduction}\label{sec:introduction}
+
+% Keep the introduction concise. Establish the problem, prior work, gap,
+% research question or hypotheses, and contribution.
+Describe the motivation for analysing GENEActiv measurements and state the
+study objective. Cite sources in numerical order using \verb|\cite{key}|; the
+selected Vancouver style renders citations in square brackets. For example,
+the original GENEA accelerometer validation can be cited as
+\cite{esliger2011validation}; replace or retain this source as appropriate.
+
+\section{Methods}\label{sec:methods}
+
+% Methods published in detail elsewhere may be cited rather than repeated.
+% Define every abbreviation at first use and use SI units throughout.
+
+\subsection{Study design and participants}\label{subsec:participants}
+
+Describe recruitment, inclusion and exclusion criteria, diagnostic groups,
+sample size, and the timing of study visits. State the ethics committee name,
+approval identifier, and consent procedure.
+
+\subsection{GENEActiv data acquisition}\label{subsec:acquisition}
+
+Report device model, placement, sampling frequency, recording duration,
+calibration, non-wear handling, and any sleep-diary or clinical annotations.
+
+\subsection{Signal processing and feature extraction}\label{subsec:processing}
+
+Document the processing pipeline sufficiently for reproduction: input format,
+filtering, epoch definition, sleep or activity segmentation, derived features,
+missing-data handling, normalization, and software versions.
+
+\subsection{Clinical and cognitive measures}\label{subsec:clinical}
+
+Define the clinical outcomes, scales, cognitive domains, and group labels used
+in the analysis. Explain how measurements were aligned with wearable data.
+
+\subsection{Statistical analysis}\label{subsec:statistics}
+
+Specify primary and secondary analyses, covariates, multiple-comparison
+control, effect sizes, confidence intervals, missing-data strategy, and the
+significance threshold.
+
+\subsection{Machine-learning analysis}\label{subsec:machine-learning}
+
+If applicable, describe preprocessing within each training fold, participant-
+grouped data splitting, model selection, hyperparameter tuning, class-imbalance
+handling, leakage controls, and final evaluation metrics.
+
+\section{Results}\label{sec:results}
+
+Present participant flow and cohort characteristics before the primary results.
+Report numerical estimates, uncertainty, and exact sample sizes. Refer to every
+table and figure in consecutive order.
+
+\begin{table}[t]
+\caption{Placeholder for cohort characteristics or primary results. Replace
+all example labels and values before submission.}\label{tab:example}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Measure & Group 1 & Group 2 \\
+\midrule
+Participants, $n$ & -- & -- \\
+Age, years & -- & -- \\
+Valid recording time, days & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Example figure inclusion (uncomment after adding the file beside this .tex):
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=\linewidth]{figure_1.pdf}
+%   \caption{A self-contained caption defining all symbols and abbreviations.}
+%   \label{fig:example}
+% \end{figure}
+
+\section{Discussion}\label{sec:discussion}
+
+Interpret the principal findings in relation to the hypotheses and prior work.
+Discuss clinical and computational relevance, robustness analyses, alternative
+explanations, generalizability, and limitations without repeating the Results.
+
+\section{Conclusion}\label{sec:conclusion}
+
+State the main conclusion and its implications concisely. Avoid introducing
+new results.
+
+\backmatter
+
+\section*{Acknowledgements}
+
+Name contributors who do not meet authorship criteria and acknowledge grants or
+other support. Write funding organization names in full.
+
+\section*{Declarations}
+
+% The journal requests the following disclosures as applicable. Replace every
+% placeholder; use "Not applicable" only when it is genuinely inapplicable.
+
+\subsection*{Funding}
+
+[State funder names and grant numbers, or ``The authors received no funding for
+this work.'']
+
+\subsection*{Competing interests}
+
+[Disclose financial and non-financial interests, or ``The authors have no
+relevant financial or non-financial interests to disclose.'']
+
+\subsection*{Ethics approval}
+
+[Name the approving ethics committee or institutional review board, approval
+number, and the ethical standard under which the study was conducted.]
+
+\subsection*{Consent to participate}
+
+[State how informed consent was obtained, or explain why it was waived.]
+
+\subsection*{Consent for publication}
+
+[State whether consent for publication is applicable and was obtained.]
+
+\subsection*{Data availability}
+
+[Original research must include this statement. Give repository links and
+persistent identifiers, or explain privacy restrictions and the controlled
+access procedure.]
+
+\subsection*{Code availability}
+
+[Give the repository URL, archived release DOI, license, and any access
+conditions, or explain why code cannot be shared.]
+
+\subsection*{Author contributions}
+
+[List each author's contributions, preferably using the CRediT taxonomy.]
+
+% Keep references.bib and sn-vancouver-num.bst beside this file when uploading.
+\bibliography{references}
+
+\end{document}
