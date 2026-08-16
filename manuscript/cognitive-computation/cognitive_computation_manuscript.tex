@@ -136,12 +136,12 @@ harmonised from those two research workbooks.
 %or preDLB (diagnosis code 3). Identifiers ending in 2 or 3 represented later
 %visits; these visits were retained but assigned to the same underlying person
 %as the first visit. The two closed collections yielded three provenance and
-%ascertainment strata for sensitivity analysis: NINR/COBEN, NU20 HC/HC2,
+%ascertainment strata for sensitivity analysis: NINR, NU20 HC/HC2,
 %and NU20 pre-LBD/pre-LBD2. The latter two are recruitment strata within one
 %project dataset, rather than separate datasets. HC/HC2 participants were
 %recruited with the prior expectation of being healthy, whereas
 %pre-LBD/pre-LBD2 included people with an expected clinical problem.
-%NINR/COBEN was not recruited using the same HC-versus-preDLB division.
+%NINR was not recruited using the same HC-versus-preDLB division.
 %Consequently, ascertainment-stratum membership was expected a priori to contain
 %information about the eventual diagnostic label. We refer to this property as
 %diagnosis-enriched ascertainment rather than evidence of a technical acquisition
@@ -361,9 +361,9 @@ reported first-visit-only performance from the held-out predictions.
 % person-grouped cross-validation. This was not a negative control for
 % acquisition artefacts, because stratum was not expected to be independent of
 % diagnosis. We also repeated nested validation separately in the
-% NINR/COBEN stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
+% NINR stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
 % within-stratum analyses were sensitivity checks with severe class imbalance:
-% NINR/COBEN contained 46 HC and 9 preDLB visits, while NU20
+% NINR contained 46 HC and 9 preDLB visits, while NU20
 % pre-LBD/pre-LBD2 contained 11 HC and 49 preDLB visits. Validation was not
 % estimable for NU20 HC/HC2 because it
 % contained 16 HC visits and only one preDLB visit.
@@ -580,7 +580,7 @@ The ascertainment-stratum-only benchmark achieved ROC AUC 0.814 and balanced
 accuracy 0.840. Diagnosis and stratum were strongly associated (Cramer's
 $V=0.682$, $p=4.65\times10^{-14}$), consistent with the consortium-defined
 diagnosis-enriched recruitment strata. The broad model's within-stratum AUC was
-0.579 in NINR/COBEN and 0.501 in NU20 pre-LBD/pre-LBD2; corresponding values for the
+0.579 in NINR and 0.501 in NU20 pre-LBD/pre-LBD2; corresponding values for the
 stable sleep model were 0.522 and 0.510. These estimates provide limited
 evidence for transportable discrimination within either stratum, but their
 precision and interpretation are constrained by the small minority classes.
@@ -622,7 +622,7 @@ This exploratory analysis identified clinically interpretable wearable
 phenotypes in HC and preDLB while also demonstrating why association evidence
 must not be conflated with diagnostic prediction. Across correlated feature
 variants, the most coherent findings involved activity variability, long
-awakenings, wake-bout frequency, sleep efficiency, and corrected WASO. Activity
+awakenings, wake-bout frequency and sleep efficiency. Activity
 variability was associated with motor and attention outcomes, variability in
 long awakenings was associated with executive performance, and three
 sleep-continuity measures showed RBDq associations concentrated in preDLB.
@@ -705,35 +705,44 @@ ascertainment-stratum-only benchmark. The WASO implementation was audited and al
 canonical exports were regenerated after correction rather than retaining a
 weakened result.
 
-Several limitations constrain inference. First, screening, family reduction,
+Several limitations constrain inference. 
+
+First, screening, family reduction,
 and GEE follow-up used the same relatively small dataset. The GEE results are
 therefore adjusted exploratory follow-up, not independent confirmation, and
-effect sizes may be optimistic. Second, covariates were selected by a
+effect sizes may be optimistic. 
+
+Second, covariates were selected by a
 data-driven imbalance test. Age did not cross that rule and was not included,
 although residual age effects, age-dependent normalisation, and other unmeasured
 confounders remain possible. A prespecified age-adjusted sensitivity model is
-needed before submission. Third, group labels and clinical variables were
-harmonised retrospectively across the NU20 and NINR/COBEN source workbooks. The
+needed before submission. %TODO add this model 
+
+Third, group labels and clinical variables were
+harmonised retrospectively across the NU20 and NINR source workbooks. The
 strong differences in diagnosis composition were an intended consequence of
-the NU20 recruitment strata and the distinct NINR/COBEN sampling frame, not
+the NU20 recruitment strata and the distinct NINR sampling frame, not
 evidence of an acquisition error. Nevertheless, collection and ascertainment
 stratum may
 also be associated with device handling, diary completion, assessment
 procedures, or other unmeasured factors. The present association models did not
 adjust for source, so source-adjusted or source-stratified sensitivity analyses
-are needed. The exact recruitment, diagnostic, and acquisition protocols must
-also be documented before this draft can be submitted.
+are needed. 
+% The exact recruitment, diagnostic, and acquisition protocols must
+% also be documented before this draft can be submitted.
 
 Fourth, actigraphy infers movement-defined sleep and wake rather than measuring
 sleep stages. No conclusions about REM sleep physiology or causation can be
-drawn. Fifth, hundreds of summaries were generated from overlapping nightly
+drawn. 
+
+Fifth, hundreds of summaries were generated from overlapping nightly
 signals. FDR and family reduction reduce but do not eliminate researcher
 degrees of freedom. The sign reversal observed for one visuospatial activity
 feature between preprocessed correlation and direct adjusted modelling further
 illustrates transformation sensitivity; that feature was not promoted as a
-primary finding. Sixth, the earlier normalised-WASO/MFS candidate did not
-survive the unit correction and should not be interpreted as evidence. Finally,
-there was no external cohort in which the entire processing, feature selection,
+primary finding. 
+
+Finally, there was no external cohort in which the entire processing, feature selection,
 and modelling pipeline could be frozen and tested. The present classifier is
 not suitable for clinical use.
 
@@ -774,7 +783,7 @@ technical, clinical, and statistical support.]
 
 The NU20 clinical collection was supported by the Ministry of Health of the
 Czech Republic (project NU20-04-00294). The public project record and scientific
-report associate the COBEN-coded cognitive-risk follow-up with NINR project
+report associate the cognitive-risk follow-up with NINR project
 LX22NPO5107, funded by the Ministry of Education, Youth and Sports of the Czech
 Republic through the National Recovery Plan and the European Union--Next
 Generation EU \cite{ninr2023report,ninrproject}. [Author query: confirm this
@@ -790,13 +799,13 @@ no relevant financial or non-financial interests to disclose.'']
 
 The public DREAMT source reports approval by the Duke Health Institutional
 Review Board (Pro00108961). [Author query: name the approving committees and
-approval identifiers for the NU20 and NINR/COBEN follow-up collections, and
+approval identifiers for the NU20 and NINR follow-up collections, and
 confirm whether a separate approval or waiver covered this secondary analysis.]
 
 \subsection*{Consent to participate}
 
 DREAMT reports written informed consent. [Author query: state how consent was
-obtained for the Newcastle, NU20, and NINR/COBEN participants, or describe an
+obtained for the Newcastle, NU20, and NINR participants, or describe an
 approved waiver where applicable.]
 
 \subsection*{Consent for publication}
@@ -809,7 +818,7 @@ The Newcastle PSG--accelerometer development dataset is available from Zenodo
 at \url{https://doi.org/10.5281/zenodo.1160410}. DREAMT v2.2.0 is available
 under the PhysioNet credentialed-access procedure at
 \url{https://doi.org/10.13026/3f7y-2d80}. Participant-level wearable and
-clinical data from NU20-04-00294 and the NINR/COBEN follow-up are not publicly available
+clinical data from NU20-04-00294 and the NINR follow-up are not publicly available
 because they contain potentially identifiable health data. [Author query: add
 the responsible institution, contact, governance review, and conditions under
 which qualified researchers may request controlled access; state whether a
