@@ -1,6 +1,5 @@
 import logging
 import re
-import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -1174,13 +1173,6 @@ def _plot_focused_association(
             zorder=1,
         )
 
-    adjusted_note = _plot_significance_note(
-        candidate,
-        adjusted,
-        interaction,
-        selected_covariates,
-        data["Person ID"].nunique(),
-    )
     fig.suptitle(
         spec["title"],
         x=0.10,
@@ -1205,30 +1197,7 @@ def _plot_focused_association(
     ax.spines["left"].set_color("#AAB5BB")
     ax.spines["bottom"].set_color("#AAB5BB")
     ax.legend(frameon=False, loc="best")
-    covariate_position_note = (
-        "Continuous covariates are held at their means."
-    )
-    if "gender" in selected_covariates:
-        covariate_position_note += " Gender is held at the reference level."
-    if jittered:
-        covariate_position_note += (
-            " Points are separated slightly on the x-axis to reveal "
-            "overlapping diagnoses; model lines use the original values."
-        )
-    fig.text(
-        0.07,
-        0.015,
-        textwrap.fill(
-            (
-                f"{adjusted_note} {covariate_position_note} Thin lines connect "
-                "repeated visits from the same person."
-            ),
-            width=145,
-        ),
-        fontsize=8.5,
-        color="#4D5963",
-    )
-    fig.subplots_adjust(left=0.10, right=0.97, top=0.86, bottom=0.16)
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.86, bottom=0.11)
 
     stem = (
         f"{position:02d}_"
@@ -1298,31 +1267,6 @@ def _prediction_band(
         prediction,
         prediction - critical * standard_error,
         prediction + critical * standard_error,
-    )
-
-
-def _plot_significance_note(
-        candidate,
-        adjusted,
-        interaction,
-        selected_covariates,
-        person_count,
-):
-    covariates = ", ".join(selected_covariates) or "none"
-    adjusted_q = adjusted.get("FDR p", np.nan)
-    interaction_q = interaction.get("FDR p", np.nan)
-    adjusted_text = (
-        f"{adjusted_q:.3g}" if pd.notna(adjusted_q) else "not estimable"
-    )
-    interaction_text = (
-        f"{interaction_q:.3g}" if pd.notna(interaction_q) else "not estimable"
-    )
-    return (
-        f"Pooled discovery: rho={candidate['Pooled Spearman rho']:.3f}, "
-        f"FDR p={candidate['Pooled FDR p']:.3g}. "
-        f"Adjusted GEE FDR p={adjusted_text}; interaction FDR "
-        f"p={interaction_text}. Covariates: {covariates}; "
-        f"{person_count} people."
     )
 
 
