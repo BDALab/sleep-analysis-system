@@ -4,7 +4,7 @@
 %
 % AUTHOR QUERIES BEFORE SUBMISSION
 % 1. Confirm the complete author list, order, affiliations, and corresponding email.
-% 2. Supply recruitment, diagnostic, device-placement, ethics, consent, and funding details.
+% 2. Confirm recruitment, diagnostic, device-placement, ethics, consent, and funding details.
 % 3. Confirm the exact UPDRS section/version and the construction of cognitive z scores.
 % 4. Decide whether data/code can be public or must use controlled access.
 % 5. The journal currently requests Word manuscripts; confirm LaTeX acceptance or convert.
@@ -14,6 +14,7 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{placeins}
 
 \raggedbottom
 
@@ -34,14 +35,16 @@ markers of sleep and activity disturbance in predementia Lewy body disease
 (preDLB). We examined feature--clinical associations in healthy controls
 (HC) and preDLB and audited diagnosis classification.
 
-\textbf{Methods:} We analysed 132 visits from 118 people, each with five to
-seven valid nights. A 25-Hz wrist-accelerometry pipeline produced 260
-sleep/diary and 690 extended activity features. False-discovery-rate-corrected
+\textbf{Methods:} A polysomnography-referenced sleep/wake classifier was
+developed from two external wearable datasets. We then analysed 132 visits from
+118 people in two closed Czech clinical collections, each with five to seven
+valid nights. The wrist-accelerometry pipeline produced 260 sleep/diary and
+690 extended activity features. False-discovery-rate-corrected
 Spearman correlations were reduced into conceptual families. Generalized
 estimating equations adjusted for diagnosis, sex, and education and clustered
 visits by person. Secondary XGBoost analysis used nested five-fold
-person-grouped validation, within-source sensitivity analyses, and a
-source-only ascertainment benchmark.
+person-grouped validation, within-source sensitivity analyses, and an
+ascertainment-stratum-only benchmark.
 
 \textbf{Results:} Greater activity variability was associated with higher motor
 scores (adjusted beta 1.322 points per feature standard deviation, 95\% CI
@@ -102,61 +105,146 @@ person-grouped validation and source-sensitive analyses.
 
 \subsection{Study design and participants}\label{subsec:participants}
 
-This was a retrospective secondary analysis of an existing multi-source
-wearable and clinical database. The primary comparison included database visits
-labelled HC (diagnosis code 0) or preDLB (diagnosis code 3). Clinical variables
-were harmonised from the \textit{preDLB shared} research workbook and the
-KARDIOVIZE workbook. The source cohorts used in the sensitivity analyses were
-COBEN, HC/HC2, and pre-LBD/pre-LBD2. Identifiers ending in 2 or 3 represented
-later visits; these visits were retained for longitudinal clustering but were
-assigned to the same underlying person as the first visit.
+This was a retrospective secondary analysis built from four distinct datasets
+(Table~\ref{tab:data-sources}). The Newcastle PSG--accelerometer and DREAMT
+datasets were used only to develop the sleep/wake classifier; their participants
+did not contribute to the HC-versus-preDLB sample, its clinical outcomes, or
+the reported count of 132 visits. The clinical application used two closed
+Czech data collections. The first was assembled under Czech Ministry of Health
+project NU20-04-00294, \textit{Diagnostics of Lewy body diseases in prodromal
+stage based on multimodal data analysis} \cite{nu20project}. 
+%The project ran from May 2020 through
+%December 2024 and included actigraphy among its multimodal assessments
+%\cite{nu20project}. 
+%In the analysis database, this collection was represented
+%by HC/HC2 and pre-LBD/pre-LBD2 identifiers. 
+The analysed recordings were dated
+26 June 2020 to 8 February 2023.
 
-These source labels were not neutral acquisition batches. They reflected a
-consortium-defined recruitment design: participants in HC/HC2 were recruited
-with the prior expectation of being healthy, whereas pre-LBD/pre-LBD2 included
-people with an expected clinical problem. COBEN was not recruited using the
-same HC-versus-preDLB division. Consequently, source membership was expected a
-priori to contain information about the eventual diagnostic label. We refer to
-this property as diagnosis-enriched ascertainment rather than evidence of a
-technical acquisition artefact.
+The second closed collection was a multimodal cognitive-risk follow-up assembled
+within the National Institute for Neurological Research (NINR; project
+LX22NPO5107), specifically its work package on biomarkers, risk factors, and
+modifiers of neurodegeneration with cognitive impairment. Its analysed recordings were dated 8 March 2023
+to 20 February 2025. 
+%Participants were assigned the internal prefix COBEN in
+%the analysis database, while their source files and clinical workbook retained
+%the label KARDIOVIZE and legacy source identifiers. 
+Clinical variables were
+harmonised from those two research workbooks.
 
-The analysis contained 132 visits from 118 people: 73 HC visits from 71 people
-and 59 preDLB visits from 47 people. Fourteen people contributed two visits.
+%The primary comparison included database visits labelled HC (diagnosis code 0)
+%or preDLB (diagnosis code 3). Identifiers ending in 2 or 3 represented later
+%visits; these visits were retained but assigned to the same underlying person
+%as the first visit. The two closed collections yielded three provenance and
+%ascertainment strata for sensitivity analysis: NINR/COBEN, NU20 HC/HC2,
+%and NU20 pre-LBD/pre-LBD2. The latter two are recruitment strata within one
+%project dataset, rather than separate datasets. HC/HC2 participants were
+%recruited with the prior expectation of being healthy, whereas
+%pre-LBD/pre-LBD2 included people with an expected clinical problem.
+%NINR/COBEN was not recruited using the same HC-versus-preDLB division.
+%Consequently, ascertainment-stratum membership was expected a priori to contain
+%information about the eventual diagnostic label. We refer to this property as
+%diagnosis-enriched ascertainment rather than evidence of a technical acquisition
+%artefact.
+
+The analysis contained 132 visits from 118 people: 73 HC (healthy control) visits from 71 people
+and 59 preDLB (predominantly demented with Lewy bodies) visits from 47 people. Fourteen people contributed two visits.
 Each included visit had five to seven valid nights of wearable-derived data.
 Clinical scale availability varied slightly by outcome, and analyses used
 complete cases for the variables in each model.
 
-\textit{[Author query: add the participating centres, recruitment dates,
-inclusion and exclusion criteria, operational diagnostic criteria and
-assessors, medication policy, interval between visits, and the relationship of
-the COBEN/KARDIOVIZE and pre-LBD studies. These details cannot be recovered
-reliably from the analysis repository.]}
+\begin{table*}[t]
+\caption{Datasets and their roles in the study.}
+\label{tab:data-sources}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.19\textwidth}p{0.31\textwidth}p{0.24\textwidth}@{}}
+\toprule
+Dataset & Access and participants & Relevant measurements & Role in this study \\
+\midrule
+Newcastle PSG--accelerometer & Public; 28 sleep-clinic patients & One-night PSG scored every 30~s and bilateral GENEActiv accelerometry at 85.7~Hz & Initial development data for the binary sleep/wake classifier \cite{vanhees2018newcastle,vanhees2015sleep} \\
+DREAMT v2.2.0 & PhysioNet restricted-access resource; 100 sleep-laboratory participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Additional development data for the binary sleep/wake classifier \cite{wang2026dreamt,wang2024wearable,pollard2026physionet} \\
+NU20-04-00294 & Closed; 77 analysed visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis; internally divided into HC/HC2 and pre-LBD/pre-LBD2 ascertainment strata \\
+NINR cognitive-risk follow-up (LX22NPO5107; internal COBEN) & Closed; 55 analysed visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis; follow-up substudy using a Kardiovize recruitment pool and legacy identifiers \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+The external development participants are not included in the clinical sample of
+132 visits from 118 people. PSG, polysomnography.
+\end{minipage}
+\end{table*}
+\FloatBarrier
+
+% \textit{[Author query: confirm with the clinical investigators that the COBEN-coded
+% sample belongs to NINR project LX22NPO5107, work package 2.1, and confirm whether
+% ``Kardiovize recruitment pool aged 60 years or older'' is the preferred cohort
+% description. Add the participating centres, inclusion and exclusion criteria,
+% operational diagnostic criteria and assessors, medication policy, visit interval,
+% and ethics identifiers. Recording dates above were recovered from the analysed
+% filenames and may not equal recruitment dates.]}
+
+\subsection{External datasets for sleep/wake model development}\label{subsec:sleep-model-data}
+
+The initial development source was the Newcastle PSG--accelerometer dataset
+(Zenodo record 1160410) \cite{vanhees2018newcastle}. It contains a single night
+of PSG from 28 sleep-clinic patients, PSG sleep scores at 30-second resolution,
+and 55 GENEActiv files recorded from both wrists at 85.7~Hz (one right-wrist
+file was unavailable). The associated protocol has been reported previously
+\cite{vanhees2015sleep}.
+
+Because the Newcastle dataset alone was insufficient for model development, we
+added DREAMT v2.2.0 \cite{wang2026dreamt,wang2024wearable}. DREAMT contains 100
+participants recorded overnight in the Duke University Health System Sleep
+Disorders Laboratory with simultaneous PSG and a left-wrist Empatica E4. The
+original E4 accelerometry was sampled at 32~Hz and was supplied in a
+time-aligned 64-Hz table; expert PSG sleep-stage labels were available every
+30~seconds. For the present binary task, preparation and wake were mapped to
+wake, and N1, N2, N3, and REM were mapped to sleep. Only triaxial acceleration
+and skin temperature were used. DREAMT reports written informed consent under
+Duke Health IRB Pro00108961 \cite{wang2026dreamt}.
+
+The two development sources were pooled for XGBoost model fitting with
+participant-grouped splitting \cite{chen2016xgboost}. For each window, the
+software calculated distributional features of acceleration magnitude,
+vertical-axis angle, and temperature. The resulting binary classifier returned
+a sleep probability; a threshold of 0.5 defined sleep for the downstream
+clinical feature pipeline. The external development sources were used to derive the
+algorithm and were not treated as external validation cohorts for the present
+HC-versus-preDLB analysis.
 
 \subsection{Wearable acquisition and signal processing}\label{subsec:processing}
 
-Raw triaxial acceleration was acquired with GENEActiv wrist-worn devices,
+Raw triaxial acceleration in the two clinical collections was acquired with
+GENEActiv wrist-worn devices,
 which have been validated for physical-activity measurement
-\cite{esliger2011validation}. Files were processed at 25 Hz. The analysis
-pipeline divided recordings into noon-to-noon days and computed a one-minute
-activity index from non-overlapping 60-second windows. Within each window, the
-three axes were filtered with a third-order Butterworth band-pass filter
-(0.25--12 Hz); the activity index was the square root of the mean axis-wise
-variance, following the general raw-accelerometry activity-index formulation
-\cite{bai2016activityindex}.
+\cite{esliger2011validation}. The software reduced samples to approximately
+25~Hz according to the acquisition-frequency header. Within diary-defined
+time-in-bed intervals, window-level acceleration-magnitude, vertical-angle, and
+temperature features were passed to the PSG-trained sleep/wake classifier.
+Predictions were placed on a 30-second grid and thresholded at 0.5. The first
+and last sleep-labelled windows defined the actigraphy-inferred sleep interval.
 
-Major rest periods were inferred from arm-angle change and temperature, using
-an approach derived from open raw-accelerometry sleep methods
-\cite{vanhees2015sleep}. A Cole--Kripke heuristic with rescoring rules labelled
-each one-minute activity-index epoch as sleep or wake
-\cite{cole1992automatic}. Actigraphy-derived nightly endpoints included sleep
-onset latency, total sleep time, wake after sleep onset (WASO), sleep
-efficiency, sleep fragmentation, number of wake bouts, and number of
-awakenings longer than five minutes. In the corrected implementation used for
-this article, raw WASO was the count of one-minute wake epochs after the first
-detected sleep epoch within the major rest period and was therefore expressed
-in minutes before age-dependent normalisation. Earlier exports had mixed
-seconds and minutes during WASO normalisation; all reported results use the
-regenerated 29 June 2026 exports after that error was corrected.
+Actigraphy-derived nightly endpoints included sleep onset latency, total sleep
+time, wake after sleep onset (WASO), sleep efficiency, sleep fragmentation,
+number of wake bouts, and awakenings meeting the five-minute threshold. Raw
+WASO was calculated as the number of 30-second wake-labelled windows between
+the first and last sleep-labelled windows and stored in seconds. Earlier
+exports passed this value directly to an age-normalisation function that
+expected minutes; all reported results use the regenerated 29 June 2026
+exports after the seconds-to-minutes conversion was corrected.
+
+For the extended feature set, the pipeline also divided recordings into
+noon-to-noon days and computed a one-minute activity index from non-overlapping
+60-second windows. Within each window, the three axes were filtered with a
+third-order Butterworth band-pass filter (0.25--12~Hz); the activity index was
+the square root of the mean axis-wise variance, following the raw-accelerometry
+activity-index formulation \cite{bai2016activityindex}. Distributional activity
+features were calculated within the sleep interval defined by the supervised
+classifier. The separate Cole--Kripke predictions available in the software
+were not the source of the sleep-continuity endpoints analysed here.
 
 Parallel diary-derived endpoints were retained when available. Night-level
 variables were summarised across the five to seven nights using measures of
@@ -258,13 +346,15 @@ specificity, precision, and Matthews correlation coefficient. We additionally
 reported first-visit-only performance from the held-out predictions.
 
 To quantify the label information built into this recruitment design, we fitted
-a source-only logistic-regression ascertainment benchmark under person-grouped
-cross-validation. This was not a negative control for acquisition artefacts,
-because source was not expected to be independent of diagnosis. We also
-repeated nested validation separately in COBEN and pre-LBD/pre-LBD2. These
-within-source analyses were sensitivity checks with severe class imbalance:
-COBEN contained 46 HC and 9 preDLB visits, while pre-LBD/pre-LBD2 contained 11
-HC and 49 preDLB visits. Validation was not estimable for HC/HC2 because it
+an ascertainment-stratum-only logistic-regression benchmark under
+person-grouped cross-validation. This was not a negative control for
+acquisition artefacts, because stratum was not expected to be independent of
+diagnosis. We also repeated nested validation separately in the
+NINR/COBEN stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
+within-stratum analyses were sensitivity checks with severe class imbalance:
+NINR/COBEN contained 46 HC and 9 preDLB visits, while NU20
+pre-LBD/pre-LBD2 contained 11 HC and 49 preDLB visits. Validation was not
+estimable for NU20 HC/HC2 because it
 contained 16 HC visits and only one preDLB visit.
 
 \subsection{Software and reproducibility}\label{subsec:software}
@@ -475,17 +565,17 @@ further to 0.620. First-visit-only AUC values were similar or lower, indicating
 that repeat-visit leakage did not explain the broad model's entire apparent
 signal.
 
-The source-only ascertainment benchmark achieved ROC AUC 0.814 and balanced
-accuracy 0.840. Diagnosis and source were strongly associated (Cramer's
+The ascertainment-stratum-only benchmark achieved ROC AUC 0.814 and balanced
+accuracy 0.840. Diagnosis and stratum were strongly associated (Cramer's
 $V=0.682$, $p=4.65\times10^{-14}$), consistent with the consortium-defined
-diagnosis-enriched recruitment strata. The broad model's within-source AUC was
-0.579 in COBEN and 0.501 in pre-LBD/pre-LBD2; corresponding values for the
+diagnosis-enriched recruitment strata. The broad model's within-stratum AUC was
+0.579 in NINR/COBEN and 0.501 in NU20 pre-LBD/pre-LBD2; corresponding values for the
 stable sleep model were 0.522 and 0.510. These estimates provide limited
-evidence for transportable discrimination within either source, but their
+evidence for transportable discrimination within either stratum, but their
 precision and interpretation are constrained by the small minority classes.
 
 \begin{table*}[t]
-\caption{Nested person-grouped HC-versus-preDLB classification and source-only ascertainment benchmark.}
+\caption{Nested person-grouped HC-versus-preDLB classification and ascertainment-stratum-only benchmark.}
 \label{tab:classification}
 \centering
 \scriptsize
@@ -497,7 +587,7 @@ Model & Visits / people & ROC AUC & PR AUC & Default BACC & Tuned BACC & First-v
 Broad sleep/diary + RFE & 132 / 118 & 0.746 & 0.744 & 0.649 & 0.666 & 0.740 & 0.648 \\
 Stable sleep families & 132 / 118 & 0.706 & 0.634 & 0.663 & 0.642 & 0.677 & 0.644 \\
 Stable sleep + activity variability & 129 / 116 & 0.620 & 0.575 & 0.604 & 0.620 & 0.589 & 0.586 \\
-Source-only ascertainment benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & -- & -- \\
+Ascertainment-stratum-only benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & -- & -- \\
 \bottomrule
 \end{tabular}}
 
@@ -507,7 +597,7 @@ All wearable models used nested five-fold stratified person-grouped outer and
 inner cross-validation. BACC, balanced accuracy; HC, healthy control; PR AUC,
 area under the precision--recall curve; preDLB, predementia Lewy body disease;
 RFE, recursive feature elimination; ROC AUC, area under the receiver operating
-characteristic curve. The source-only row quantifies expected label enrichment
+characteristic curve. The stratum-only row quantifies expected label enrichment
 from the recruitment design; it is neither a test of acquisition artefacts nor
 a diagnostic model proposed for deployment.
 \end{minipage}
@@ -557,8 +647,9 @@ broad activity-variability family, which is more compelling than reliance on a
 single engineered column.
 
 The executive association similarly concerns between-night instability. Long
-awakenings were defined from contiguous one-minute epochs labelled wake, with
-more than five wake minutes constituting a long awakening. The MAD across
+awakenings were operationalised from runs of at least ten contiguous 30-second
+windows labelled wake, corresponding to the pipeline's five-minute threshold.
+The MAD across
 nights of the age-normalised count was negatively associated with executive
 performance. This may indicate that inconsistent sleep continuity co-occurs
 with poorer executive function. It does not establish that awakenings caused
@@ -586,8 +677,8 @@ separation. Because source and diagnosis were structurally entangled by the
 recruitment design, the broad classifier's moderate pooled AUC cannot determine
 how much discrimination arose from disease-related wearable signal versus
 wearable differences associated with the recruitment strata. The high
-source-only benchmark does not prove that the wearable classifier learned
-technical source artefacts, because source identity was not supplied as a
+ascertainment-stratum-only benchmark does not prove that the wearable classifier
+learned technical source artefacts, because source identity was not supplied as a
 predictor. It does show that pooled classification performance alone is
 insufficient to establish transportability beyond this study design.
 
@@ -599,7 +690,7 @@ FDR correction, reduction of correlated variants into interpretable families,
 and reporting of both rank correlations and adjusted effects with robust
 confidence intervals. The classification audit used true person-grouped nested
 validation, first-visit sensitivity, within-source evaluation, and a simple
-source-only ascertainment benchmark. The WASO implementation was audited and all
+ascertainment-stratum-only benchmark. The WASO implementation was audited and all
 canonical exports were regenerated after correction rather than retaining a
 weakened result.
 
@@ -611,9 +702,11 @@ data-driven imbalance test. Age did not cross that rule and was not included,
 although residual age effects, age-dependent normalisation, and other unmeasured
 confounders remain possible. A prespecified age-adjusted sensitivity model is
 needed before submission. Third, group labels and clinical variables were
-harmonised retrospectively across source workbooks. The strong differences in
-diagnosis composition were an intended consequence of consortium-defined
-recruitment, not evidence of an acquisition error. Nevertheless, source may
+harmonised retrospectively across the NU20 and NINR/COBEN source workbooks. The
+strong differences in diagnosis composition were an intended consequence of
+the NU20 recruitment strata and the distinct NINR/COBEN sampling frame, not
+evidence of an acquisition error. Nevertheless, collection and ascertainment
+stratum may
 also be associated with device handling, diary completion, assessment
 procedures, or other unmeasured factors. The present association models did not
 adjust for source, so source-adjusted or source-stratified sensitivity analyses
@@ -651,8 +744,8 @@ and sleep-continuity families were associated with motor, attention, executive,
 and RBD symptom measures after diagnosis and covariate adjustment. The findings
 support wearable feature families as exploratory phenotypes for clinical
 association research. They do not yet establish diagnostic classification
-independent of study design: diagnosis was deliberately enriched across source
-cohorts, and the minority classes were too small for decisive within-source
+independent of study design: diagnosis was deliberately enriched across
+ascertainment strata, and the minority classes were too small for decisive within-source
 validation. Independent validation with adequate representation of both groups
 within each source is required before either biomarker or clinical-utility
 claims are warranted.
@@ -668,8 +761,14 @@ technical, clinical, and statistical support.]
 
 \subsection*{Funding}
 
-[State all funders and grant numbers, or confirm: ``The authors received no
-funding for this work.'']
+The NU20 clinical collection was supported by the Ministry of Health of the
+Czech Republic (project NU20-04-00294). The public project record and scientific
+report associate the COBEN-coded cognitive-risk follow-up with NINR project
+LX22NPO5107, funded by the Ministry of Education, Youth and Sports of the Czech
+Republic through the National Recovery Plan and the European Union--Next
+Generation EU \cite{ninr2023report,ninrproject}. [Author query: confirm this
+attribution with the clinical investigators, add any co-funding for data
+collection and the present analysis, and state the role of each funder.]
 
 \subsection*{Competing interests}
 
@@ -678,13 +777,16 @@ no relevant financial or non-financial interests to disclose.'']
 
 \subsection*{Ethics approval}
 
-[Name every approving ethics committee, approval identifier, and the ethical
-standard under which each source cohort was conducted.]
+The public DREAMT source reports approval by the Duke Health Institutional
+Review Board (Pro00108961). [Author query: name the approving committees and
+approval identifiers for the NU20 and NINR/COBEN follow-up collections, and
+confirm whether a separate approval or waiver covered this secondary analysis.]
 
 \subsection*{Consent to participate}
 
-[State how written informed consent was obtained for each source cohort or
-explain an approved waiver.]
+DREAMT reports written informed consent. [Author query: state how consent was
+obtained for the Newcastle, NU20, and NINR/COBEN participants, or describe an
+approved waiver where applicable.]
 
 \subsection*{Consent for publication}
 
@@ -692,10 +794,15 @@ explain an approved waiver.]
 
 \subsection*{Data availability}
 
-[Because participant-level wearable and clinical data may be identifiable,
-state the privacy restriction and controlled-access procedure, including the
-responsible institution and contact. If a de-identified derived dataset can be
-archived, add its persistent identifier.]
+The Newcastle PSG--accelerometer development dataset is available from Zenodo
+at \url{https://doi.org/10.5281/zenodo.1160410}. DREAMT v2.2.0 is available
+under the PhysioNet credentialed-access procedure at
+\url{https://doi.org/10.13026/3f7y-2d80}. Participant-level wearable and
+clinical data from NU20-04-00294 and the NINR/COBEN follow-up are not publicly available
+because they contain potentially identifiable health data. [Author query: add
+the responsible institution, contact, governance review, and conditions under
+which qualified researchers may request controlled access; state whether a
+de-identified derived feature table can be archived.]
 
 \subsection*{Code availability}
 
