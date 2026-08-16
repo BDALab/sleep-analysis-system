@@ -159,14 +159,14 @@ complete cases for the variables in each model.
 \centering
 \scriptsize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}p{0.18\textwidth}p{0.19\textwidth}p{0.31\textwidth}p{0.24\textwidth}@{}}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.22\textwidth}p{0.31\textwidth}p{0.22\textwidth}@{}}
 \toprule
 Dataset & Access and participants & Relevant measurements & Role in this study \\
 \midrule
-Newcastle PSG--accelerometer & Public; 28 sleep-clinic patients & One-night PSG scored every 30~s and bilateral GENEActiv accelerometry at 85.7~Hz & Initial development data for the binary sleep/wake classifier \cite{vanhees2018newcastle,vanhees2015sleep} \\
-DREAMT v2.2.0 & PhysioNet restricted-access resource; 100 sleep-laboratory participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Additional development data for the binary sleep/wake classifier \cite{wang2026dreamt,wang2024wearable,pollard2026physionet} \\
-NU20-04-00294 & Closed; 77 analysed visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis; internally divided into HC/HC2 and pre-LBD/pre-LBD2 ascertainment strata \\
-NINR cognitive-risk follow-up (LX22NPO5107; internal COBEN) & Closed; 55 analysed visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis; follow-up substudy using a Kardiovize recruitment pool and legacy identifiers \\
+Newcastle PSG--accelerometer & Public; 28 patients & One-night PSG scored every 30~s and bilateral GENEActiv accelerometry at 85.7~Hz & Development data for the binary sleep/wake classifier \cite{vanhees2018newcastle,vanhees2015sleep} \\
+DREAMT v2.2.0 & PhysioNet restricted-access resource; 100 participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Development data for the binary sleep/wake classifier \cite{wang2026dreamt,wang2024wearable,pollard2026physionet} \\
+NU20-04-00294 & Closed; 77 analysed visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
+LX22NPO5107 & Closed; 55 analysed visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
 \bottomrule
 \end{tabular}
 
@@ -192,8 +192,7 @@ The initial development source was the Newcastle PSG--accelerometer dataset
 (Zenodo record 1160410) \cite{vanhees2018newcastle}. It contains a single night
 of PSG from 28 sleep-clinic patients, PSG sleep scores at 30-second resolution,
 and 55 GENEActiv files recorded from both wrists at 85.7~Hz (one right-wrist
-file was unavailable). The associated protocol has been reported previously
-\cite{vanhees2015sleep}.
+file was unavailable) \cite{vanhees2015sleep}.
 
 Because the Newcastle dataset alone was insufficient for model development, we
 added DREAMT v2.2.0 \cite{wang2026dreamt,wang2024wearable}. DREAMT contains 100
