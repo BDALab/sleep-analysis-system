@@ -218,12 +218,15 @@ clinical feature pipeline.
 \subsection{Wearable acquisition and signal processing}\label{subsec:processing}
 
 Raw triaxial acceleration in the two clinical collections was acquired with
-GENEActiv wrist-worn devices,
-which have been validated for physical-activity measurement
-\cite{esliger2011validation}. The software reduced samples to approximately
-25~Hz according to the acquisition-frequency header. Within diary-defined
-time-in-bed intervals, window-level acceleration-magnitude, vertical-angle, and
-temperature features were passed to the PSG-trained sleep/wake classifier.
+GENEActiv version 1.1 wrist-worn devices configured at 25~Hz. Devices were
+worn on the left wrist and have been validated for physical-activity
+measurement \cite{esliger2011validation}. Participants were asked to wear the
+device for seven consecutive nights, putting it on before getting into bed and
+removing it immediately after leaving bed in the morning. They were instructed
+not to charge or immerse the device during the recording period and to fasten
+it snugly without discomfort or looseness. Within
+diary-defined time-in-bed intervals, window-level acceleration-magnitude,
+vertical-angle, and temperature features were passed to the PSG-trained sleep/wake classifier.
 Predictions were placed on a 30-second grid and thresholded at 0.5. The first
 and last sleep-labelled windows defined the actigraphy-inferred sleep interval.
 
@@ -237,23 +240,37 @@ noon-to-noon days and computed a one-minute activity index from non-overlapping
 third-order Butterworth band-pass filter (0.25--12~Hz); the activity index was
 the square root of the mean axis-wise variance, following the raw-accelerometry
 activity-index formulation \cite{bai2016activityindex}. Distributional activity
-features were calculated within the sleep interval defined by the supervised
+features were calculated within the sleep interval defined
+ by the supervised
 classifier. 
 
+Participants completed a Czech sleep diary each evening
+before sleep and each morning after sleep. For each of seven consecutive days,
+the diary recorded daytime naps; alcohol and caffeine consumption and the time
+of the last drink; sleep-medication use; time of getting into bed; time of
+attempting sleep; estimated sleep latency; approximate intervals of nocturnal
+awakenings; final awakening and bed-exit times; subjective sleep quality and
+morning freshness; and optional comments on unusual circumstances. Participants
+were told to provide approximate times rather than monitor the clock while
+falling asleep. If a day was missed, it was left blank and recording continued
+on the following day.
+
 Parallel diary-derived endpoints were retained when available. Night-level
-variables from both, actigraphy and diary, were summarised across the five to seven nights using measures of
+variables from both actigraphy and diary sources were summarised across the five to seven nights using measures of
 level, trend, and variability, including mean, median, minimum, maximum, slope,
 standard deviation (SD), median absolute deviation (MAD), range, interquartile
 range (IQR), coefficient of variation, and relative interdecile range. The core
 dataset comprised 260 sleep and diary features. The extended dataset comprised
 690 features and additionally summarised the distribution of the minute-level
-activity index within each sleep window. A visit required at least five valid
-nights; at most seven nights were included.
-
-\textit{[Author query: add the device model/version, original acquisition
-sampling rate, wrist side, wear instructions, recording dates/duration,
-calibration procedure, non-wear exclusion rules, diary protocol, and exact
-valid-night definition.]}
+activity index within each sleep window. A valid night required a parseable
+diary-defined interval from getting into bed to leaving bed, a matching segment
+of recorded accelerometry, and at least one sleep-labelled 30-second window
+within that interval. Nights without a matching recording or without any
+classifier-detected sleep were not retained. No separate algorithmic non-wear
+exclusion was applied within the diary-defined overnight interval. A visit
+required at least five valid nights; at most seven nights were included. The
+analysis software read acceleration and temperature values from the standard
+GENEActiv CSV export without an additional study-specific calibration step.
 
 \subsection{Clinical and cognitive outcomes}\label{subsec:outcomes}
 
