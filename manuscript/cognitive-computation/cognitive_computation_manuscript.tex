@@ -159,14 +159,17 @@ complete cases for the variables in each model.
 \centering
 \scriptsize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}p{0.18\textwidth}p{0.22\textwidth}p{0.31\textwidth}p{0.22\textwidth}@{}}
+\begin{tabular}{@{}p{0.16\textwidth}p{0.10\textwidth}p{0.10\textwidth}p{0.30\textwidth}p{0.23\textwidth}@{}}
 \toprule
-Dataset & Access and participants & Relevant measurements & Role in this study \\
+\textbf{Dataset} & \textbf{Access} & \textbf{Subjects} & \textbf{Relevant measurements} & \textbf{Role in this study} \\
 \midrule
-Newcastle PSG--accelerometer & Public; 28 patients & One-night PSG scored every 30~s and bilateral GENEActiv accelerometry at 85.7~Hz & Development data for the binary sleep/wake classifier \cite{vanhees2018newcastle,vanhees2015sleep} \\
-DREAMT v2.2.0 & PhysioNet restricted-access resource; 100 participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Development data for the binary sleep/wake classifier \cite{wang2026dreamt,wang2024wearable,pollard2026physionet} \\
-NU20-04-00294 & Closed; 77 analysed visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
-LX22NPO5107 & Closed; 55 analysed visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
+Newcastle PSG--accelerometer & Public & 28 patients & One-night PSG scored every 30~s and bilateral GENEActiv accelerometry at 85.7~Hz & Development data for the binary sleep/wake classifier \\
+\midrule
+DREAMT v2.2.0 & Restricted & 100 participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Development data for the binary sleep/wake classifier \\
+\midrule
+NU20-04-00294 & Closed & 77 visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
+\midrule
+LX22NPO5107 & Closed & 55 visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
 \bottomrule
 \end{tabular}
 
@@ -210,9 +213,7 @@ participant-grouped splitting \cite{chen2016xgboost}. For each window, the
 software calculated distributional features of acceleration magnitude,
 vertical-axis angle, and temperature. The resulting binary classifier returned
 a sleep probability; a threshold of 0.5 defined sleep for the downstream
-clinical feature pipeline. The external development sources were used to derive the
-algorithm and were not treated as external validation cohorts for the present
-HC-versus-preDLB analysis.
+clinical feature pipeline.
 
 \subsection{Wearable acquisition and signal processing}\label{subsec:processing}
 
@@ -226,14 +227,9 @@ temperature features were passed to the PSG-trained sleep/wake classifier.
 Predictions were placed on a 30-second grid and thresholded at 0.5. The first
 and last sleep-labelled windows defined the actigraphy-inferred sleep interval.
 
-Actigraphy-derived nightly endpoints included sleep onset latency, total sleep
-time, wake after sleep onset (WASO), sleep efficiency, sleep fragmentation,
-number of wake bouts, and awakenings meeting the five-minute threshold. Raw
-WASO was calculated as the number of 30-second wake-labelled windows between
-the first and last sleep-labelled windows and stored in seconds. Earlier
-exports passed this value directly to an age-normalisation function that
-expected minutes; all reported results use the regenerated 29 June 2026
-exports after the seconds-to-minutes conversion was corrected.
+Actigraphy-derived nightly endpoints included sleep onset latency (SOL), total sleep
+time (TST), time in bed (TIB), wake after sleep onset (WASO), wake after sleep offset (WASF), sleep efficiency (SE), sleep fragmentation (SF),
+number of wake bouts (WB), and awakenings meeting the five-minute threshold (WB5).
 
 For the extended feature set, the pipeline also divided recordings into
 noon-to-noon days and computed a one-minute activity index from non-overlapping
@@ -242,11 +238,10 @@ third-order Butterworth band-pass filter (0.25--12~Hz); the activity index was
 the square root of the mean axis-wise variance, following the raw-accelerometry
 activity-index formulation \cite{bai2016activityindex}. Distributional activity
 features were calculated within the sleep interval defined by the supervised
-classifier. The separate Cole--Kripke predictions available in the software
-were not the source of the sleep-continuity endpoints analysed here.
+classifier. 
 
 Parallel diary-derived endpoints were retained when available. Night-level
-variables were summarised across the five to seven nights using measures of
+variables from both, actigraphy and diary, were summarised across the five to seven nights using measures of
 level, trend, and variability, including mean, median, minimum, maximum, slope,
 standard deviation (SD), median absolute deviation (MAD), range, interquartile
 range (IQR), coefficient of variation, and relative interdecile range. The core
