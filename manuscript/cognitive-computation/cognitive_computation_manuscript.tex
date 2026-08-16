@@ -279,17 +279,16 @@ Behaviour Disorder Screening Questionnaire score (RBDq) represented
 self-reported symptoms compatible with REM sleep behaviour disorder
 \cite{stiasnykolster2007rbdsq}. The available Unified Parkinson's Disease
 Rating Scale (UPDRS) score represented motor symptom burden; higher values were
-worse. The Mayo Fluctuations Scale (MFS) represented characteristic cognitive
-fluctuation features \cite{ferman2004fluctuations}. Visuospatial, attention,
+worse \cite{fahn1987updrs}. The Mayo Fluctuations Scale (MFS) represented
+characteristic cognitive fluctuation features \cite{ferman2004fluctuations}. Visuospatial, attention,
 and executive measures were harmonised as domain scores, with higher values
-indicating better performance. Education was harmonised as years of education
-from the source workbooks. Recorded sex was coded female or male (the software
-output retained the historical label ``gender'').
+indicating better performance. Education was harmonised as years of education. 
+Recorded sex was coded female or male.
 
-\textit{[Author query: specify the UPDRS version and section, RBDq version and
-range, the exact tests contributing to each cognitive domain score and their
-standardisation reference, and whether all source cohorts used identical
-instruments.]}
+% TODO \textit{[Author query: specify the UPDRS version and section, RBDq version and
+% range, the exact tests contributing to each cognitive domain score and their
+% standardisation reference, and whether all source cohorts used identical
+% instruments.]}
 
 \subsection{Exploratory association analysis}\label{subsec:statistics}
 
@@ -300,6 +299,7 @@ $p<0.05$ imbalance rule and were selected as adjustment covariates; age did not
 ($p=0.1799$). This rule was created during project development and was not
 preregistered. Consequently, the adjusted analyses should be interpreted as
 exploratory, and age-adjusted sensitivity analysis remains desirable.
+% TODO: This sentence should be maybe deleted
 
 Shapiro--Wilk tests assessed each calculated feature separately in HC and
 preDLB. Because most features were non-normal in at least one group, two-sided
@@ -311,7 +311,7 @@ tested features; correlation $p$ values were corrected separately across
 features for each clinical outcome.
 
 High-dimensional variants were reduced in two stages. First, every feature was
-mapped to a project-defined conceptual family based on source and measurement,
+mapped to a project-defined conceptual family based on source and measurement,   
 including long awakenings, wake-bout frequency, WASO, sleep efficiency, sleep
 onset latency, and activity variability. Second, within each conceptual family,
 complete-linkage clustering grouped variants whose absolute within-cohort
@@ -356,27 +356,29 @@ the precision--recall curve (PR AUC), balanced accuracy, sensitivity,
 specificity, precision, and Matthews correlation coefficient. We additionally
 reported first-visit-only performance from the held-out predictions.
 
-To quantify the label information built into this recruitment design, we fitted
-an ascertainment-stratum-only logistic-regression benchmark under
-person-grouped cross-validation. This was not a negative control for
-acquisition artefacts, because stratum was not expected to be independent of
-diagnosis. We also repeated nested validation separately in the
-NINR/COBEN stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
-within-stratum analyses were sensitivity checks with severe class imbalance:
-NINR/COBEN contained 46 HC and 9 preDLB visits, while NU20
-pre-LBD/pre-LBD2 contained 11 HC and 49 preDLB visits. Validation was not
-estimable for NU20 HC/HC2 because it
-contained 16 HC visits and only one preDLB visit.
+% To quantify the label information built into this recruitment design, we fitted
+% an ascertainment-stratum-only logistic-regression benchmark under
+% person-grouped cross-validation. This was not a negative control for
+% acquisition artefacts, because stratum was not expected to be independent of
+% diagnosis. We also repeated nested validation separately in the
+% NINR/COBEN stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
+% within-stratum analyses were sensitivity checks with severe class imbalance:
+% NINR/COBEN contained 46 HC and 9 preDLB visits, while NU20
+% pre-LBD/pre-LBD2 contained 11 HC and 49 preDLB visits. Validation was not
+% estimable for NU20 HC/HC2 because it
+% contained 16 HC visits and only one preDLB visit.
 
 \subsection{Software and reproducibility}\label{subsec:software}
 
 The workflow was implemented in Python 3.14 with NumPy 2.4.6, pandas 3.0.3,
 SciPy 1.17.1, scikit-learn 1.9.0 \cite{pedregosa2011scikitlearn}, statsmodels
-0.14.6 \cite{seabold2010statsmodels}, and XGBoost 3.2.0. Randomised model
-searches used seed 17. Canonical association outputs were the corrected
-\texttt{dataset-clinical} run \texttt{20260629\_132528\_560853} and
-\texttt{dataset-clinical-acc} run \texttt{20260629\_132533\_149540}; the
-person-grouped classification run was \texttt{20260702\_111118}.
+0.14.6 \cite{seabold2010statsmodels}, and XGBoost 3.2.0
+\cite{chen2016xgboost}. 
+% Randomised model
+% searches used seed 17. Canonical association outputs were the corrected
+% \texttt{dataset-clinical} run \texttt{20260629\_132528\_560853} and
+% \texttt{dataset-clinical-acc} run \texttt{20260629\_132533\_149540}; the
+% person-grouped classification run was \texttt{20260702\_111118}.
 
 \section{Results}\label{sec:results}
 
