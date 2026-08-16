@@ -10,6 +10,7 @@
 *.uml
 *.jpg
 *.pdf
+!manuscript/cognitive-computation/figure*.pdf
 *.csv
 *.xlsx
 *.bin

@@ -162,7 +162,7 @@ def run_hc_vs_predlb_person_grouped_classification(output_dir=None, run_specs=No
         first_visit_df.to_excel(writer, sheet_name="first_visit_summary", index=False)
         cohort_distribution_df.to_excel(writer, sheet_name="cohort_distribution", index=False)
         cohort_performance_df.to_excel(writer, sheet_name="cohort_performance", index=False)
-        source_only_df.to_excel(writer, sheet_name="source_only_negative_control", index=False)
+        source_only_df.to_excel(writer, sheet_name="source_ascertainment", index=False)
         leave_one_cohort_df.to_excel(writer, sheet_name="leave_one_cohort_out", index=False)
         within_cohort_df.to_excel(writer, sheet_name="within_cohort_nested_cv", index=False)
         settings_df.to_excel(writer, sheet_name="settings", index=False)
@@ -232,12 +232,12 @@ def _run_person_grouped_spec(spec, output_root):
     cohort_chi2 = _cohort_chi_square(
         pd.crosstab(predictions["source_cohort"], predictions["diagnosis_label"])
     )
-    source_only_summary, source_only_predictions = _source_only_negative_control(
+    source_only_summary, source_only_predictions = _source_only_ascertainment_benchmark(
         predictions=predictions,
         outer_splits=PERSON_GROUPED_OUTER_CV_SPLITS,
     )
     source_only_predictions.to_excel(
-        spec_dir / "source_only_negative_control_predictions.xlsx",
+        spec_dir / "source_only_ascertainment_predictions.xlsx",
         index=False,
     )
 
@@ -325,7 +325,7 @@ def _run_person_grouped_spec(spec, output_root):
         cohort_performance.to_excel(writer, sheet_name="cohort_performance", index=False)
         pd.DataFrame([source_only_summary]).to_excel(
             writer,
-            sheet_name="source_only_negative_control",
+            sheet_name="source_ascertainment",
             index=False,
         )
         leave_one_cohort_summary.to_excel(writer, sheet_name="leave_one_cohort_out", index=False)
@@ -470,7 +470,11 @@ def _prepare_spec_data(spec, spec_dir):
             ),
             "cohort_sensitivity": [
                 "cohort-stratified performance from person-grouped predictions",
-                "source-only negative-control classifier using the same person-grouped CV",
+                (
+                    "source-only ascertainment benchmark using the same person-grouped CV; "
+                    "source is diagnosis-enriched by recruitment design and is not a "
+                    "negative control for acquisition artefacts"
+                ),
                 "leave-one-source-cohort-out validation",
                 "within-source-cohort nested CV where sample size permits",
             ],
@@ -851,7 +855,7 @@ def _within_cohort_nested_cv(prepared, spec):
     return pd.DataFrame(rows), predictions
 
 
-def _source_only_negative_control(predictions, outer_splits):
+def _source_only_ascertainment_benchmark(predictions, outer_splits):
     y = predictions["y_true"].astype(int).to_numpy()
     groups = predictions["person_group"].astype(str).to_numpy()
     X = predictions[["source_cohort"]].copy()
@@ -1134,8 +1138,9 @@ def _settings(output_dir):
             {
                 "setting": "important_boundary",
                 "value": (
-                    "This is not a replacement for external validation. Source-cohort "
-                    "confounding is explicitly measured and should be reported."
+                    "This is not a replacement for external validation. The source-only "
+                    "benchmark measures label enrichment from consortium-defined recruitment; "
+                    "it does not by itself prove technical acquisition confounding."
                 ),
             },
         ]

@@ -1,11 +1,16 @@
-# Cognitive Computation LaTeX starter
+# Cognitive Computation manuscript draft
 
 This folder contains two complementary resources:
 
 - `springer-nature-latex-template-dec-2024.zip`: the unmodified official
   Springer Nature journal-article template package (version 3.1, December 2024).
-- `cognitive_computation_manuscript.tex`: a compact starter adapted to the
-  current *Cognitive Computation* instructions for original research.
+- `cognitive_computation_manuscript.tex`: a complete editable first draft of
+  the HC-versus-preDLB actigraphy article, adapted to the current *Cognitive
+  Computation* instructions for original research.
+- `figure1_activity_variability_updrs.pdf`,
+  `figure2_long_awakenings_executive.pdf`, and
+  `figure3_wake_bouts_rbdq.pdf`: canonical WASO-corrected vector figures used by
+  the manuscript.
 
 There is no separate LaTeX class published specifically for *Cognitive
 Computation*. Springer Nature states that its universal LaTeX authoring template
@@ -45,10 +50,19 @@ or directly:
 latexmk -pdf cognitive_computation_manuscript.tex
 ```
 
-For a clean submission archive after adding all referenced figure files, run
-`make submission-zip` and update the Makefile's file list if needed. Springer
+For a clean submission archive containing the referenced figure files, run
+`make submission-zip`. Springer
 advises keeping all uploaded LaTeX source, bibliography, style, and figure files
 in one directory and compiling with `pdflatex` before upload.
+
+## Author queries still open
+
+The draft deliberately leaves bracketed queries where the repository cannot
+support a reliable statement. Before submission, complete the author list and
+affiliations, recruitment and diagnostic criteria, device placement and wear
+protocol, exact clinical instruments, ethics and consent, funding, and
+data/code access statements. Also run the proposed age-adjusted sensitivity
+analysis and decide whether the regression results belong in a supplement.
 
 ## Authoritative links checked 8 August 2026
 

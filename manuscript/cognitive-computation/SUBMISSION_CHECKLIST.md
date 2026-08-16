@@ -28,6 +28,23 @@
 - [ ] Add code and materials availability statements where applicable.
 - [ ] Ensure the methods document participant-level splitting and leakage
       controls for any machine-learning analysis.
+- [ ] Run and report the prespecified age-adjusted sensitivity models rather
+      than relying only on the exploratory covariate-imbalance rule.
+- [ ] Freeze the canonical analysis outputs, tag the exact code commit used to
+      produce them, and update the Code Availability statement.
+
+## Project details to complete
+
+- [ ] Confirm the full author list, order, affiliations, corresponding email,
+      and CRediT contributions with the supervisor before submission.
+- [ ] Add centres, recruitment dates, eligibility criteria, operational preDLB
+      criteria, visit intervals, and the relationship among source cohorts.
+- [ ] Add the device model, original sampling rate, wrist side, wear and
+      non-wear protocol, recording duration, and valid-night definition.
+- [ ] Specify the UPDRS version/section, RBDq version/range, cognitive tests,
+      score harmonisation, and whether instruments matched across cohorts.
+- [ ] Replace every bracketed ethics, consent, funding, conflict, data access,
+      code access, and acknowledgement placeholder.
 
 ## References, tables, and figures
 

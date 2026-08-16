@@ -6,6 +6,18 @@ Project path: `/Volumes/Portable/geneactiv-processing-data`
 
 This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers clinical-variable integration, education harmonization, scenario-specific covariate verification, feature-family reduction, the diagnosis-adjusted follow-up of exploratory feature-outcome associations, strict classification, classification validity checks, thesis-level person-grouped classifier validation, and first-pass regression prediction of clinical scores.
 
+> **Interpretation correction, 2026-08-14:** Earlier versions used the terms
+> "source-cohort confounding" and "source-only negative control" too strongly.
+> The source cohorts were consortium-defined recruitment strata: HC/HC2 was
+> recruited with an expectation of health, pre-LBD/pre-LBD2 included people
+> with an expected clinical problem, and COBEN was not recruited using the same
+> binary division. Source was therefore expected to be associated with the
+> eventual label. The source-only analysis is an **ascertainment benchmark**,
+> not proof of technical acquisition or protocol confounding. It still shows
+> that pooled classification performance cannot be interpreted independently
+> of this recruitment design. Within-source estimates are additionally limited
+> by very small minority classes.
+
 ## 1) Executive Summary
 
 1. Six clinical variables and education were integrated into `dashboard.models.Subject`.
@@ -101,28 +113,30 @@ This report updates `phd_supervisor_experiment_report_2026-05-06.md`. It covers 
     `0.691` / BACC `0.664` to AUC `0.647` / BACC `0.637`; stable sleep plus
     activity decreased from AUC `0.690` / BACC `0.650` to AUC `0.649` / BACC
     `0.619`.
-20. The same validity audit found strong source-cohort confounding. Diagnosis
-    and cohort/source were strongly associated (`Cramer's V` approximately
-    `0.68-0.69`, `p < 5e-14`), and a negative-control classifier using source
-    cohort alone reached BACC approximately `0.84`. This is stronger than the
-    actigraphy-based strict classifiers by balanced accuracy. Therefore the
-    current diagnostic classifier should be treated as exploratory and
-    secondary; the association and regression analyses remain more defensible
-    for publication than diagnostic classification performance claims.
+20. The same validity audit confirmed strong source-label enrichment. Diagnosis
+    and source were strongly associated (`Cramer's V` approximately
+    `0.68-0.69`, `p < 5e-14`), as expected from the consortium-defined
+    recruitment strata. A source-only ascertainment benchmark reached BACC
+    approximately `0.84`. This does not prove acquisition/protocol confounding
+    or that the wearable classifier used source identity, but it prevents the
+    pooled diagnostic performance from being interpreted independently of the
+    recruitment design. Classification should therefore remain exploratory and
+    secondary.
 21. A full thesis-level person-grouped nested-CV HC-versus-preDLB validation
     was run on 2026-07-02. The broad RFE model preserved moderate ranking
     signal (`AUC = 0.746`, default `BACC = 0.649`, tuned `BACC = 0.666`), but
-    the source-only negative-control model remained stronger (`AUC = 0.814`,
+    the source-only ascertainment benchmark was higher (`AUC = 0.814`,
     `BACC = 0.840`). Stable primary sleep families gave similar balanced
     accuracy (`AUC = 0.706`, `BACC = 0.663`), while adding activity variability
     weakened diagnostic classification (`AUC = 0.620`, `BACC = 0.604`).
-22. Cohort-sensitive validation confirms that current diagnostic
-    classification should not be presented as source-robust. Within-cohort
-    nested CV was near chance in COBEN and pre-LBD/pre-LBD2, and HC/HC2 could
-    not be estimated because it contained only one preDLB subject. This is a
-    useful thesis result because it demonstrates the methodological boundary
-    clearly, but it argues against article-level diagnostic classifier claims
-    without a better balanced external or multi-source validation set.
+22. Source-sensitive validation does not yet establish transportability beyond
+    the pooled recruitment design. Within-source nested-CV point estimates were
+    weak in COBEN and pre-LBD/pre-LBD2, but both analyses had severe class
+    imbalance; HC/HC2 could not be estimated because it contained only one
+    preDLB subject. These results do not prove technical source confounding or
+    absence of a disease signal. They do argue against article-level diagnostic
+    claims until validation includes adequate numbers of both groups within
+    sources or an independent cohort.
 23. The WASO-corrected all-diagnosis clinical-scale regression remains
     exploratory prediction, not a ready clinical estimator. In the sleep/diary
     plus lifestyle dataset, only visuospatial and executive scores improved
@@ -1366,8 +1380,9 @@ using the classifier in article-level interpretation:
 - whether second visits (`HC2-*`, `pre-LBD2-*`) can inflate performance when
   they are not grouped with the same underlying person;
 - whether performance remains similar when only first visits are retained;
-- whether source cohort alone can predict the diagnostic label, which would
-  indicate cohort/protocol confounding.
+- how much diagnostic-label information is built into the consortium-defined
+  recruitment source. This is an ascertainment benchmark, not a negative
+  control for acquisition or protocol artefacts.
 
 The run output is:
 
@@ -1401,21 +1416,24 @@ Interpretation:
   subject rows) in the activity-enhanced stable-family run. Removing second
   visits lowers AUC and balanced accuracy in all three models, so repeated
   visits probably inflate performance slightly.
-- The larger problem is source-cohort confounding. Diagnosis and source cohort
-  are strongly associated (`Cramer's V` approximately `0.68-0.69`,
-  `p < 5e-14`). This is expected from the dataset design: COBEN is mostly HC,
-  HC/HC2 is almost entirely HC, and pre-LBD/pre-LBD2 is mostly preDLB.
-- The negative-control source-only classifier is the strongest warning sign.
-  Using only the source cohort label gives BACC approximately `0.84`, which
-  is higher than the actigraphy-based strict classifiers. This does not prove
-  that the actigraphy signal is false, but it means that diagnostic
-  classification performance cannot currently be separated cleanly from
-  cohort/source effects.
+- Diagnosis and source are strongly associated (`Cramer's V` approximately
+  `0.68-0.69`, `p < 5e-14`). This is expected from the consortium design:
+  HC/HC2 was recruited with an expectation of health, pre-LBD/pre-LBD2
+  included people with an expected clinical problem, and COBEN did not use the
+  same binary recruitment division.
+- The source-only ascertainment benchmark gives BACC approximately `0.84`.
+  Because source was expected to contain label information, this is not a valid
+  negative control and does not demonstrate technical acquisition or protocol
+  confounding. Source identity was not supplied to the wearable classifier, so
+  the result also does not prove that the classifier learned source artefacts.
+  It does show that pooled diagnostic performance cannot be separated cleanly
+  from the source-associated recruitment design using this dataset alone.
 - The practical conclusion is that the classifier should remain a secondary
   exploratory analysis. It can support the statement that there is signal in
   the data, but it should not be presented as a reliable diagnostic model
-  until the result survives person-grouped retraining and stronger
-  cohort-robust validation.
+  until the result survives person-grouped retraining and validation with
+  adequate representation of both diagnoses within each source or in an
+  independent cohort.
 - For the article, the more defensible primary statistical story remains the
   association/regression framework: clinically interpretable sleep-continuity
   and activity-variability families related to RBDq, UPDRS, attention,
@@ -1446,7 +1464,7 @@ Design:
 - model variants: broad RFE, stable primary sleep families, and stable primary
   sleep plus activity variability;
 - sensitivity outputs: first-visit-only metrics, cohort-stratified
-  performance, source-only negative control, leave-one-cohort-out validation,
+  performance, source-only ascertainment benchmark, leave-one-cohort-out validation,
   and within-cohort nested CV where sample size allowed.
 
 Main person-grouped nested-CV results:
@@ -1475,9 +1493,11 @@ Interpretation of the main table:
   where activity variability relates to UPDRS and attention. It means activity
   variability is more convincing as a clinical-outcome association family than
   as a diagnostic classifier feature family.
-- The source-only negative-control classifier remains stronger than all
-  actigraphy/diary classifiers. This is the decisive limitation: source cohort
-  alone gives BACC approximately `0.84`.
+- The source-only ascertainment benchmark gives BACC approximately `0.84`.
+  This is expected from diagnosis-enriched recruitment and must not be read as
+  proof that the wearable classifier is technically source-confounded. The
+  limitation is that pooled performance cannot establish discrimination that
+  is independent of the recruitment design.
 
 Cohort composition remained highly imbalanced:
 
@@ -1491,12 +1511,12 @@ Within-cohort nested-CV results:
 
 | Model | Cohort | Status | AUC | BACC | Sensitivity | Specificity | Interpretation |
 |---|---|---|---:|---:|---:|---:|---|
-| Broad strict RFE | COBEN | completed | 0.579 | 0.557 | 0.222 | 0.891 | near chance; detects few preDLB subjects |
-| Broad strict RFE | pre-LBD/pre-LBD2 | completed | 0.501 | 0.469 | 0.939 | 0.000 | near chance; predicts almost everyone as preDLB |
-| Stable primary sleep | COBEN | completed | 0.522 | 0.524 | 0.222 | 0.826 | near chance |
-| Stable primary sleep | pre-LBD/pre-LBD2 | completed | 0.510 | 0.490 | 0.980 | 0.000 | near chance; poor HC recognition |
-| Stable sleep + activity | COBEN | completed | 0.471 | 0.463 | 0.125 | 0.800 | below chance |
-| Stable sleep + activity | pre-LBD/pre-LBD2 | completed | 0.383 | 0.469 | 0.938 | 0.000 | below chance ranking; poor HC recognition |
+| Broad strict RFE | COBEN | completed | 0.579 | 0.557 | 0.222 | 0.891 | weak estimate; only 9 preDLB visits |
+| Broad strict RFE | pre-LBD/pre-LBD2 | completed | 0.501 | 0.469 | 0.939 | 0.000 | weak estimate; only 11 HC visits |
+| Stable primary sleep | COBEN | completed | 0.522 | 0.524 | 0.222 | 0.826 | weak, imbalanced estimate |
+| Stable primary sleep | pre-LBD/pre-LBD2 | completed | 0.510 | 0.490 | 0.980 | 0.000 | weak, imbalanced estimate; poor HC recognition |
+| Stable sleep + activity | COBEN | completed | 0.471 | 0.463 | 0.125 | 0.800 | imbalanced estimate below chance |
+| Stable sleep + activity | pre-LBD/pre-LBD2 | completed | 0.383 | 0.469 | 0.938 | 0.000 | imbalanced estimate; poor HC recognition |
 | All models | HC/HC2 | skipped | - | - | - | - | only one preDLB subject, so grouped CV is not estimable |
 
 Leave-one-cohort-out validation was also informative:
@@ -1517,9 +1537,10 @@ Overall interpretation:
   strong classifier result. It demonstrates that careful person grouping and
   cohort sensitivity analysis are necessary and materially change the
   interpretation.
-- The broad RFE and stable sleep-family models show a moderate internal
-  signal, but the source-only negative control and within-cohort analyses show
-  that the signal is not source-robust.
+- The broad RFE and stable sleep-family models show a moderate pooled internal
+  signal. The recruitment enrichment and weak, imbalanced within-source
+  estimates mean that source-independent transportability has not been
+  established; they do not prove that acquisition artefacts caused the signal.
 - The thesis can present this as a methodological finding: diagnostic
   classification from the current pooled dataset is vulnerable to cohort
   composition, while feature-outcome association analyses remain the more
@@ -1842,32 +1863,41 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
     performance. The 2026-07-02 thesis validation then retrained the models
     with person-grouped outer and inner CV, so repeated visits no longer leak
     across folds in that run.
-14. **Cohort-source confounding is confirmed for HC-versus-preDLB
-    classification and remains after person-grouped retraining.** Diagnostic
-    composition differs substantially among COBEN, HC/HC2, and pre-LBD source
-    cohorts. In the person-grouped thesis run, source cohort alone reached
-    balanced accuracy around `0.84`, and within-cohort nested CV was near
-    chance or not estimable. Diagnostic classification performance therefore
-    cannot currently be interpreted independently of cohort/source
-    differences.
-15. **Clinical-scale regression is internally person-grouped but still not
+14. **Source-label ascertainment is confirmed, but technical source confounding
+    is not.** Diagnostic composition differs substantially among COBEN, HC/HC2,
+    and pre-LBD sources because the consortium recruitment strata were defined
+    using prior expectations of health or clinical concern. In the
+    person-grouped thesis run, source alone reached balanced accuracy around
+    `0.84`, as expected under that design. Within-source nested-CV estimates
+    were weak or not estimable, but had very small minority groups. Diagnostic
+    classification therefore cannot currently be interpreted independently of
+    recruitment design; neither the source-only benchmark nor these imbalanced
+    sensitivities prove acquisition/protocol confounding.
+15. **The association models have not yet included recruitment source.** This
+    does not invalidate the current diagnosis-, sex-, and education-adjusted
+    GEE findings, but source may be related to both wearable measurements and
+    clinical outcomes through recruitment or protocol differences. Before
+    publication, primary associations should receive source-adjusted and, where
+    estimable, source-stratified sensitivity analyses. Diagnosis-source
+    collinearity and small minority groups must be reported rather than hidden.
+16. **Clinical-scale regression is internally person-grouped but still not
     externally validated.** The regression folds keep repeated visits from the
-    same person together, but this does not solve source-cohort confounding or
-    transportability to a new cohort.
-16. **Regression error rates use observed score ranges.** The reported
+    same person together, but this does not solve source-associated
+    ascertainment or transportability to a new cohort.
+17. **Regression error rates use observed score ranges.** The reported
     `MAE/range` values divide by the minimum-to-maximum span observed in this
     dataset. They should not be confused with error as a percentage of the
     theoretical questionnaire maximum.
-17. **Final regression feature importances are not stability estimates.** They
+18. **Final regression feature importances are not stability estimates.** They
     come from final all-data models after validation. Bootstrap or repeated
     grouped resampling is needed before presenting individual predictors as
     stable score-estimation biomarkers.
-18. **Focused HC-versus-preDLB regression improves interpretability, not all
+19. **Focused HC-versus-preDLB regression improves interpretability, not all
     outcomes.** Removing MCI-AD and NonHC observations reduces clinical
     heterogeneity but also changes the score distributions and sample size.
     Focused regression should therefore be compared against its own baseline
     and not interpreted as automatically superior.
-19. **Lifestyle diary predictors require cautious interpretation.** Alcohol
+20. **Lifestyle diary predictors require cautious interpretation.** Alcohol
     and caffeine timing sometimes improve prediction, but they can also encode
     cohort, lifestyle, diary-completion, or reporting-pattern differences.
     They should be reported as an extended model, not as primary disease
@@ -1879,15 +1909,20 @@ No candidate survived the first pooled FDR screen in the isolated MCI-AD vs HC a
 2. Use the retained focused plots and effect estimates to define a short, clinically interpretable candidate list.
 3. Treat the strict and person-grouped classifiers as exploratory thesis
    analyses, not as diagnostic models. The 2026-07-02 person-grouped run
-   confirms moderate internal signal but poor source-robustness.
-4. Fit prespecified sensitivity models with age, gender, and education regardless of preliminary covariate-test significance.
+   confirms moderate pooled internal signal but does not establish
+   source-independent transportability.
+4. Fit prespecified sensitivity models with age, gender, and education
+   regardless of preliminary covariate-test significance, then add
+   source-adjusted and source-stratified GEE sensitivities while reporting
+   diagnosis-source collinearity and small strata.
 5. Compare the current GEE results with alternative working correlations and, where appropriate, mixed-effects models.
 6. Do not spend more effort tuning the current diagnostic classifier unless a
    better balanced validation design is available. Person-grouped validation
-   has already been run and shows that cohort/source effects dominate.
+   has already been run and shows that recruitment-source enrichment prevents
+   a clean source-independent interpretation.
 7. If classification is included in the thesis, present the full validation
    ladder: visit-level strict model, first-visit audit, person-grouped nested
-   CV, source-only negative control, leave-one-cohort-out, and within-cohort
+   CV, source-only ascertainment benchmark, leave-one-cohort-out, and within-cohort
    nested CV.
 8. Compare actigraphy-only, diary-only, and combined classifiers. A signal
    confined to diary variables would be especially vulnerable to reporting
@@ -2017,7 +2052,8 @@ No FDR-significant candidate was detected for MCI-AD vs HC alone. Focused
 visualization is now complete. Person-grouped thesis validation of the
 HC-versus-preDLB classifiers has also been completed and confirms the same
 practical boundary: diagnostic classification contains moderate internal
-signal but is not robust to cohort/source sensitivity checks.
+signal, but source-independent transportability is not established by the
+available imbalanced sensitivity checks.
 
 WASO-corrected strict nested classification with RFE confirms a moderate
 internal signal but still produces conservative results. The primary
@@ -2093,7 +2129,8 @@ improvement in the activity-core model. However, UPDRS and MFS still do not
 beat the median baseline in MAE. Therefore, the assumption that intermediate
 states are the only barrier is incomplete. Removing MCI-AD and NonHC helps
 interpretability and some targets, but score noise, feature overlap,
-cohort-source effects, and sparse scales still limit individual prediction.
+source-associated recruitment or measurement heterogeneity, and sparse scales
+still limit individual prediction.
 
 Alcohol/caffeine timing and related diary-lifestyle predictors should remain
 in an extended secondary model. They sometimes improve MAE, especially for
@@ -2104,7 +2141,9 @@ reporting, or cohort differences rather than disease-specific physiology.
 The classification findings should remain secondary to the current
 association analyses. The 2026-07-02 thesis validation has now grouped
 validation by underlying person and tested cohort/source transportability; it
-shows moderate internal signal but poor source robustness. The most important
-next step is therefore not additional hyperparameter tuning, but either
-acquiring a better balanced validation cohort or focusing the article on the
-association, GEE, and regression evidence.
+shows moderate pooled internal signal, while source-independent performance
+remains unresolved because the recruitment strata are diagnosis-enriched and
+the within-source minority classes are small. The most important next step is
+therefore not additional hyperparameter tuning, but either acquiring a better
+balanced validation cohort or focusing the article on the association, GEE,
+and regression evidence.

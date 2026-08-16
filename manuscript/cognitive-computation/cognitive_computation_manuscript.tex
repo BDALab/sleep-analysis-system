@@ -1,12 +1,13 @@
-% Cognitive Computation manuscript starter
-% Based on the Springer Nature LaTeX authoring template, version 3.1
-% (December 2024), adapted to the journal's current submission guidelines.
+% Draft for Cognitive Computation
+% Springer Nature LaTeX authoring template, version 3.1 (December 2024).
+% Compile with: latexmk -pdf cognitive_computation_manuscript.tex
 %
-% Compile with:
-%   latexmk -pdf cognitive_computation_manuscript.tex
-%
-% The referee option enables double spacing for review. Remove it only if the
-% editorial office requests a different presentation.
+% AUTHOR QUERIES BEFORE SUBMISSION
+% 1. Confirm the complete author list, order, affiliations, and corresponding email.
+% 2. Supply recruitment, diagnostic, device-placement, ethics, consent, and funding details.
+% 3. Confirm the exact UPDRS section/version and the construction of cognitive z scores.
+% 4. Decide whether data/code can be public or must use controlled access.
+% 5. The journal currently requests Word manuscripts; confirm LaTeX acceptance or convert.
 \documentclass[referee,pdflatex,sn-vancouver-num]{sn-jnl}
 
 \usepackage{graphicx}
@@ -18,178 +19,706 @@
 
 \begin{document}
 
-\title[Short running title]{Full Informative Title of the GENEActiv Study}
+\title[Interpretable actigraphy phenotypes in preDLB]{Interpretable Wrist-Actigraphy Phenotypes in Predementia Lewy Body Disease: Clinical Associations and Challenges of Multi-Cohort Classification}
 
-% Mark the corresponding author with an asterisk.
-% Add further authors by repeating \author and linking affiliation numbers.
-\author*[1]{\fnm{Given Name} \sur{Family Name}}\email{corresponding.author@example.org}
-\author[1]{\fnm{Given Name} \sur{Family Name}}
+% Replace the placeholders below only after every co-author approves the order.
+\author*[1]{\fnm{Marek} \sur{Mikulec}}\email{[corresponding author email]}
+% \author[2]{\fnm{Given Name} \sur{Family Name}}
 
-\affil*[1]{\orgdiv{Department}, \orgname{Institution},
-  \orgaddress{\street{Street address}, \city{City}, \postcode{Postal code},
-  \country{Country}}}
+\affil*[1]{\orgdiv{[Department]}, \orgname{[Institution]},
+  \orgaddress{\city{[City]}, \country{Czech Republic}}}
 
-% The journal requires a structured abstract of 150--250 words using these
-% four headings. Do not cite references or use undefined abbreviations here.
 \abstract{%
-\textbf{Background / introduction:} State the clinical or computational problem,
-the knowledge gap, and the objective of the study.
+\textbf{Background / introduction:} Wrist actigraphy may provide scalable
+markers of sleep and activity disturbance in predementia Lewy body disease
+(preDLB), but diagnosis-enriched source cohorts complicate diagnostic
+evaluation. We examined feature--clinical associations in healthy controls
+(HC) and preDLB and audited diagnosis classification.
 
-\textbf{Methods:} Summarize the cohort, GENEActiv recording protocol, feature
-extraction, outcomes, statistical or machine-learning analysis, validation
-strategy, and primary evaluation metrics.
+\textbf{Methods:} We analysed 132 visits from 118 people, each with five to
+seven valid nights. A 25-Hz wrist-accelerometry pipeline produced 260
+sleep/diary and 690 extended activity features. False-discovery-rate-corrected
+Spearman correlations were reduced into conceptual families. Generalized
+estimating equations adjusted for diagnosis, sex, and education and clustered
+visits by person. Secondary XGBoost analysis used nested five-fold
+person-grouped validation, within-source sensitivity analyses, and a
+source-only ascertainment benchmark.
 
-\textbf{Results:} Report the main quantitative findings with uncertainty where
-appropriate. Distinguish prespecified analyses from exploratory analyses.
+\textbf{Results:} Greater activity variability was associated with higher motor
+scores (adjusted beta 1.322 points per feature standard deviation, 95\% CI
+0.807--1.837) and lower attention scores (beta $-0.198$, 95\% CI
+$-0.311$ to $-0.084$). More variable long awakenings were associated with
+lower executive scores (beta $-0.155$, 95\% CI $-0.254$ to $-0.056$).
+Wake-bout frequency, sleep efficiency, and wake after sleep onset had
+preDLB-specific associations with REM-sleep-behaviour symptom scores. The broad
+classifier achieved ROC AUC 0.746. Source alone achieved 0.814, as expected
+from the consortium-defined diagnosis-enriched recruitment strata;
+within-source estimates were limited by severe class imbalance.
 
-\textbf{Conclusions:} Explain the principal interpretation, relevance to
-cognitive computation, and the main limitation or implication.}
+\textbf{Conclusions:} Free-living activity variability and sleep continuity
+show interpretable associations in HC and preDLB and merit independent
+validation. The pooled data do not establish diagnostic performance independent
+of their recruitment design.}
 
-% Supply 4--6 indexing terms (the journal page is inconsistent in one place,
-% saying 3--6, but its detailed preparation instructions specify 4--6).
-\keywords{GENEActiv, actigraphy, wearable sensors, cognitive computation}
+\keywords{actigraphy, wearable sensors, Lewy body disease, sleep fragmentation, interpretable machine learning, multi-cohort validation}
 
 \maketitle
 
 \section{Introduction}\label{sec:introduction}
 
-% Keep the introduction concise. Establish the problem, prior work, gap,
-% research question or hypotheses, and contribution.
-Describe the motivation for analysing GENEActiv measurements and state the
-study objective. Cite sources in numerical order using \verb|\cite{key}|; the
-selected Vancouver style renders citations in square brackets. For example,
-the original GENEA accelerometer validation can be cited as
-\cite{esliger2011validation}; replace or retain this source as appropriate.
+Dementia with Lewy bodies (DLB) is commonly preceded by a heterogeneous
+predementia phase in which cognitive, motor, sleep, autonomic, and psychiatric
+features can emerge before dementia. Research criteria describe mild cognitive
+impairment with Lewy bodies and delirium-onset and psychiatric-onset
+presentations, while emphasising the need for longitudinal validation of early
+markers \cite{mckeith2020prodromal}. Isolated rapid eye movement (REM) sleep
+behaviour disorder is a particularly important prodromal synucleinopathy
+phenotype, but polysomnography and specialist assessment are difficult to
+deploy repeatedly at scale.
+
+Wrist actigraphy is inexpensive and well suited to repeated, free-living
+measurement. Previous studies have shown that actigraphy can contribute to
+screening for isolated REM sleep behaviour disorder \cite{stefani2018screening},
+that 24-hour rest--activity measures differ in this population
+\cite{winer2023restactivity}, and that accelerometry-derived sleep, physical
+activity, and circadian features relate to non-motor symptoms
+\cite{ophey2025accelerometry}. Recent multicentre work also demonstrates both
+the promise and the difficulty of generalising actigraphy models across devices
+and populations \cite{zhou2025multicenter}. Two issues therefore need to be
+addressed together: whether engineered wearable features have clinically
+interpretable associations, and whether apparent diagnostic performance
+survives participant-grouped and source-sensitive validation.
+
+The present exploratory study focused on healthy control (HC) and predementia
+Lewy body disease (preDLB) visits assembled from multiple Czech research data
+sources. We first screened a broad set of sleep, diary, and activity features
+against motor, sleep-behaviour, fluctuation, visuospatial, attention, and
+executive outcomes. To reduce the risk of interpreting many correlated
+variants as independent discoveries, we mapped features to fixed conceptual
+families, clustered highly redundant variants, and followed representative
+features with person-clustered regression. We then asked whether the same
+feature families supported HC-versus-preDLB classification under nested,
+person-grouped validation and source-sensitive analyses. The
+analysis was exploratory rather than a preregistered confirmatory test.
 
 \section{Methods}\label{sec:methods}
 
-% Methods published in detail elsewhere may be cited rather than repeated.
-% Define every abbreviation at first use and use SI units throughout.
-
 \subsection{Study design and participants}\label{subsec:participants}
 
-Describe recruitment, inclusion and exclusion criteria, diagnostic groups,
-sample size, and the timing of study visits. State the ethics committee name,
-approval identifier, and consent procedure.
+This was a retrospective secondary analysis of an existing multi-source
+wearable and clinical database. The primary comparison included database visits
+labelled HC (diagnosis code 0) or preDLB (diagnosis code 3). Clinical variables
+were harmonised from the \textit{preDLB shared} research workbook and the
+KARDIOVIZE workbook. The source cohorts used in the sensitivity analyses were
+COBEN, HC/HC2, and pre-LBD/pre-LBD2. Identifiers ending in 2 or 3 represented
+later visits; these visits were retained for longitudinal clustering but were
+assigned to the same underlying person as the first visit.
 
-\subsection{GENEActiv data acquisition}\label{subsec:acquisition}
+These source labels were not neutral acquisition batches. They reflected a
+consortium-defined recruitment design: participants in HC/HC2 were recruited
+with the prior expectation of being healthy, whereas pre-LBD/pre-LBD2 included
+people with an expected clinical problem. COBEN was not recruited using the
+same HC-versus-preDLB division. Consequently, source membership was expected a
+priori to contain information about the eventual diagnostic label. We refer to
+this property as diagnosis-enriched ascertainment rather than evidence of a
+technical acquisition artefact.
 
-Report device model, placement, sampling frequency, recording duration,
-calibration, non-wear handling, and any sleep-diary or clinical annotations.
+The analysis contained 132 visits from 118 people: 73 HC visits from 71 people
+and 59 preDLB visits from 47 people. Fourteen people contributed two visits.
+Each included visit had five to seven valid nights of wearable-derived data.
+Clinical scale availability varied slightly by outcome, and analyses used
+complete cases for the variables in each model.
 
-\subsection{Signal processing and feature extraction}\label{subsec:processing}
+\textit{[Author query: add the participating centres, recruitment dates,
+inclusion and exclusion criteria, operational diagnostic criteria and
+assessors, medication policy, interval between visits, and the relationship of
+the COBEN/KARDIOVIZE and pre-LBD studies. These details cannot be recovered
+reliably from the analysis repository.]}
 
-Document the processing pipeline sufficiently for reproduction: input format,
-filtering, epoch definition, sleep or activity segmentation, derived features,
-missing-data handling, normalization, and software versions.
+\subsection{Wearable acquisition and signal processing}\label{subsec:processing}
 
-\subsection{Clinical and cognitive measures}\label{subsec:clinical}
+Raw triaxial acceleration was acquired with GENEActiv wrist-worn devices,
+which have been validated for physical-activity measurement
+\cite{esliger2011validation}. Files were processed at 25 Hz. The analysis
+pipeline divided recordings into noon-to-noon days and computed a one-minute
+activity index from non-overlapping 60-second windows. Within each window, the
+three axes were filtered with a third-order Butterworth band-pass filter
+(0.25--12 Hz); the activity index was the square root of the mean axis-wise
+variance, following the general raw-accelerometry activity-index formulation
+\cite{bai2016activityindex}.
 
-Define the clinical outcomes, scales, cognitive domains, and group labels used
-in the analysis. Explain how measurements were aligned with wearable data.
+Major rest periods were inferred from arm-angle change and temperature, using
+an approach derived from open raw-accelerometry sleep methods
+\cite{vanhees2015sleep}. A Cole--Kripke heuristic with rescoring rules labelled
+each one-minute activity-index epoch as sleep or wake
+\cite{cole1992automatic}. Actigraphy-derived nightly endpoints included sleep
+onset latency, total sleep time, wake after sleep onset (WASO), sleep
+efficiency, sleep fragmentation, number of wake bouts, and number of
+awakenings longer than five minutes. In the corrected implementation used for
+this article, raw WASO was the count of one-minute wake epochs after the first
+detected sleep epoch within the major rest period and was therefore expressed
+in minutes before age-dependent normalisation. Earlier exports had mixed
+seconds and minutes during WASO normalisation; all reported results use the
+regenerated 29 June 2026 exports after that error was corrected.
 
-\subsection{Statistical analysis}\label{subsec:statistics}
+Parallel diary-derived endpoints were retained when available. Night-level
+variables were summarised across the five to seven nights using measures of
+level, trend, and variability, including mean, median, minimum, maximum, slope,
+standard deviation (SD), median absolute deviation (MAD), range, interquartile
+range (IQR), coefficient of variation, and relative interdecile range. The core
+dataset comprised 260 sleep and diary features. The extended dataset comprised
+690 features and additionally summarised the distribution of the minute-level
+activity index within each sleep window. A visit required at least five valid
+nights; at most seven nights were included.
 
-Specify primary and secondary analyses, covariates, multiple-comparison
-control, effect sizes, confidence intervals, missing-data strategy, and the
-significance threshold.
+\textit{[Author query: add the device model/version, original acquisition
+sampling rate, wrist side, wear instructions, recording dates/duration,
+calibration procedure, non-wear exclusion rules, diary protocol, and exact
+valid-night definition.]}
 
-\subsection{Machine-learning analysis}\label{subsec:machine-learning}
+\subsection{Clinical and cognitive outcomes}\label{subsec:outcomes}
 
-If applicable, describe preprocessing within each training fold, participant-
-grouped data splitting, model selection, hyperparameter tuning, class-imbalance
-handling, leakage controls, and final evaluation metrics.
+Six clinical outcomes were available at the corresponding visit. The REM Sleep
+Behaviour Disorder Screening Questionnaire score (RBDq) represented
+self-reported symptoms compatible with REM sleep behaviour disorder
+\cite{stiasnykolster2007rbdsq}. The available Unified Parkinson's Disease
+Rating Scale (UPDRS) score represented motor symptom burden; higher values were
+worse. The Mayo Fluctuations Scale (MFS) represented characteristic cognitive
+fluctuation features \cite{ferman2004fluctuations}. Visuospatial, attention,
+and executive measures were harmonised as domain scores, with higher values
+indicating better performance. Education was harmonised as years of education
+from the source workbooks. Recorded sex was coded female or male (the software
+output retained the historical label ``gender'').
+
+\textit{[Author query: specify the UPDRS version and section, RBDq version and
+range, the exact tests contributing to each cognitive domain score and their
+standardisation reference, and whether all source cohorts used identical
+instruments.]}
+
+\subsection{Exploratory association analysis}\label{subsec:statistics}
+
+An initial covariate-balance screen compared age and education with Welch's
+two-sample $t$ tests and sex with a chi-squared test. In HC versus preDLB, sex
+($p=0.0102$) and education ($p=6.6\times10^{-6}$) passed the prespecified
+$p<0.05$ imbalance rule and were selected as adjustment covariates; age did not
+($p=0.1799$). This rule was created during project development and was not
+preregistered. Consequently, the adjusted analyses should be interpreted as
+exploratory, and age-adjusted sensitivity analysis remains desirable.
+
+Shapiro--Wilk tests assessed each calculated feature separately in HC and
+preDLB. Because most features were non-normal in at least one group, two-sided
+Mann--Whitney $U$ tests compared groups and Spearman rank correlations assessed
+every feature--clinical outcome pair in the pooled HC/preDLB sample. The
+Benjamini--Hochberg procedure controlled the false discovery rate (FDR) at 0.05
+\cite{benjamini1995fdr}. Group-comparison $p$ values were corrected across all
+tested features; correlation $p$ values were corrected separately across
+features for each clinical outcome.
+
+High-dimensional variants were reduced in two stages. First, every feature was
+mapped to a project-defined conceptual family based on source and measurement,
+including long awakenings, wake-bout frequency, WASO, sleep efficiency, sleep
+onset latency, and activity variability. Second, within each conceptual family,
+complete-linkage clustering grouped variants whose absolute within-cohort
+Spearman correlation was at least 0.85. One representative per redundancy
+cluster was chosen by the largest absolute screening effect, followed by data
+completeness, preference for robust nightly summaries, preference for a raw
+rather than normalised source, and FDR-adjusted $p$ value. This reduction aids
+interpretation but is data-driven and does not constitute replication.
+
+Representative associations were followed with Gaussian generalised
+estimating equations (GEE) using an independence working correlation and robust
+sandwich covariance \cite{liang1986gee}. Models clustered visits by underlying
+person and included diagnosis, sex, and education. The clinical outcome
+remained on its original scale, while each feature was standardised within the
+model's complete-case sample; beta therefore represents outcome change per one
+feature SD. Feature-by-diagnosis interactions tested whether slopes differed
+between HC and preDLB. Spearman-rho confidence intervals were estimated with
+the same person-clustered robust framework applied to standardised ranks. FDR
+was controlled separately by outcome for adjusted main effects, interactions,
+and diagnosis-specific slopes. All tests were two-sided.
+
+\subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification}
+
+Classification was a secondary validity analysis, not the primary clinical
+claim. Three XGBoost gradient-boosted tree pipelines were evaluated
+\cite{chen2016xgboost}: (1) a broad sleep/diary set with recursive feature
+elimination (RFE) and diary/lifestyle predictors, (2) fixed stable sleep
+families with univariate $K$-best selection, and (3) the stable sleep families
+plus activity variability. All preprocessing was fit within training folds:
+linear residualisation of wearable features for sex and education, median
+imputation, removal of constant features, min--max scaling, feature selection,
+hyperparameter search, and classification. The RFE search considered 20, 40,
+80, or 120 features; $K$-best considered 20, 40, 80, 120, or all available
+features.
+
+Outer and inner validation both used five-fold stratified group splits by
+underlying person, preventing first and later visits from appearing in
+different folds. Hyperparameters and an optional probability threshold were
+selected only from each outer training partition. Performance measures were
+area under the receiver operating characteristic curve (ROC AUC), area under
+the precision--recall curve (PR AUC), balanced accuracy, sensitivity,
+specificity, precision, and Matthews correlation coefficient. We additionally
+reported first-visit-only performance from the held-out predictions.
+
+To quantify the label information built into this recruitment design, we fitted
+a source-only logistic-regression ascertainment benchmark under person-grouped
+cross-validation. This was not a negative control for acquisition artefacts,
+because source was not expected to be independent of diagnosis. We also
+repeated nested validation separately in COBEN and pre-LBD/pre-LBD2. These
+within-source analyses were sensitivity checks with severe class imbalance:
+COBEN contained 46 HC and 9 preDLB visits, while pre-LBD/pre-LBD2 contained 11
+HC and 49 preDLB visits. Validation was not estimable for HC/HC2 because it
+contained 16 HC visits and only one preDLB visit.
+
+\subsection{Software and reproducibility}\label{subsec:software}
+
+The workflow was implemented in Python 3.14 with NumPy 2.4.6, pandas 3.0.3,
+SciPy 1.17.1, scikit-learn 1.9.0 \cite{pedregosa2011scikitlearn}, statsmodels
+0.14.6 \cite{seabold2010statsmodels}, and XGBoost 3.2.0. Randomised model
+searches used seed 17. Canonical association outputs were the corrected
+\texttt{dataset-clinical} run \texttt{20260629\_132528\_560853} and
+\texttt{dataset-clinical-acc} run \texttt{20260629\_132533\_149540}; the
+person-grouped classification run was \texttt{20260702\_111118}.
 
 \section{Results}\label{sec:results}
 
-Present participant flow and cohort characteristics before the primary results.
-Report numerical estimates, uncertainty, and exact sample sizes. Refer to every
-table and figure in consecutive order.
+\subsection{Cohort characteristics}\label{subsec:cohort-results}
+
+The 132 visits represented 118 people, with 14 people contributing a second
+visit. HC and preDLB visits had similar mean age, but the preDLB group contained
+more women and fewer years of education (Table~\ref{tab:characteristics}). Most
+visits contributed seven valid nights. As expected from the database labels,
+preDLB visits had higher median RBDq, UPDRS, and MFS values and lower median
+cognitive-domain scores. Outcome-specific missingness was modest but explains
+small changes in sample size across analyses.
 
 \begin{table}[t]
-\caption{Placeholder for cohort characteristics or primary results. Replace
-all example labels and values before submission.}\label{tab:example}
+\caption{Visit-level characteristics of the HC-versus-preDLB analysis sample.}
+\label{tab:characteristics}
+\centering
+\small
 \begin{tabular}{@{}lll@{}}
 \toprule
-Measure & Group 1 & Group 2 \\
+Characteristic & HC & preDLB \\
 \midrule
-Participants, $n$ & -- & -- \\
-Age, years & -- & -- \\
-Valid recording time, days & -- & -- \\
+Visits / underlying people, $n$ & 73 / 71 & 59 / 47 \\
+Age, years, mean (SD) & 69.08 (5.90) & 70.31 (6.42) \\
+Female, $n$ (\%) & 36 (49.3) & 43 (72.9) \\
+Education, years, mean (SD) & 15.79 (3.18) & 13.48 (2.40) \\
+Valid nights, median (range) & 7 (5--7) & 7 (5--7) \\
+RBDq, median (IQR) & 2 (1--3) & 4 (2--5) \\
+UPDRS, median (IQR) & 1 (0--2) & 5 (3--8.75) \\
+MFS, median (IQR) & 0 (0--0) & 1 (0--2) \\
+Visuospatial score, median (IQR) & 0.458 ($-0.127$--0.707) & $-0.770$ ($-1.360$--0.151) \\
+Attention score, median (IQR) & 0.333 (0--0.767) & $-0.168$ ($-0.663$--0.167) \\
+Executive score, median (IQR) & 0.111 ($-0.167$--0.540) & $-0.484$ ($-0.905$--0.042) \\
 \bottomrule
 \end{tabular}
+
+\medskip
+\begin{minipage}{0.94\linewidth}\footnotesize
+Values are calculated across database visits. Education was available for 72
+HC and 57 preDLB visits; RBDq, UPDRS, MFS, and cognitive-domain availability
+also varied slightly. IQR, interquartile range; MFS, Mayo Fluctuations Scale;
+RBDq, REM Sleep Behaviour Disorder Screening Questionnaire score; UPDRS,
+Unified Parkinson's Disease Rating Scale.
+\end{minipage}
 \end{table}
 
-% Example figure inclusion (uncomment after adding the file beside this .tex):
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=\linewidth]{figure_1.pdf}
-%   \caption{A self-contained caption defining all symbols and abbreviations.}
-%   \label{fig:example}
-% \end{figure}
+\subsection{Screening and feature-family reduction}\label{subsec:screening-results}
+
+Across the core sleep/diary dataset, 94--97\% of features were non-normal in at
+least one diagnostic group, depending on the group-specific Shapiro--Wilk
+criterion. The corresponding proportion was 87--91\% in the extended dataset,
+supporting rank-based screening. Of 260 core features, 19 showed FDR-significant
+HC/preDLB group differences and 36 feature--outcome correlations were
+FDR-significant; reduction yielded 22 representative correlation clusters. Of
+690 extended features, the corresponding counts were 27 group differences, 83
+correlations, and 46 representative clusters. These are counts of engineered
+variants, not independent biological effects.
+
+The most coherent cross-method families were long awakenings, sleep onset
+latency, sleep efficiency, wake-bout frequency, and corrected WASO. Activity
+variability formed an additional family in the extended dataset. The earlier
+range-of-normalised-WASO association with MFS weakened after correction of the
+WASO unit error and was not retained as a focused candidate. A strong
+diary-normalised sleep-onset-latency screening result was also downgraded
+because the corresponding raw grouped feature was constant and could not be
+estimated in direct GEE follow-up.
+
+\subsection{Shared adjusted clinical associations}\label{subsec:shared-results}
+
+Three representative associations combined FDR-significant rank screening
+with a consistent diagnosis-adjusted GEE result (Table~\ref{tab:shared}).
+Greater between-night dispersion of nightly activity MAD was associated with
+higher UPDRS scores (pooled $\rho=0.331$; adjusted beta 1.322 UPDRS points per
+feature SD; Fig.~\ref{fig:activity-updrs}). Greater variability in relative
+interdecile activity range was associated with lower attention scores
+($\rho=-0.327$; adjusted beta $-0.198$). More variable age-normalised counts of
+awakenings longer than five minutes were associated with lower executive
+scores ($\rho=-0.324$; adjusted beta $-0.155$;
+Fig.~\ref{fig:awakenings-executive}). None of these three feature-by-diagnosis
+interactions survived FDR correction, supporting a shared adjusted slope in the
+combined sample rather than clear evidence for different HC and preDLB slopes.
+
+\begin{table*}[t]
+\caption{Primary shared feature--outcome associations in HC and preDLB.}
+\label{tab:shared}
+\centering
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+Outcome & Representative feature & $n$ / people & Pooled $\rho$ (95\% CI) & Pooled FDR $p$ & Adjusted beta (95\% CI) & Adjusted FDR $p$ \\
+\midrule
+UPDRS & IQR of nightly activity MAD & 125 / 113 & 0.331 (0.171--0.490) & 0.01349 & 1.322 (0.807--1.837) & 0.000013 \\
+Attention & SD of nightly relative interdecile activity range & 126 / 114 & $-0.327$ ($-0.506$ to $-0.149$) & 0.02842 & $-0.198$ ($-0.311$ to $-0.084$) & 0.00316 \\
+Executive & MAD of normalised long-awakening count & 128 / 116 & $-0.324$ ($-0.459$ to $-0.188$) & 0.00709 & $-0.155$ ($-0.254$ to $-0.056$) & 0.01677 \\
+\bottomrule
+\end{tabular}}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+Pooled $\rho$ is the exploratory Spearman association; confidence intervals
+use person-clustered robust inference. Adjusted betas are outcome units per one
+feature SD from Gaussian GEE models including diagnosis, sex, and education and
+clustering repeated visits by person. The $n$/people column refers to the
+adjusted complete-case model. FDR, false discovery rate; IQR, interquartile
+range; MAD, median absolute deviation; SD, standard deviation.
+\end{minipage}
+\end{table*}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure1_activity_variability_updrs.pdf}
+  \caption{Activity variability and motor impairment. Points show complete-case
+  visits; thin segments connect repeated visits from the same person. Thick
+  lines and bands are diagnosis-adjusted GEE predictions and robust 95\%
+  confidence intervals with sex and education held constant. Greater IQR of
+  nightly activity median absolute deviation was associated with higher UPDRS
+  in the pooled HC/preDLB sample. GEE, generalised estimating equation; HC,
+  healthy control; IQR, interquartile range; preDLB, predementia Lewy body
+  disease; UPDRS, Unified Parkinson's Disease Rating Scale.}
+  \label{fig:activity-updrs}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure2_long_awakenings_executive.pdf}
+  \caption{Between-night variability in long awakenings and executive
+  performance. The feature is the median absolute deviation across nights of
+  the age-normalised number of actigraphy-inferred awakenings longer than five
+  minutes. Higher variability was associated with lower executive-domain
+  scores after adjustment for diagnosis, sex, and education. Plot conventions
+  follow Fig.~\ref{fig:activity-updrs}.}
+  \label{fig:awakenings-executive}
+\end{figure}
+
+\subsection{Diagnosis-specific RBDq associations}\label{subsec:interaction-results}
+
+Three sleep-continuity features had FDR-significant feature-by-diagnosis
+interactions for RBDq (Table~\ref{tab:interactions}). In preDLB, a greater
+maximum nightly number of wake bouts was associated with higher RBDq
+($\rho=0.586$; adjusted beta 1.360 RBDq points per feature SD), whereas both
+estimates were near zero in HC (Fig.~\ref{fig:wake-bouts-rbdq}). Lower median
+normalised sleep efficiency and higher median raw WASO similarly tracked higher
+RBDq only in preDLB. Interaction FDR $p$ values were 0.00227, 0.01965, and
+0.01436, respectively.
+
+\begin{table*}[t]
+\caption{Diagnosis-specific sleep-continuity associations with RBDq.}
+\label{tab:interactions}
+\centering
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Feature & Diagnosis & $n$ visits & $\rho$ (95\% CI) & Adjusted beta (95\% CI); slope FDR $p$ & Interaction FDR $p$ \\
+\midrule
+Maximum nightly wake bouts & HC & 73 & $-0.025$ ($-0.262$--0.213) & $-0.032$ ($-0.361$--0.296); 0.98460 & \multirow{2}{*}{0.00227} \\
+ & preDLB & 58 & 0.586 (0.374--0.797) & 1.360 (0.662--2.058); 0.00047 & \\
+Median normalised sleep efficiency & HC & 73 & $-0.070$ ($-0.303$--0.163) & $-0.133$ ($-0.455$--0.190); 0.73676 & \multirow{2}{*}{0.01965} \\
+ & preDLB & 58 & $-0.415$ ($-0.667$ to $-0.164$) & $-1.099$ ($-1.792$ to $-0.406$); 0.00330 & \\
+Median raw WASO & HC & 73 & $-0.032$ ($-0.267$--0.203) & $-0.004$ ($-0.405$--0.397); 0.98460 & \multirow{2}{*}{0.01436} \\
+ & preDLB & 58 & 0.460 (0.246--0.674) & 1.076 (0.401--1.750); 0.00330 & \\
+\bottomrule
+\end{tabular}}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+Correlations use outcome-complete visits within diagnosis. Diagnosis-specific
+betas were derived from interaction GEE models containing 129 visits from 116
+people and adjusted for sex and education. Betas are RBDq points per one
+feature SD. HC, healthy control; preDLB, predementia Lewy body disease; RBDq,
+REM Sleep Behaviour Disorder Screening Questionnaire score; WASO, wake after
+sleep onset.
+\end{minipage}
+\end{table*}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure3_wake_bouts_rbdq.pdf}
+  \caption{Maximum nightly wake-bout frequency and RBDq by diagnosis. Thick
+  lines and bands are diagnosis-specific adjusted GEE predictions and robust
+  95\% confidence intervals; thin segments connect repeat visits. The positive
+  association was concentrated in preDLB, with an approximately null HC slope.
+  Actigraphy-derived wake bouts indicate movement-defined sleep disruption and
+  do not identify REM sleep or dream enactment.}
+  \label{fig:wake-bouts-rbdq}
+\end{figure}
+
+\subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification-results}
+
+Under nested person-grouped cross-validation, the broad RFE model provided
+moderate ranking performance (ROC AUC 0.746, PR AUC 0.744) and balanced
+accuracy of 0.649 at the default threshold or 0.666 with inner-fold threshold
+tuning (Table~\ref{tab:classification}). Restricting input to the stable sleep
+families reduced ROC AUC to 0.706, while adding activity variability reduced it
+further to 0.620. First-visit-only AUC values were similar or lower, indicating
+that repeat-visit leakage did not explain the broad model's entire apparent
+signal.
+
+The source-only ascertainment benchmark achieved ROC AUC 0.814 and balanced
+accuracy 0.840. Diagnosis and source were strongly associated (Cramer's
+$V=0.682$, $p=4.65\times10^{-14}$), consistent with the consortium-defined
+diagnosis-enriched recruitment strata. The broad model's within-source AUC was
+0.579 in COBEN and 0.501 in pre-LBD/pre-LBD2; corresponding values for the
+stable sleep model were 0.522 and 0.510. These estimates provide limited
+evidence for transportable discrimination within either source, but their
+precision and interpretation are constrained by the small minority classes.
+
+\begin{table*}[t]
+\caption{Nested person-grouped HC-versus-preDLB classification and source-only ascertainment benchmark.}
+\label{tab:classification}
+\centering
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllllll@{}}
+\toprule
+Model & Visits / people & ROC AUC & PR AUC & Default BACC & Tuned BACC & First-visit AUC & First-visit BACC \\
+\midrule
+Broad sleep/diary + RFE & 132 / 118 & 0.746 & 0.744 & 0.649 & 0.666 & 0.740 & 0.648 \\
+Stable sleep families & 132 / 118 & 0.706 & 0.634 & 0.663 & 0.642 & 0.677 & 0.644 \\
+Stable sleep + activity variability & 129 / 116 & 0.620 & 0.575 & 0.604 & 0.620 & 0.589 & 0.586 \\
+Source-only ascertainment benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & -- & -- \\
+\bottomrule
+\end{tabular}}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+All wearable models used nested five-fold stratified person-grouped outer and
+inner cross-validation. BACC, balanced accuracy; HC, healthy control; PR AUC,
+area under the precision--recall curve; preDLB, predementia Lewy body disease;
+RFE, recursive feature elimination; ROC AUC, area under the receiver operating
+characteristic curve. The source-only row quantifies expected label enrichment
+from the recruitment design; it is neither a test of acquisition artefacts nor
+a diagnostic model proposed for deployment.
+\end{minipage}
+\end{table*}
 
 \section{Discussion}\label{sec:discussion}
 
-Interpret the principal findings in relation to the hypotheses and prior work.
-Discuss clinical and computational relevance, robustness analyses, alternative
-explanations, generalizability, and limitations without repeating the Results.
+\subsection{Principal findings}\label{subsec:principal-findings}
+
+This exploratory analysis identified clinically interpretable wearable
+phenotypes in HC and preDLB while also demonstrating why association evidence
+must not be conflated with diagnostic prediction. Across correlated feature
+variants, the most coherent findings involved activity variability, long
+awakenings, wake-bout frequency, sleep efficiency, and corrected WASO. Activity
+variability was associated with motor and attention outcomes, variability in
+long awakenings was associated with executive performance, and three
+sleep-continuity measures showed RBDq associations concentrated in preDLB.
+These effects survived adjustment for diagnosis, sex, and education in
+person-clustered models. The person-grouped classifier showed moderate pooled
+discrimination, but the diagnosis-enriched source composition and imprecise,
+weak within-source results prevented a source-independent performance claim.
+
+The pooled Spearman coefficient and adjusted GEE beta answer complementary
+questions. Spearman $\rho$ quantifies the strength and direction of a monotonic
+relationship on a standardised scale and is useful for comparing associations
+across outcomes. The GEE beta estimates the expected change in the original
+clinical outcome for a one-SD increase in a feature after accounting for
+diagnosis, sex, education, and repeated visits. Beta therefore evaluates
+whether the relationship persists under adjustment and expresses its clinical
+scale, but it is not itself a correlation coefficient. Reporting both, with
+person-clustered confidence intervals, avoids treating adjusted effect size and
+unadjusted rank association as interchangeable.
+
+\subsection{Clinical and computational interpretation}\label{subsec:interpretation}
+
+The activity-variability features describe inconsistency rather than simply
+high or low activity. For example, the UPDRS feature first computes the median
+absolute deviation of minute-level activity within each night and then takes
+the IQR of that nightly value across the recording week. A high value therefore
+indicates fluctuating nocturnal movement dispersion across nights. Its positive
+association with UPDRS is compatible with greater motor burden accompanying a
+less stable rest--activity phenotype, but actigraphy alone cannot distinguish
+parkinsonian motor symptoms from awakenings, periodic limb movements,
+caregiving interruptions, or environmental activity. The negative attention
+association used a different distributional summary yet converged on the same
+broad activity-variability family, which is more compelling than reliance on a
+single engineered column.
+
+The executive association similarly concerns between-night instability. Long
+awakenings were defined from contiguous one-minute epochs labelled wake, with
+more than five wake minutes constituting a long awakening. The MAD across
+nights of the age-normalised count was negatively associated with executive
+performance. This may indicate that inconsistent sleep continuity co-occurs
+with poorer executive function. It does not establish that awakenings caused
+cognitive impairment, and the normalised feature incorporates an age-dependent
+transformation that should be tested against raw endpoints in an independent
+sample.
+
+The RBDq interactions require especially careful interpretation. RBDq is a
+symptom questionnaire, not a count of nocturnal awakenings. Wrist actigraphy
+cannot identify REM sleep without physiological sleep staging and cannot
+measure REM sleep without atonia. The observed positive relationships of RBDq
+with wake bouts and WASO, and its negative relationship with sleep efficiency,
+therefore indicate co-occurring movement-defined sleep disruption in preDLB,
+not detection of dream enactment or proof of REM sleep behaviour disorder. The
+findings are nevertheless biologically plausible and consistent with reports
+of altered rest--activity and sleep characteristics in isolated REM sleep
+behaviour disorder \cite{stefani2018screening,winer2023restactivity,ophey2025accelerometry}.
+
+From a cognitive-computation perspective, conceptual feature families provided
+a useful bridge between hundreds of correlated calculations and mechanisms
+that a clinician can inspect. However, family restriction did not improve
+classification. This is informative: interpretability constraints can expose
+stable association domains without guaranteeing individual-level diagnostic
+separation. Because source and diagnosis were structurally entangled by the
+recruitment design, the broad classifier's moderate pooled AUC cannot determine
+how much discrimination arose from disease-related wearable signal versus
+wearable differences associated with the recruitment strata. The high
+source-only benchmark does not prove that the wearable classifier learned
+technical source artefacts, because source identity was not supplied as a
+predictor. It does show that pooled classification performance alone is
+insufficient to establish transportability beyond this study design.
+
+\subsection{Strengths and limitations}\label{subsec:limitations}
+
+Strengths include five to seven nights per visit, explicit modelling of repeat
+visits, nonparametric screening appropriate to the observed distributions,
+FDR correction, reduction of correlated variants into interpretable families,
+and reporting of both rank correlations and adjusted effects with robust
+confidence intervals. The classification audit used true person-grouped nested
+validation, first-visit sensitivity, within-source evaluation, and a simple
+source-only ascertainment benchmark. The WASO implementation was audited and all
+canonical exports were regenerated after correction rather than retaining a
+weakened result.
+
+Several limitations constrain inference. First, screening, family reduction,
+and GEE follow-up used the same relatively small dataset. The GEE results are
+therefore adjusted exploratory follow-up, not independent confirmation, and
+effect sizes may be optimistic. Second, covariates were selected by a
+data-driven imbalance test. Age did not cross that rule and was not included,
+although residual age effects, age-dependent normalisation, and other unmeasured
+confounders remain possible. A prespecified age-adjusted sensitivity model is
+needed before submission. Third, group labels and clinical variables were
+harmonised retrospectively across source workbooks. The strong differences in
+diagnosis composition were an intended consequence of consortium-defined
+recruitment, not evidence of an acquisition error. Nevertheless, source may
+also be associated with device handling, diary completion, assessment
+procedures, or other unmeasured factors. The present association models did not
+adjust for source, so source-adjusted or source-stratified sensitivity analyses
+are needed. The exact recruitment, diagnostic, and acquisition protocols must
+also be documented before this draft can be submitted.
+
+Fourth, actigraphy infers movement-defined sleep and wake rather than measuring
+sleep stages. No conclusions about REM sleep physiology or causation can be
+drawn. Fifth, hundreds of summaries were generated from overlapping nightly
+signals. FDR and family reduction reduce but do not eliminate researcher
+degrees of freedom. The sign reversal observed for one visuospatial activity
+feature between preprocessed correlation and direct adjusted modelling further
+illustrates transformation sensitivity; that feature was not promoted as a
+primary finding. Sixth, the earlier normalised-WASO/MFS candidate did not
+survive the unit correction and should not be interpreted as evidence. Finally,
+there was no external cohort in which the entire processing, feature selection,
+and modelling pipeline could be frozen and tested. The present classifier is
+not suitable for clinical use.
+
+Future work should preregister a compact set of raw and normalised endpoints
+from the stable families, include age and relevant treatment or sleep-disorder
+covariates, recruit sufficient numbers of both diagnostic groups within each
+source, and reserve an
+independent centre or time period for validation. Repeated-measures analyses
+should distinguish within-person change from cross-sectional between-person
+differences. For classification, prospective harmonisation and leave-one-centre-
+out validation are more important than additional feature selection. For
+clinical interpretation, polysomnography or multimodal physiology would be
+needed to connect actigraphy-derived fragmentation to REM-specific mechanisms.
 
 \section{Conclusion}\label{sec:conclusion}
 
-State the main conclusion and its implications concisely. Avoid introducing
-new results.
+In free-living HC and preDLB observations, interpretable activity-variability
+and sleep-continuity families were associated with motor, attention, executive,
+and RBD symptom measures after diagnosis and covariate adjustment. The findings
+support wearable feature families as exploratory phenotypes for clinical
+association research. They do not yet establish diagnostic classification
+independent of study design: diagnosis was deliberately enriched across source
+cohorts, and the minority classes were too small for decisive within-source
+validation. Independent validation with adequate representation of both groups
+within each source is required before either biomarker or clinical-utility
+claims are warranted.
 
 \backmatter
 
 \section*{Acknowledgements}
 
-Name contributors who do not meet authorship criteria and acknowledge grants or
-other support. Write funding organization names in full.
+[Add contributors who do not meet authorship criteria and acknowledge all
+technical, clinical, and statistical support.]
 
 \section*{Declarations}
 
-% The journal requests the following disclosures as applicable. Replace every
-% placeholder; use "Not applicable" only when it is genuinely inapplicable.
-
 \subsection*{Funding}
 
-[State funder names and grant numbers, or ``The authors received no funding for
-this work.'']
+[State all funders and grant numbers, or confirm: ``The authors received no
+funding for this work.'']
 
 \subsection*{Competing interests}
 
-[Disclose financial and non-financial interests, or ``The authors have no
-relevant financial or non-financial interests to disclose.'']
+[Disclose financial and non-financial interests, or confirm: ``The authors have
+no relevant financial or non-financial interests to disclose.'']
 
 \subsection*{Ethics approval}
 
-[Name the approving ethics committee or institutional review board, approval
-number, and the ethical standard under which the study was conducted.]
+[Name every approving ethics committee, approval identifier, and the ethical
+standard under which each source cohort was conducted.]
 
 \subsection*{Consent to participate}
 
-[State how informed consent was obtained, or explain why it was waived.]
+[State how written informed consent was obtained for each source cohort or
+explain an approved waiver.]
 
 \subsection*{Consent for publication}
 
-[State whether consent for publication is applicable and was obtained.]
+[Confirm whether consent for publication is applicable and was obtained.]
 
 \subsection*{Data availability}
 
-[Original research must include this statement. Give repository links and
-persistent identifiers, or explain privacy restrictions and the controlled
-access procedure.]
+[Because participant-level wearable and clinical data may be identifiable,
+state the privacy restriction and controlled-access procedure, including the
+responsible institution and contact. If a de-identified derived dataset can be
+archived, add its persistent identifier.]
 
 \subsection*{Code availability}
 
-[Give the repository URL, archived release DOI, license, and any access
-conditions, or explain why code cannot be shared.]
+[Add the public repository URL, release tag or archival DOI, software licence,
+and the exact frozen commit used to generate the article results.]
 
 \subsection*{Author contributions}
 
-[List each author's contributions, preferably using the CRediT taxonomy.]
+[List each author's contributions using the CRediT taxonomy. Suggested roles to
+allocate include conceptualisation, methodology, software, formal analysis,
+investigation, data curation, visualisation, writing--original draft,
+writing--review and editing, supervision, and funding acquisition.]
 
-% Keep references.bib and sn-vancouver-num.bst beside this file when uploading.
+% TODO: Decide whether score-prediction regression and remaining focused plots
+% belong in an electronic supplement. They are intentionally omitted from this
+% focused main draft because individual score prediction was generally weak.
+
+\begingroup
+\interlinepenalty=10000
 \bibliography{references}
+\endgroup
 
 \end{document}

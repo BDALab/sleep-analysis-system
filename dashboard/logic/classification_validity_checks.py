@@ -111,7 +111,7 @@ def run_hc_vs_predlb_classification_validity_checks(output_dir=None):
         repeats_df.to_excel(writer, sheet_name="person_repeats", index=False)
         cohort_distribution_df.to_excel(writer, sheet_name="cohort_distribution", index=False)
         cohort_metrics_df.to_excel(writer, sheet_name="cohort_performance", index=False)
-        source_only_df.to_excel(writer, sheet_name="source_only_negative_control", index=False)
+        source_only_df.to_excel(writer, sheet_name="source_ascertainment", index=False)
         settings_df.to_excel(writer, sheet_name="settings", index=False)
         _style_workbook(writer.book)
 
@@ -227,7 +227,7 @@ def _analyze_run(spec):
     repeated_person_count = int((data.groupby("person_id")["#Subject"].nunique() > 1).sum())
     cohort_table = pd.crosstab(data["source_cohort"], data["diagnosis_label"])
     cohort_chi2 = _cohort_chi_square(cohort_table)
-    source_only = _source_only_negative_control(data)
+    source_only = _source_only_ascertainment_benchmark(data)
 
     summary = {
         "run_key": spec["run_key"],
@@ -382,7 +382,7 @@ def _cohort_chi_square(cohort_table):
     }
 
 
-def _source_only_negative_control(data):
+def _source_only_ascertainment_benchmark(data):
     if data["source_cohort"].nunique() < 2 or data["y_true"].nunique() < 2:
         return {
             "source_only_auc": np.nan,
@@ -429,11 +429,13 @@ def _source_only_negative_control(data):
             "source_only_auc": float(auc(fpr, tpr)),
             "source_only_bacc": float(balanced_accuracy_score(y, predictions)),
             "source_only_note": (
-                "source-only negative control; high values indicate cohort-source confounding risk"
+                "source-only ascertainment benchmark; high values quantify expected label "
+                "enrichment from consortium-defined recruitment and do not by themselves "
+                "prove technical acquisition confounding"
             ),
         }
     except Exception as exc:
-        logger.warning("Source-only negative-control model failed", exc_info=True)
+        logger.warning("Source-only ascertainment benchmark failed", exc_info=True)
         return {
             "source_only_auc": np.nan,
             "source_only_bacc": np.nan,
@@ -451,7 +453,8 @@ def _settings(output_dir):
                 "value": (
                     "Audit existing strict HC-vs-preDLB classifiers for repeated-person leakage, "
                     "first-visit-only performance, cohort/source entanglement, and source-only "
-                    "negative-control predictability."
+                    "ascertainment predictability. Source is diagnosis-enriched by recruitment "
+                    "design, so this is not a negative control for acquisition artefacts."
                 ),
             },
             {
