@@ -13,6 +13,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{multirow}
 \usepackage{placeins}
 
@@ -333,6 +334,18 @@ the same person-clustered robust framework applied to standardised ranks. FDR
 was controlled separately by outcome for adjusted main effects, interactions,
 and diagnosis-specific slopes. All tests were two-sided.
 
+Sensitivity analyses retained the representative feature--outcome pairs chosen
+by the canonical screening and family-reduction pipeline; screening, clustering,
+and representative selection were not repeated. The primary GEE models were
+refitted with age, clinical collection (NINR versus NU20), and both age and
+collection. A secondary ascertainment audit replaced the collection indicator
+with three recruitment-stratum indicators (COBEN, NU20 HC/HC2, and NU20
+pre-LBD/pre-LBD2), with and without age. Finally, the primary and age-adjusted
+models were repeated separately within NINR and NU20. FDR correction was
+applied separately by dataset, analysis subset, model variant, and clinical
+outcome. These were post hoc robustness analyses rather than independent
+validation.
+
 \subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification}
 
 Classification was a secondary validity analysis, not the primary clinical
@@ -565,6 +578,63 @@ sleep onset.
   \label{fig:wake-bouts-rbdq}
 \end{figure}
 
+\subsection{Age and source sensitivity analyses}\label{subsec:association-sensitivity}
+
+The six reported findings retained their directions in every pooled age and
+source adjusted model (Table~\ref{tab:association-sensitivity}). With age and
+clinical collection included together, the shared associations remained
+FDR significant for activity variability with UPDRS (beta 1.154, 95\% CI 
+0.449--1.860), activity variability with attention (beta $-0.194$, 95\% CI
+$-0.312$ to $-0.075$), and long-awakening variability with executive
+performance (beta $-0.158$, 95\% CI $-0.254$ to $-0.062$). In the age-only
+model, the UPDRS estimate remained positive with a confidence interval excluding
+zero (beta 1.186, 95\% CI 0.438--1.934; nominal $p=0.00189$), although its
+within outcome FDR value was 0.05108. The three RBDq feature-by-diagnosis
+interactions remained FDR significant after joint age and collection adjustment,
+and the corresponding preDLB slopes remained similar to the primary estimates.
+Adjustment for the three diagnosis enriched ascertainment strata produced the
+same overall interpretation.
+
+\begin{table*}[t]
+\caption{Pooled age and source sensitivity results for the six reported findings.}
+\label{tab:association-sensitivity}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}@{}}
+\toprule
+Finding & Age-adjusted result; FDR $p$ & Age and collection adjusted result; FDR $p$ & Age and ascertainment stratum adjusted result; FDR $p$ \\
+\midrule
+UPDRS $\sim$ activity MAD variability & beta 1.186 (0.438--1.934); 0.05108 & beta 1.154 (0.449--1.860); 0.03622 & beta 1.162 (0.452--1.872); 0.03633 \\
+\midrule
+Attention $\sim$ activity-range variability & beta $-0.195$ ($-0.314$ to $-0.075$); 0.00687 & beta $-0.194$ ($-0.312$ to $-0.075$); 0.00699 & beta $-0.194$ ($-0.312$ to $-0.075$); 0.00690 \\
+\midrule
+Executive $\sim$ long-awakening variability & beta $-0.158$ ($-0.254$ to $-0.062$); 0.00981 & beta $-0.158$ ($-0.254$ to $-0.062$); 0.01046 & beta $-0.159$ ($-0.254$ to $-0.064$); 0.00872 \\
+\midrule
+Wake bouts $\times$ diagnosis for RBDq & interaction FDR $p=0.00271$ & interaction FDR $p=0.00117$ & interaction FDR $p=0.00066$ \\
+\midrule
+Sleep efficiency $\times$ diagnosis for RBDq & interaction FDR $p=0.02582$ & interaction FDR $p=0.02175$ & interaction FDR $p=0.01877$ \\
+\midrule
+WASO $\times$ diagnosis for RBDq & interaction FDR $p=0.02152$ & interaction FDR $p=0.01155$ & interaction FDR $p=0.00961$ \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+Betas are outcome units per one feature SD. Collection adjustment distinguishes
+NINR from NU20. Ascertainment-stratum adjustment uses COBEN, NU20 HC/HC2, and
+NU20 pre-LBD/pre-LBD2 indicators and is an audit of diagnosis-enriched
+recruitment rather than a substitute for independent validation. FDR,
+false-discovery rate; MAD, median absolute deviation; RBDq, REM Sleep Behaviour
+Disorder Screening Questionnaire score; WASO, wake after sleep onset.
+\end{minipage}
+\end{table*}
+
+Within-collection estimates for the three shared associations had the same
+directions in NINR and NU20, but statistical support was uneven.
+These stratified analyses assess consistency
+and precision, they do not provide independent replication.
+
 \subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification-results}
 
 Under nested person-grouped cross-validation, the broad RFE model provided
@@ -715,8 +785,11 @@ effect sizes may be optimistic.
 Second, covariates were selected by a
 data-driven imbalance test. Age did not cross that rule and was not included,
 although residual age effects, age-dependent normalisation, and other unmeasured
-confounders remain possible. A prespecified age-adjusted sensitivity model is
-needed before submission. %TODO add this model 
+confounders remain possible. In the completed post hoc sensitivity analyses,
+all six reported findings retained their directions after age adjustment. The
+UPDRS association had an age-adjusted confidence interval excluding zero but
+its within-outcome FDR value was 0.05108; the other pooled findings retained
+FDR significance.
 
 Third, group labels and clinical variables were
 harmonised retrospectively across the NU20 and NINR source workbooks. The
@@ -725,9 +798,12 @@ the NU20 recruitment strata and the distinct NINR sampling frame, not
 evidence of an acquisition error. Nevertheless, collection and ascertainment
 stratum may
 also be associated with device handling, diary completion, assessment
-procedures, or other unmeasured factors. The present association models did not
-adjust for source, so source-adjusted or source-stratified sensitivity analyses
-are needed. 
+procedures, or other unmeasured factors. The sensitivity models cannot
+distinguish technical from clinical collection differences. Pooled age and collection adjusted
+estimates were similar to the primary estimates, but within-collection support
+was uneven and the diagnostic groups were highly imbalanced within each source.
+The sensitivity analyses therefore reduce, but do not eliminate, concern about
+source-dependent inference.
 % The exact recruitment, diagnostic, and acquisition protocols must
 % also be documented before this draft can be submitted.
 
@@ -762,7 +838,8 @@ needed to connect actigraphy-derived fragmentation to REM-specific mechanisms.
 In free-living HC and preDLB observations, interpretable activity-variability
 and sleep-continuity families were associated with motor, attention, executive,
 and RBD symptom measures after diagnosis and covariate adjustment. The findings
-support wearable feature families as exploratory phenotypes for clinical
+were directionally stable in pooled age and source adjusted analyses, although
+within-collection support was uneven. They support wearable feature families as exploratory phenotypes for clinical
 association research. They do not yet establish diagnostic classification
 independent of study design: diagnosis was deliberately enriched across
 ascertainment strata, and the minority classes were too small for decisive within-source
