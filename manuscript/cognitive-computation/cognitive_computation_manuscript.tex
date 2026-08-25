@@ -581,7 +581,8 @@ sleep onset.
 \subsection{Age and source sensitivity analyses}\label{subsec:association-sensitivity}
 
 The six reported findings retained their directions in every pooled age and
-source adjusted model (Table~\ref{tab:association-sensitivity}). With age and
+source adjusted model (Tables~\ref{tab:shared-association-sensitivity}
+and~\ref{tab:rbdq-interaction-sensitivity}). With age and
 clinical collection included together, the shared associations remained
 FDR significant for activity variability with UPDRS (beta 1.154, 95\% CI 
 0.449--1.860), activity variability with attention (beta $-0.194$, 95\% CI
@@ -596,37 +597,62 @@ Adjustment for the three diagnosis enriched ascertainment strata produced the
 same overall interpretation.
 
 \begin{table*}[t]
-\caption{Pooled age and source sensitivity results for the six reported findings.}
-\label{tab:association-sensitivity}
+\caption{Pooled age and source sensitivity results for the three shared clinical associations.}
+\label{tab:shared-association-sensitivity}
 \centering
 \scriptsize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.246\textwidth}@{}}
 \toprule
-Finding & Age-adjusted result; FDR $p$ & Age and collection adjusted result; FDR $p$ & Age and ascertainment stratum adjusted result; FDR $p$ \\
+Finding & Age adjusted & Age and collection adjusted & Age and ascertainment stratum adjusted \\
 \midrule
-UPDRS $\sim$ activity MAD variability & beta 1.186 (0.438--1.934); 0.05108 & beta 1.154 (0.449--1.860); 0.03622 & beta 1.162 (0.452--1.872); 0.03633 \\
+UPDRS $\sim$ activity MAD variability & $\beta=1.186$ (0.438--1.934); FDR $p=0.05108$ & $\beta=1.154$ (0.449--1.860); FDR $p=0.03622$ & $\beta=1.162$ (0.452--1.872); FDR $p=0.03633$ \\
 \midrule
-Attention $\sim$ activity-range variability & beta $-0.195$ ($-0.314$ to $-0.075$); 0.00687 & beta $-0.194$ ($-0.312$ to $-0.075$); 0.00699 & beta $-0.194$ ($-0.312$ to $-0.075$); 0.00690 \\
+Attention $\sim$ activity-range variability & $\beta=-0.195$ ($-0.314$ to $-0.075$); FDR $p=0.00687$ & $\beta=-0.194$ ($-0.312$ to $-0.075$); FDR $p=0.00699$ & $\beta=-0.194$ ($-0.312$ to $-0.075$); FDR $p=0.00690$ \\
 \midrule
-Executive $\sim$ long-awakening variability & beta $-0.158$ ($-0.254$ to $-0.062$); 0.00981 & beta $-0.158$ ($-0.254$ to $-0.062$); 0.01046 & beta $-0.159$ ($-0.254$ to $-0.064$); 0.00872 \\
-\midrule
-Wake bouts $\times$ diagnosis for RBDq & interaction FDR $p=0.00271$ & interaction FDR $p=0.00117$ & interaction FDR $p=0.00066$ \\
-\midrule
-Sleep efficiency $\times$ diagnosis for RBDq & interaction FDR $p=0.02582$ & interaction FDR $p=0.02175$ & interaction FDR $p=0.01877$ \\
-\midrule
-WASO $\times$ diagnosis for RBDq & interaction FDR $p=0.02152$ & interaction FDR $p=0.01155$ & interaction FDR $p=0.00961$ \\
+Executive $\sim$ long-awakening variability & $\beta=-0.158$ ($-0.254$ to $-0.062$); FDR $p=0.00981$ & $\beta=-0.158$ ($-0.254$ to $-0.062$); FDR $p=0.01046$ & $\beta=-0.159$ ($-0.254$ to $-0.064$); FDR $p=0.00872$ \\
 \bottomrule
 \end{tabular}
 
 \medskip
 \begin{minipage}{0.96\textwidth}\footnotesize
-Betas are outcome units per one feature SD. Collection adjustment distinguishes
-NINR from NU20. Ascertainment-stratum adjustment uses COBEN, NU20 HC/HC2, and
+Betas and 95\% confidence intervals are outcome units per one feature SD. In
+each model, the beta is estimated with a common slope across diagnosis groups.
+Collection adjustment distinguishes NINR from NU20. Ascertainment-stratum
+adjustment uses COBEN, NU20 HC/HC2, and
 NU20 pre-LBD/pre-LBD2 indicators and is an audit of diagnosis-enriched
 recruitment rather than a substitute for independent validation. FDR,
-false-discovery rate; MAD, median absolute deviation; RBDq, REM Sleep Behaviour
-Disorder Screening Questionnaire score; WASO, wake after sleep onset.
+false-discovery rate; MAD, median absolute deviation.
+\end{minipage}
+\end{table*}
+
+\begin{table*}[!b]
+\caption{Pooled age and source sensitivity results for diagnosis-dependent associations with RBDq.}
+\label{tab:rbdq-interaction-sensitivity}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.246\textwidth}@{}}
+\toprule
+Finding & Age adjusted & Age and collection adjusted & Age and ascertainment stratum adjusted \\
+\midrule
+Wake bouts & HC: $-0.037$ ($-0.369$, 0.295);\newline preDLB: 1.362 (0.661, 2.062);\newline interaction: 0.00271 & HC: $-0.011$ ($-0.355$, 0.333);\newline preDLB: 1.419 (0.751, 2.087);\newline interaction: 0.00117 & HC: $-0.027$ ($-0.376$, 0.322);\newline preDLB: 1.443 (0.784, 2.101);\newline interaction: 0.00066 \\
+\midrule
+Sleep efficiency & HC: $-0.162$ ($-0.510$, 0.186);\newline preDLB: $-1.107$ ($-1.793$, $-0.420$);\newline interaction: 0.02582 & HC: $-0.143$ ($-0.491$, 0.204);\newline preDLB: $-1.105$ ($-1.785$, $-0.426$);\newline interaction: 0.02175 & HC: $-0.126$ ($-0.482$, 0.230);\newline preDLB: $-1.116$ ($-1.794$, $-0.439$);\newline interaction: 0.01877 \\
+\midrule
+WASO & HC: 0.012 ($-0.429$, 0.452);\newline preDLB: 1.077 (0.401, 1.753);\newline interaction: 0.02152 & HC: $-0.005$ ($-0.443$, 0.432);\newline preDLB: 1.113 (0.465, 1.760);\newline interaction: 0.01155 & HC: $-0.032$ ($-0.494$, 0.429);\newline preDLB: 1.125 (0.487, 1.763);\newline interaction: 0.00961 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{minipage}{0.96\textwidth}\footnotesize
+Each cell reports the HC beta (95\% CI), preDLB beta (95\% CI), and
+FDR-adjusted interaction $p$-value, in that order. Betas are outcome units per
+one feature SD. The interaction tests whether the diagnosis-specific slopes
+differ; it is not an effect-size estimate. Collection adjustment distinguishes
+NINR from NU20. Ascertainment-stratum adjustment uses COBEN, NU20 HC/HC2, and
+NU20 pre-LBD/pre-LBD2 indicators. FDR, false-discovery rate; RBDq, REM Sleep
+Behaviour Disorder Screening Questionnaire score; WASO, wake after sleep onset.
 \end{minipage}
 \end{table*}
 
@@ -635,6 +661,7 @@ directions in NINR and NU20, but statistical support was uneven.
 These stratified analyses assess consistency
 and precision, they do not provide independent replication.
 
+\FloatBarrier
 \subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification-results}
 
 Under nested person-grouped cross-validation, the broad RFE model provided
