@@ -212,8 +212,11 @@ wake, and N1, N2, N3, and REM were mapped to sleep. Only triaxial acceleration
 and skin temperature were used. DREAMT reports written informed consent under
 Duke Health IRB Pro00108961 \cite{wang2026dreamt}.
 
-The two development sources were pooled for XGBoost model fitting with
-participant-grouped splitting \cite{chen2016xgboost}. For each window, the
+The initial Newcastle-only implementation followed our previously published
+sleep/wake method \cite{mikulec2022prodromal}; subsequent external evaluation
+on DREAMT showed limited transportability. The two development sources were
+therefore pooled for XGBoost model fitting with participant-grouped splitting
+\cite{chen2016xgboost}. For each window, the
 software calculated distributional features of acceleration magnitude,
 vertical-axis angle, and temperature. The resulting binary classifier returned
 a sleep probability; a threshold of 0.5 defined sleep for the downstream
