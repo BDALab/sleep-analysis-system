@@ -3,7 +3,7 @@
 % Compile with: latexmk -pdf cognitive_computation_manuscript.tex
 %
 % AUTHOR QUERIES BEFORE SUBMISSION
-% 1. Confirm the complete author list, order, affiliations, and corresponding email.
+% 1. Confirm the complete author list, order, and affiliations.
 % 2. Confirm recruitment, diagnostic, device-placement, ethics, consent, and funding details.
 % 3. Confirm the exact UPDRS section/version and the construction of cognitive z scores.
 % 4. Decide whether data/code can be public or must use controlled access.
@@ -21,14 +21,17 @@
 
 \begin{document}
 
-\title[Interpretable actigraphy phenotypes in preDLB]{Interpretable Wrist-Actigraphy Phenotypes in Predementia Lewy Body Disease: Clinical Associations and Challenges of Multi-Cohort Classification}
+\title[Source-aware actigraphy phenotyping in preDLB]{Source-Aware Computational Phenotyping from Multi-Night Wrist Actigraphy in Predementia Lewy Body Disease}
 
 % Replace the placeholders below only after every co-author approves the order.
-\author*[1]{\fnm{Marek} \sur{Mikulec}}\email{[corresponding author email]}
-% \author[2]{\fnm{Given Name} \sur{Family Name}}
+\author[1]{\fnm{Marek} \sur{Mikulec}}
+\author[1]{\fnm{Jiří} \sur{Mekyska}}
+\author[2]{\fnm{Luboš} \sur{Brabenec}}
+\author[3]{\fnm{Irena} \sur{Rektorová}}
 
-\affil*[1]{\orgdiv{[Department]}, \orgname{[Institution]},
-  \orgaddress{\city{[City]}, \country{Czech Republic}}}
+\affil[1]{\orgdiv{Dept. of Telecommunications}, \orgname{FEEC, Brno University of Technology}, \orgaddress{\city{Brno}, \country{Czech Republic}}}
+\affil[2]{\orgdiv{Applied Neuroscience Research Group}, \orgname{CEITEC, Masaryk University}, \orgaddress{\city{Brno}, \country{Czech Republic}}}
+\affil[3]{\orgdiv{International Clinical Research Center and First Department of Neurology}, \orgname{FM, Masaryk University}, \orgaddress{\city{Brno}, \country{Czech Republic}}}
 
 \abstract{%
 \textbf{Background / introduction:} Wrist actigraphy may provide scalable
@@ -298,9 +301,7 @@ two-sample $t$ tests and sex with a chi-squared test. In HC versus preDLB, sex
 ($p=0.0102$) and education ($p=6.6\times10^{-6}$) passed the prespecified
 $p<0.05$ imbalance rule and were selected as adjustment covariates; age did not
 ($p=0.1799$). This rule was created during project development and was not
-preregistered. Consequently, the adjusted analyses should be interpreted as
-exploratory, and age-adjusted sensitivity analysis remains desirable.
-% TODO: This sentence should be maybe deleted
+preregistered.
 
 Shapiro--Wilk tests assessed each calculated feature separately in HC and
 preDLB. Because most features were non-normal in at least one group, two-sided
@@ -896,8 +897,7 @@ collection and the present analysis, and state the role of each funder.]
 
 \subsection*{Competing interests}
 
-[Disclose financial and non-financial interests, or confirm: ``The authors have
-no relevant financial or non-financial interests to disclose.'']
+The authors have no relevant financial or non-financial interests to disclose.
 
 \subsection*{Ethics approval}
 
