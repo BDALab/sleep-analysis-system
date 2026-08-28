@@ -57,7 +57,7 @@ $-0.311$ to $-0.084$). More variable long awakenings were associated with
 lower executive scores (beta $-0.155$, 95\% CI $-0.254$ to $-0.056$).
 Wake-bout frequency, sleep efficiency, and wake after sleep onset had
 preDLB-specific associations with REM-sleep-behaviour symptom scores. The broad
-classifier achieved ROC AUC 0.746.
+classifier achieved ROC AUC 0.746 (95\% CI 0.652--0.830).
 
 \textbf{Conclusions:} Free-living activity variability and sleep continuity
 show interpretable associations in HC and preDLB and merit independent
@@ -381,6 +381,18 @@ hyperparameter search, and classification. The RFE search considered 20, 40,
 80, or 120 features; $K$-best considered 20, 40, 80, 120, or all available
 features.
 
+No prospective prediction-model sample-size calculation was performed. The
+classification sample comprised all available database visits with an HC or
+preDLB label that met the valid-night and pipeline-specific data requirements.
+In the core grouped table, 245 records were screened: four lacked a database
+diagnosis code and 109 had non-target labels (79 non-HC and 30 MCI-AD), leaving
+132 HC/preDLB visits from 118 people. The activity-extended pipeline included
+129 visits from 116 people because three target visits lacked usable extended
+activity features. Age and sex were complete; education was missing for three
+visits. Two candidate columns in each pipeline failed the 90\% coverage rule
+and were removed before modelling. Remaining predictor and education
+missingness was median-imputed within training folds.
+
 Outer and inner validation both used five-fold stratified group splits by
 underlying person, preventing first and later visits from appearing in
 different folds. Hyperparameters and an optional probability threshold were
@@ -389,6 +401,23 @@ area under the receiver operating characteristic curve (ROC AUC), area under
 the precision--recall curve (PR AUC), balanced accuracy, sensitivity,
 specificity, precision, and Matthews correlation coefficient. We additionally
 reported first-visit-only performance from the held-out predictions.
+The randomised search evaluated 12 configurations per outer fold for the RFE
+pipeline and 20 per fold for each $K$-best pipeline, optimising inner-fold
+balanced accuracy. To address class imbalance without synthetic resampling,
+the XGBoost positive-class weight was searched over 1, 2, 3, 4, and 5. The
+tuned decision threshold maximised Matthews correlation coefficient in grouped
+inner-fold out-of-fold predictions; default-threshold results used 0.5.
+
+Uncertainty intervals for classification metrics used 10,000 stratified
+person-level bootstrap samples, resampling people with replacement within
+diagnosis and retaining all visits belonging to each sampled person. We also
+summarised descriptive out-of-fold calibration using the Brier score,
+calibration intercept and slope, and five quantile-based calibration groups.
+Because classification was a validity analysis rather than an individual-risk
+model, calibration was not assigned a clinical decision interpretation. Full
+uncertainty estimates, calibration results, search spaces, foldwise selected
+hyperparameters, and analytical flow are provided in the Supplementary
+Material.
 
 To quantify the label information built into this recruitment design, we fitted
 an ascertainment-stratum-only logistic-regression benchmark under
@@ -702,22 +731,33 @@ and precision, they do not provide independent replication.
 \subsection{Person-grouped classification and source-sensitive validation}\label{subsec:classification-results}
 
 Under nested person-grouped cross-validation, the broad RFE model provided
-moderate ranking performance (ROC AUC 0.746, PR AUC 0.744) and balanced
-accuracy of 0.649 at the default threshold or 0.666 with inner-fold threshold
-tuning (Table~\ref{tab:classification}). Restricting input to the stable sleep
-families reduced ROC AUC to 0.706, while adding activity variability reduced it
-further to 0.620. First-visit-only AUC values were similar or lower, indicating
+moderate ranking performance (ROC AUC 0.746, 95\% CI 0.652--0.830; PR AUC
+0.744, 95\% CI 0.638--0.837) and balanced accuracy of 0.649 (95\% CI
+0.566--0.730) at the default threshold or 0.666 (95\% CI 0.584--0.745) with
+inner-fold threshold tuning (Table~\ref{tab:classification}). Restricting input
+to the stable sleep families reduced ROC AUC to 0.706 (95\% CI 0.612--0.795),
+while adding activity variability reduced it further to 0.620 (95\% CI
+0.516--0.721). First-visit-only AUC values were similar or lower, indicating
 that repeat-visit leakage did not explain the broad model's entire apparent
 signal.
 
-The ascertainment-stratum-only benchmark achieved ROC AUC 0.814 and balanced
-accuracy 0.840. Diagnosis and stratum were strongly associated (Cramer's
+The ascertainment-stratum-only benchmark achieved ROC AUC 0.814 (95\% CI
+0.722--0.895) and balanced accuracy 0.840 (95\% CI 0.767--0.904). Diagnosis and
+stratum were strongly associated (Cramer's
 $V=0.682$, $p=4.65\times10^{-14}$), consistent with the consortium-defined
 diagnosis-enriched recruitment strata. The broad model's within-stratum AUC was
-0.579 in NINR and 0.501 in NU20 pre-LBD/pre-LBD2; corresponding values for the
-stable sleep model were 0.522 and 0.510. These estimates provide limited
+0.579 (95\% CI 0.341--0.795) in NINR and 0.501 (95\% CI 0.330--0.684) in NU20
+pre-LBD/pre-LBD2; corresponding values for the stable sleep model were 0.522
+(95\% CI 0.280--0.756) and 0.510 (95\% CI 0.331--0.691). These estimates provide limited
 evidence for transportable discrimination within either stratum, but their
 precision and interpretation are constrained by the small minority classes.
+
+Descriptive out-of-fold calibration was weak. Brier scores were 0.237 for the
+broad model, 0.242 for stable sleep families, and 0.273 after adding activity
+variability; corresponding calibration slopes were 0.391, 0.359, and 0.269.
+The slopes substantially below one indicate overly extreme probabilities,
+reinforcing that these outputs should not be interpreted as individual
+clinical-risk estimates.
 
 \begin{table*}[t]
 \caption{Nested person-grouped HC-versus-preDLB classification and ascertainment-stratum-only benchmark.}

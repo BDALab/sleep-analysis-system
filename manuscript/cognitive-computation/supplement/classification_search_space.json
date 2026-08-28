@@ -1,0 +1,103 @@
+{
+  "analysis_seed": 17,
+  "feature_selection": {
+    "kbest_features": [
+      20,
+      40,
+      80,
+      120,
+      "all"
+    ],
+    "rfe_features": [
+      20,
+      40,
+      80,
+      120
+    ],
+    "rfe_step": [
+      0.05,
+      0.1,
+      0.2
+    ]
+  },
+  "inner_cv": "StratifiedGroupKFold(5)",
+  "kbest_randomized_search_iterations": 20,
+  "outer_cv": "StratifiedGroupKFold(5)",
+  "rfe_randomized_search_iterations": 12,
+  "search_scoring": "balanced_accuracy",
+  "threshold_grid": {
+    "start": 0.0,
+    "step": 0.0001,
+    "stop_exclusive": 1.0
+  },
+  "threshold_objective": "Matthews correlation coefficient",
+  "xgboost": {
+    "colsample_bylevel": [
+      0.6,
+      0.8,
+      1.0
+    ],
+    "colsample_bytree": [
+      0.5,
+      0.7,
+      0.9,
+      1.0
+    ],
+    "gamma": [
+      0,
+      0.05,
+      0.1,
+      0.25,
+      0.5
+    ],
+    "learning_rate": [
+      0.01,
+      0.03,
+      0.05,
+      0.1,
+      0.2
+    ],
+    "max_depth": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "min_child_weight": [
+      1.0,
+      3.0,
+      5.0,
+      10.0
+    ],
+    "n_estimators": [
+      150,
+      300,
+      500
+    ],
+    "reg_alpha": [
+      0.0,
+      0.01,
+      0.1,
+      1.0
+    ],
+    "reg_lambda": [
+      0.5,
+      1.0,
+      2.0,
+      5.0
+    ],
+    "scale_pos_weight": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "subsample": [
+      0.6,
+      0.8,
+      1.0
+    ]
+  }
+}

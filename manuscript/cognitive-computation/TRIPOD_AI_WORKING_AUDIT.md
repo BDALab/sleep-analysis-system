@@ -36,27 +36,27 @@ than implying readiness for clinical use.
 
 ## High-priority items before submission
 
-- [ ] Add a participant-flow diagram or table giving records assessed, excluded,
-  and analysed for each clinical source, with reasons for exclusion.
+- [x] Report the analytical record flow into each classification pipeline,
+  including missing-label, non-target-label, and missing-activity exclusions.
+- [ ] Add the clinical recruitment flow by source, including eligibility and
+  clinical exclusion reasons, after confirmation by the clinical team.
 - [ ] Confirm recruitment dates, eligibility criteria, diagnostic procedures,
   clinical assessors, and ethics/consent identifiers with the clinical team.
-- [ ] State whether all eligible available visits were used and add a sample-size
-  rationale; if there was no prospective calculation, say so transparently.
-- [ ] Report missingness for candidate predictors and outcomes, and distinguish
-  unavailable clinical measurements from values imputed inside model folds.
-- [ ] Report how class imbalance was handled. If no weighting or resampling was
-  used, state this explicitly.
-- [ ] Add confidence intervals for ROC AUC, PR AUC, balanced accuracy,
-  sensitivity, and specificity using a person-level bootstrap or another method
-  that respects repeated visits.
-- [ ] Add calibration assessment (at minimum a calibration plot and Brier score)
-  if the classification analysis is presented as estimating individual risk.
-  If it remains a ranking/validity analysis, explicitly explain why calibration
-  is not interpreted clinically.
-- [ ] Provide the final search space and foldwise selected hyperparameters or a
-  machine-readable supplement sufficient to reproduce each pipeline.
-- [ ] Explain how the reported threshold was selected and identify clearly which
-  metrics use the default 0.5 threshold and which use inner-fold tuning.
+- [x] State that the sample used all analytically eligible available HC/preDLB
+  visits and that no prospective prediction-model sample-size calculation was
+  performed.
+- [x] Report predictor and demographic missingness, the 90% coverage filter, and
+  fold-confined median imputation.
+- [x] Report that no synthetic resampling was used and that positive-class weight
+  was selected inside the hyperparameter search.
+- [x] Add 95% confidence intervals from 10,000 diagnosis-stratified person-level
+  bootstrap samples for all classification metrics.
+- [x] Add descriptive calibration curves, Brier scores, intercepts, and slopes,
+  while explaining that the analysis is not an individual-risk model.
+- [x] Export the full search space and foldwise selected hyperparameters in the
+  working supplementary material.
+- [x] Explain the default 0.5 threshold and inner-fold MCC-based threshold
+  selection.
 - [ ] Freeze the analysis commit, environment/lock file, exact run identifiers,
   and supplementary outputs only after collaborator review is complete.
 - [ ] State whether patients or the public were involved in study design,
