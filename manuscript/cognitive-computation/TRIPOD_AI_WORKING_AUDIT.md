@@ -54,11 +54,11 @@ than implying readiness for clinical use.
 - [x] Add descriptive calibration curves, Brier scores, intercepts, and slopes,
   while explaining that the analysis is not an individual-risk model.
 - [x] Export the full search space and foldwise selected hyperparameters in the
-  working supplementary material.
+  internal classification-audit materials (not planned for journal submission).
 - [x] Explain the default 0.5 threshold and inner-fold MCC-based threshold
   selection.
 - [ ] Freeze the analysis commit, environment/lock file, exact run identifiers,
-  and supplementary outputs only after collaborator review is complete.
+  and internal audit outputs only after collaborator review is complete.
 - [ ] State whether patients or the public were involved in study design,
   analysis, or reporting.
 

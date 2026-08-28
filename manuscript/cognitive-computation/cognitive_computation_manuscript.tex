@@ -377,9 +377,7 @@ families with univariate $K$-best selection, and (3) the stable sleep families
 plus activity variability. All preprocessing was fit within training folds:
 linear residualisation of wearable features for sex and education, median
 imputation, removal of constant features, min--max scaling, feature selection,
-hyperparameter search, and classification. The RFE search considered 20, 40,
-80, or 120 features; $K$-best considered 20, 40, 80, 120, or all available
-features.
+hyperparameter search, and classification.
 
 No prospective prediction-model sample-size calculation was performed. The
 classification sample comprised all available database visits with an HC or
@@ -389,35 +387,29 @@ diagnosis code and 109 had non-target labels (79 non-HC and 30 MCI-AD), leaving
 132 HC/preDLB visits from 118 people. The activity-extended pipeline included
 129 visits from 116 people because three target visits lacked usable extended
 activity features. Age and sex were complete; education was missing for three
-visits. Two candidate columns in each pipeline failed the 90\% coverage rule
-and were removed before modelling. Remaining predictor and education
-missingness was median-imputed within training folds.
+visits. Candidate columns with less than 90\% coverage were removed before
+modelling, and remaining predictor and education missingness was median-imputed
+within training folds.
 
 Outer and inner validation both used five-fold stratified group splits by
 underlying person, preventing first and later visits from appearing in
 different folds. Hyperparameters and an optional probability threshold were
-selected only from each outer training partition. Performance measures were
-area under the receiver operating characteristic curve (ROC AUC), area under
-the precision--recall curve (PR AUC), balanced accuracy, sensitivity,
-specificity, precision, and Matthews correlation coefficient. We additionally
-reported first-visit-only performance from the held-out predictions.
-The randomised search evaluated 12 configurations per outer fold for the RFE
-pipeline and 20 per fold for each $K$-best pipeline, optimising inner-fold
-balanced accuracy. To address class imbalance without synthetic resampling,
-the XGBoost positive-class weight was searched over 1, 2, 3, 4, and 5. The
-tuned decision threshold maximised Matthews correlation coefficient in grouped
-inner-fold out-of-fold predictions; default-threshold results used 0.5.
+selected only from each outer training partition. Inner randomised searches
+tuned the feature count and XGBoost hyperparameters by balanced accuracy. To
+address class imbalance without synthetic resampling, the positive-class
+weight was searched over 1, 2, 3, 4, and 5. The optional decision threshold
+maximised Matthews correlation coefficient in grouped inner-fold predictions;
+default-threshold results used 0.5. We report ROC AUC, precision--recall AUC
+(PR AUC), balanced accuracy, and first-visit-only performance from the held-out
+predictions.
 
 Uncertainty intervals for classification metrics used 10,000 stratified
 person-level bootstrap samples, resampling people with replacement within
 diagnosis and retaining all visits belonging to each sampled person. We also
-summarised descriptive out-of-fold calibration using the Brier score,
-calibration intercept and slope, and five quantile-based calibration groups.
-Because classification was a validity analysis rather than an individual-risk
-model, calibration was not assigned a clinical decision interpretation. Full
-uncertainty estimates, calibration results, search spaces, foldwise selected
-hyperparameters, and analytical flow are provided in the Supplementary
-Material.
+summarised descriptive out-of-fold calibration using the Brier score and
+calibration slope. Because classification was a validity analysis rather than
+an individual-risk model, calibration was not assigned a clinical decision
+interpretation.
 
 To quantify the label information built into this recruitment design, we fitted
 an ascertainment-stratum-only logistic-regression benchmark under
@@ -1021,8 +1013,8 @@ investigation, data curation, visualisation, writing--original draft,
 writing--review and editing, supervision, and funding acquisition.]
 
 % TODO: Decide whether score-prediction regression and remaining focused plots
-% belong in an electronic supplement. They are intentionally omitted from this
-% focused main draft because individual score prediction was generally weak.
+% belong in a later exploratory report. They are intentionally omitted from
+% this focused draft because individual score prediction was generally weak.
 
 \begingroup
 \interlinepenalty=10000

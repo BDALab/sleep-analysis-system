@@ -11,6 +11,9 @@ This folder contains two complementary resources:
   `figure2_long_awakenings_executive.pdf`, and
   `figure3_wake_bouts_rbdq.pdf`: canonical WASO-corrected vector figures used by
   the manuscript.
+- `supplement/` and `analysis/tripod_classification_audit.py`: detailed working
+  classification-audit outputs retained for reproducibility and possible
+  reviewer queries. They are not part of the planned submission package.
 
 There is no separate LaTeX class published specifically for *Cognitive
 Computation*. Springer Nature states that its universal LaTeX authoring template
@@ -44,6 +47,9 @@ From this directory, run:
 make
 ```
 
+This compiles the manuscript only. To rebuild the internal classification audit
+document separately, run `make audit-supplement`.
+
 or directly:
 
 ```sh
@@ -61,8 +67,8 @@ The draft deliberately leaves bracketed queries where the repository cannot
 support a reliable statement. Before submission, complete the author list and
 affiliations, recruitment and diagnostic criteria, device placement and wear
 protocol, exact clinical instruments, ethics and consent, funding, and
-data/code access statements. Also run the proposed age-adjusted sensitivity
-analysis and decide whether the regression results belong in a supplement.
+data/code access statements. The detailed classification audit should remain an
+internal reproducibility resource unless a reviewer specifically requests it.
 
 ## Authoritative links checked 8 August 2026
 

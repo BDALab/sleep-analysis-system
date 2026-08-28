@@ -1,17 +1,16 @@
 MAIN = cognitive_computation_manuscript
-SUPPLEMENT = supplement/cognitive_computation_supplement
 FIGURES = figure1_activity_variability_updrs.pdf \
 	figure2_long_awakenings_executive.pdf \
 	figure3_wake_bouts_rbdq.pdf
 
-.PHONY: all manuscript supplement clean submission-zip
+.PHONY: all manuscript audit-supplement clean submission-zip
 
-all: manuscript supplement
+all: manuscript
 
 manuscript:
 	latexmk -pdf $(MAIN).tex
 
-supplement:
+audit-supplement:
 	cd supplement && latexmk -pdf cognitive_computation_supplement.tex
 
 clean:
