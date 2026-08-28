@@ -39,8 +39,11 @@
       and CRediT contributions with the supervisor before submission.
 - [ ] Add centres, recruitment dates, eligibility criteria, operational preDLB
       criteria, visit intervals, and the relationship among source cohorts.
-- [ ] Add the device model, original sampling rate, wrist side, wear and
-      non-wear protocol, recording duration, and valid-night definition.
+- [x] Add the clinical device model, 25-Hz acquisition rate, left-wrist side,
+      wear/non-wear protocol, seven-night duration, calibration statement, and
+      valid-night definition. Public development-source rates are reported
+      separately (Newcastle 85.7 Hz; DREAMT E4 32 Hz in the supplied 64-Hz
+      aligned table).
 - [ ] Specify the UPDRS version/section, RBDq version/range, cognitive tests,
       score harmonisation, and whether instruments matched across cohorts.
 - [ ] Replace every bracketed ethics, consent, funding, conflict, data access,

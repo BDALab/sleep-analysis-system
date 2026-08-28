@@ -105,6 +105,15 @@ features with person-clustered regression. We then asked whether the same
 feature families supported HC-versus-preDLB classification under nested,
 person-grouped validation and source-sensitive analyses.
 
+The computational contribution is a source-aware phenotyping and validation
+framework rather than a new learning algorithm. It combines (i) conceptual
+family reduction of hundreds of correlated multi-night features, (ii)
+person-clustered estimation of clinically interpretable associations across
+repeat visits, and (iii) nested person-grouped classification with first-visit,
+source-stratified, and ascertainment-stratum-only audits. This design makes
+recruitment-source dependence an explicit part of model evaluation and
+separates exploratory phenotype discovery from diagnostic-performance claims.
+
 \section{Methods}\label{sec:methods}
 
 \subsection{Study design and participants}\label{subsec:participants}
@@ -221,6 +230,14 @@ software calculated distributional features of acceleration magnitude,
 vertical-axis angle, and temperature. The resulting binary classifier returned
 a sleep probability; a threshold of 0.5 defined sleep for the downstream
 clinical feature pipeline.
+
+After preprocessing, the pooled development matrix contained 267,969
+PSG-labelled windows from 126 participants (28 Newcastle and 98 DREAMT). A
+participant-grouped shuffle split (random seed 42) reserved 40\% of participants
+as a final test partition: 75 participants (157,702 windows) remained for
+training and 51 participants (110,267 windows) for testing. Median imputation,
+hyperparameter search, and selection of the number of boosting rounds used only
+the training partition, with ten-fold participant-grouped validation.
 
 \subsection{Wearable acquisition and signal processing}\label{subsec:processing}
 
@@ -373,17 +390,19 @@ the precision--recall curve (PR AUC), balanced accuracy, sensitivity,
 specificity, precision, and Matthews correlation coefficient. We additionally
 reported first-visit-only performance from the held-out predictions.
 
-% To quantify the label information built into this recruitment design, we fitted
-% an ascertainment-stratum-only logistic-regression benchmark under
-% person-grouped cross-validation. This was not a negative control for
-% acquisition artefacts, because stratum was not expected to be independent of
-% diagnosis. We also repeated nested validation separately in the
-% NINR stratum and the NU20 pre-LBD/pre-LBD2 stratum. These
-% within-stratum analyses were sensitivity checks with severe class imbalance:
-% NINR contained 46 HC and 9 preDLB visits, while NU20
-% pre-LBD/pre-LBD2 contained 11 HC and 49 preDLB visits. Validation was not
-% estimable for NU20 HC/HC2 because it
-% contained 16 HC visits and only one preDLB visit.
+To quantify the label information built into this recruitment design, we fitted
+an ascertainment-stratum-only logistic-regression benchmark under
+person-grouped cross-validation. This was not a negative control for
+acquisition artefacts, because stratum was expected to be associated with
+diagnosis. We also repeated nested validation separately in the NINR stratum
+and in the NU20 pre-LBD/pre-LBD2 stratum. These
+within-stratum analyses were sensitivity checks with severe class imbalance:
+NINR contained 46 HC and 9 preDLB visits, while NU20 pre-LBD/pre-LBD2 contained
+11 HC and 49 preDLB visits. Validation was not estimable for NU20 HC/HC2 because
+it contained 16 HC visits and only one preDLB visit. Randomised searches used
+seed 17. Reporting of this secondary prediction analysis was guided by
+TRIPOD+AI \cite{collins2024tripodai}; it was not intended as a deployable
+clinical prediction model.
 
 \subsection{Software and reproducibility}\label{subsec:software}
 
@@ -400,6 +419,18 @@ GitLab repository \cite{bdalab2026sleepanalysis,mikulec2026geneactiv}.
 % person-grouped classification run was \texttt{20260702\_111118}.
 
 \section{Results}\label{sec:results}
+
+\subsection{Sleep/wake classifier validation}\label{subsec:sleep-model-results}
+
+In ten-fold participant-grouped validation within the training partition, the
+final pooled sleep/wake classifier achieved accuracy 0.70 ($\pm$0.04),
+sensitivity 0.71 ($\pm$0.07), specificity 0.69 ($\pm$0.07), F1 score 0.73
+($\pm$0.05), and Matthews correlation coefficient 0.40 ($\pm$0.06). On the
+held-out participant groups, accuracy was 0.72, sensitivity 0.75, specificity
+0.66, F1 score 0.77, and Matthews correlation coefficient 0.41. Because both
+development datasets contributed participants to the training and test
+partitions, these values represent participant-level internal validation across
+the pooled sources, not leave-one-dataset-out transportability.
 
 \subsection{Cohort characteristics}\label{subsec:cohort-results}
 
