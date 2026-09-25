@@ -119,7 +119,7 @@ separates exploratory phenotype discovery from diagnostic-performance claims.
 \subsection{Study design and participants}\label{subsec:participants}
 
 This was a retrospective secondary analysis built from four distinct datasets
-(Table~\ref{tab:data-sources}). The Newcastle PSG--accelerometer and DREAMT
+(Table~\ref{tab:data-sources}; Fig.~\ref{fig:study-workflow}). The Newcastle PSG--accelerometer and DREAMT
 datasets were used only to develop the sleep/wake classifier; their participants
 did not contribute to the HC-versus-preDLB sample, its clinical outcomes, or
 the reported count of 132 visits. The clinical application used two closed
@@ -192,6 +192,23 @@ The external development participants are not included in the clinical sample of
 132 visits from 118 people. PSG, polysomnography.
 \end{minipage}
 \end{table*}
+\FloatBarrier
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{study_workflow.pdf}
+  \caption{Study workflow and separation of data sources. Newcastle and DREAMT
+  data were used only to develop and internally validate the binary sleep/wake
+  classifier; their participants did not enter the clinical analyses. The
+  trained classifier was applied within diary-defined recording intervals from
+  the NU20 and NINR collections to derive nightly endpoints and multi-night
+  summaries. These features entered complementary association and
+  source-sensitive classification pathways. CV, cross-validation; FDR,
+  false-discovery rate; GEE, generalised estimating equation; HC, healthy
+  control; MCC, Matthews correlation coefficient; preDLB, predementia Lewy
+  body disease; PSG, polysomnography.}
+  \label{fig:study-workflow}
+\end{figure*}
 \FloatBarrier
 
 % \textit{[Author query: confirm with the clinical investigators that the COBEN-coded

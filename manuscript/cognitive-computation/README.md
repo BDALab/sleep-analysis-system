@@ -11,6 +11,9 @@ This folder contains two complementary resources:
   `figure2_long_awakenings_executive.pdf`, and
   `figure3_wake_bouts_rbdq.pdf`: canonical WASO-corrected vector figures used by
   the manuscript.
+- `study_workflow.tex` and `study_workflow.pdf`: editable vector study-workflow
+  figure separating sleep/wake model development from clinical phenotyping and
+  the two complementary analysis pathways.
 - `supplement/` and `analysis/tripod_classification_audit.py`: detailed working
   classification-audit outputs retained for reproducibility and possible
   reviewer queries. They are not part of the planned submission package.
