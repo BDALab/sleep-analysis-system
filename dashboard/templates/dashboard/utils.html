@@ -758,16 +758,19 @@
                         </div>
                         <div class="small-column">
                             <h3>HC vs preDLB validity checks</h3>
-                            <p>Audit repeated-person leakage, first-visit-only metrics, and cohort/source
-                                confounding.</p>
+                            <p>Audit repeated-person leakage, first-visit-only metrics, and recruitment-source
+                                ascertainment.</p>
                             <a href="{% url 'dashboard:utils' 'classification-validity-hc-predlb' %}"
                                class="button button-small button-fix-width">Audit</a>
                         </div>
                         <div class="small-column">
-                            <h3>Person-grouped thesis classifier</h3>
-                            <p>Retrain HC vs preDLB with grouped nested CV and cohort-source sensitivity checks.</p>
+                            <h3>Person-grouped XGBoost vs elastic-net</h3>
+                            <p>Compare nonlinear XGBoost with sparse elastic-net logistic regression across the
+                                same three HC-vs-preDLB feature definitions, grouped nested CV folds, calibration
+                                metrics, and recruitment-source sensitivity checks. This longer analysis reruns all
+                                six prespecified model/feature-set combinations.</p>
                             <a href="{% url 'dashboard:utils' 'classification-person-grouped-hc-predlb' %}"
-                               class="button button-small button-fix-width">Run</a>
+                               class="button button-small button-fix-width">Run comparison</a>
                         </div>
                     </div>
                 </details>

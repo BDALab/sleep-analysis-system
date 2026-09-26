@@ -9,21 +9,27 @@ import pandas as pd
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from sklearn.base import clone
+from sklearn.calibration import calibration_curve
 from sklearn.compose import ColumnTransformer
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     auc,
     average_precision_score,
     balanced_accuracy_score,
+    brier_score_loss,
     confusion_matrix,
+    log_loss,
     matthews_corrcoef,
     precision_score,
     recall_score,
+    roc_auc_score,
     roc_curve,
 )
 from sklearn.model_selection import RandomizedSearchCV, StratifiedGroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from dashboard.logic.analysis_preparation import prepare_analysis_dataset
 from dashboard.logic.classification_covariates import resolve_adjustment_columns
@@ -33,6 +39,7 @@ from dashboard.logic.classification_grouped_statistics import (
     FEATURE_BLOCK_ALL,
     FEATURE_SELECTOR_MODE_KBEST,
     FEATURE_SELECTOR_MODE_RFE,
+    FoldwiseCovariateResidualizer,
     SEED,
     STATS_PREFIXES,
     TARGET_COLUMN,
@@ -87,11 +94,27 @@ PERSON_GROUPED_INNER_CV_SPLITS = max(
     2,
     int(os.environ.get("GENEACTIV_PERSON_GROUPED_INNER_CV_SPLITS", "5")),
 )
+ELASTIC_NET_SEARCH_ITER = max(
+    1,
+    int(os.environ.get("GENEACTIV_ELASTIC_NET_SEARCH_ITER", "30")),
+)
+MODEL_COMPARISON_BOOTSTRAPS = max(
+    100,
+    int(os.environ.get("GENEACTIV_MODEL_COMPARISON_BOOTSTRAPS", "2000")),
+)
+
+MODEL_FAMILY_XGBOOST = "xgboost"
+MODEL_FAMILY_ELASTIC_NET = "elastic_net"
+MODEL_FAMILIES = (MODEL_FAMILY_XGBOOST, MODEL_FAMILY_ELASTIC_NET)
+FEATURE_SELECTOR_MODE_EMBEDDED = "embedded_elastic_net"
 
 PERSON_GROUPED_RUN_SPECS = (
     {
         "run_key": "broad_strict_rfe",
-        "run_label": "Broad strict RFE, person-grouped",
+        "run_label": "Broad strict RFE, XGBoost, person-grouped",
+        "comparison_key": "broad",
+        "feature_set_label": "Broad sleep/diary features",
+        "model_family": MODEL_FAMILY_XGBOOST,
         "dataset_name": "dataset-clinical",
         "output_name": "broad-strict-rfe",
         "include_diary_covariates": True,
@@ -100,8 +123,27 @@ PERSON_GROUPED_RUN_SPECS = (
         "notes": "All grouped sleep/diary features plus diary predictors, XGBoost RFE.",
     },
     {
+        "run_key": "broad_elastic_net",
+        "run_label": "Broad elastic-net, person-grouped",
+        "comparison_key": "broad",
+        "feature_set_label": "Broad sleep/diary features",
+        "model_family": MODEL_FAMILY_ELASTIC_NET,
+        "dataset_name": "dataset-clinical",
+        "output_name": "broad-elastic-net",
+        "include_diary_covariates": True,
+        "feature_selector_mode": FEATURE_SELECTOR_MODE_EMBEDDED,
+        "allowed_feature_family_ids": frozenset(),
+        "notes": (
+            "All grouped sleep/diary features plus diary predictors; "
+            "elastic-net logistic regression performs embedded shrinkage and selection."
+        ),
+    },
+    {
         "run_key": "stable_sleep",
-        "run_label": "Stable primary sleep families, person-grouped",
+        "run_label": "Stable primary sleep families, XGBoost",
+        "comparison_key": "stable_sleep",
+        "feature_set_label": "Stable primary sleep families",
+        "model_family": MODEL_FAMILY_XGBOOST,
         "dataset_name": "dataset-clinical",
         "output_name": "stable-primary-sleep",
         "include_diary_covariates": False,
@@ -110,8 +152,24 @@ PERSON_GROUPED_RUN_SPECS = (
         "notes": "HC vs preDLB, fixed primary sleep families only.",
     },
     {
+        "run_key": "stable_sleep_elastic_net",
+        "run_label": "Stable primary sleep families, elastic-net",
+        "comparison_key": "stable_sleep",
+        "feature_set_label": "Stable primary sleep families",
+        "model_family": MODEL_FAMILY_ELASTIC_NET,
+        "dataset_name": "dataset-clinical",
+        "output_name": "stable-primary-sleep-elastic-net",
+        "include_diary_covariates": False,
+        "feature_selector_mode": FEATURE_SELECTOR_MODE_EMBEDDED,
+        "allowed_feature_family_ids": PRIMARY_SLEEP_STABLE_FAMILY_IDS,
+        "notes": "HC vs preDLB, fixed primary sleep families, elastic-net comparator.",
+    },
+    {
         "run_key": "stable_sleep_activity",
-        "run_label": "Stable sleep + activity variability, person-grouped",
+        "run_label": "Stable sleep + activity variability, XGBoost",
+        "comparison_key": "stable_sleep_activity",
+        "feature_set_label": "Stable sleep + activity variability",
+        "model_family": MODEL_FAMILY_XGBOOST,
         "dataset_name": "dataset-clinical-acc",
         "output_name": "stable-sleep-activity",
         "include_diary_covariates": False,
@@ -120,6 +178,24 @@ PERSON_GROUPED_RUN_SPECS = (
                 PRIMARY_SLEEP_STABLE_FAMILY_IDS | ACTIVITY_EXTENSION_STABLE_FAMILY_IDS
         ),
         "notes": "HC vs preDLB, primary sleep families plus activity variability.",
+    },
+    {
+        "run_key": "stable_sleep_activity_elastic_net",
+        "run_label": "Stable sleep + activity variability, elastic-net",
+        "comparison_key": "stable_sleep_activity",
+        "feature_set_label": "Stable sleep + activity variability",
+        "model_family": MODEL_FAMILY_ELASTIC_NET,
+        "dataset_name": "dataset-clinical-acc",
+        "output_name": "stable-sleep-activity-elastic-net",
+        "include_diary_covariates": False,
+        "feature_selector_mode": FEATURE_SELECTOR_MODE_EMBEDDED,
+        "allowed_feature_family_ids": (
+                PRIMARY_SLEEP_STABLE_FAMILY_IDS | ACTIVITY_EXTENSION_STABLE_FAMILY_IDS
+        ),
+        "notes": (
+            "HC vs preDLB, primary sleep families plus activity variability, "
+            "elastic-net comparator."
+        ),
     },
 )
 
@@ -136,9 +212,11 @@ def run_hc_vs_predlb_person_grouped_classification(output_dir=None, run_specs=No
     source_only_rows = []
     leave_one_cohort_frames = []
     within_cohort_frames = []
+    completed_runs = []
 
     for spec in run_specs:
         result = _run_person_grouped_spec(spec, output_dir)
+        completed_runs.append(result)
         summary_rows.append(result["summary"])
         first_visit_rows.append(result["first_visit_summary"])
         cohort_distribution_frames.append(result["cohort_distribution"])
@@ -154,6 +232,10 @@ def run_hc_vs_predlb_person_grouped_classification(output_dir=None, run_specs=No
     source_only_df = pd.DataFrame(source_only_rows)
     leave_one_cohort_df = pd.concat(leave_one_cohort_frames, ignore_index=True)
     within_cohort_df = pd.concat(within_cohort_frames, ignore_index=True)
+    model_comparison_df = _paired_model_comparisons(
+        completed_runs,
+        n_bootstrap=MODEL_COMPARISON_BOOTSTRAPS,
+    )
     settings_df = _settings(output_dir)
 
     summary_path = output_dir / "hc_vs_predlb_person_grouped_classification_summary.xlsx"
@@ -165,13 +247,25 @@ def run_hc_vs_predlb_person_grouped_classification(output_dir=None, run_specs=No
         source_only_df.to_excel(writer, sheet_name="source_ascertainment", index=False)
         leave_one_cohort_df.to_excel(writer, sheet_name="leave_one_cohort_out", index=False)
         within_cohort_df.to_excel(writer, sheet_name="within_cohort_nested_cv", index=False)
+        model_comparison_df.to_excel(writer, sheet_name="model_comparison", index=False)
         settings_df.to_excel(writer, sheet_name="settings", index=False)
+        _style_workbook(writer.book)
+
+    comparison_path = output_dir / "xgboost_vs_elastic_net_paired_bootstrap.xlsx"
+    with pd.ExcelWriter(comparison_path, engine="openpyxl") as writer:
+        model_comparison_df.to_excel(
+            writer,
+            sheet_name="paired_model_comparison",
+            index=False,
+        )
         _style_workbook(writer.book)
 
     result = {
         "run_dir": str(output_dir),
         "summary_path": str(summary_path),
+        "comparison_path": str(comparison_path),
         "summary": summary_df.replace({np.nan: None}).to_dict("records"),
+        "model_comparison": model_comparison_df.replace({np.nan: None}).to_dict("records"),
     }
     (output_dir / "hc_vs_predlb_person_grouped_classification_summary.json").write_text(
         json.dumps(result, indent=2),
@@ -186,20 +280,31 @@ def _run_person_grouped_spec(spec, output_root):
     spec_dir.mkdir(parents=True, exist_ok=True)
 
     prepared = _prepare_spec_data(spec, spec_dir)
-    predictions, fold_details = _run_grouped_nested_cv(
+    predictions, fold_details, coefficient_details = _run_grouped_nested_cv(
         X=prepared["X"],
         y=prepared["y"],
         groups=prepared["groups"],
         subjects=prepared["subjects"],
         source_cohorts=prepared["source_cohorts"],
         visit_indices=prepared["visit_indices"],
+        model_family=spec["model_family"],
         feature_selector_mode=spec["feature_selector_mode"],
         n_covariates=len(prepared["adjustment_columns"]),
+        feature_names=prepared["feature_columns"],
         outer_splits=PERSON_GROUPED_OUTER_CV_SPLITS,
         inner_splits=PERSON_GROUPED_INNER_CV_SPLITS,
     )
     predictions.to_excel(spec_dir / "subject_predictions.xlsx", index=False)
     fold_details.to_excel(spec_dir / "outer_fold_details.xlsx", index=False)
+    if not coefficient_details.empty:
+        coefficient_details.to_excel(
+            spec_dir / "elastic_net_outer_fold_coefficients.xlsx",
+            index=False,
+        )
+        _elastic_net_coefficient_stability(coefficient_details).to_excel(
+            spec_dir / "elastic_net_coefficient_stability.xlsx",
+            index=False,
+        )
 
     y_true = predictions["y_true"].astype(int).to_numpy()
     y_pred_default = predictions["y_pred_default"].astype(int).to_numpy()
@@ -278,6 +383,9 @@ def _run_person_grouped_spec(spec, output_root):
         **base_summary,
         "run_key": spec["run_key"],
         "run_label": spec["run_label"],
+        "comparison_key": spec["comparison_key"],
+        "feature_set_label": spec["feature_set_label"],
+        "model_family": spec["model_family"],
         "dataset_name": spec["dataset_name"],
         "run_dir": str(spec_dir),
         "mode": "person_grouped_nested_cv",
@@ -310,6 +418,8 @@ def _run_person_grouped_spec(spec, output_root):
     first_visit_summary = {
         "run_key": spec["run_key"],
         "run_label": spec["run_label"],
+        "comparison_key": spec["comparison_key"],
+        "model_family": spec["model_family"],
         "subject_count": int(len(first_visit_predictions)),
         "person_group_count": int(first_visit_predictions["person_group"].nunique()),
         **first_visit_metrics,
@@ -333,6 +443,8 @@ def _run_person_grouped_spec(spec, output_root):
         _style_workbook(writer.book)
 
     return {
+        "spec": spec,
+        "predictions": predictions,
         "summary": summary,
         "first_visit_summary": first_visit_summary,
         "cohort_distribution": cohort_distribution,
@@ -340,6 +452,8 @@ def _run_person_grouped_spec(spec, output_root):
         "source_only_summary": {
             "run_key": spec["run_key"],
             "run_label": spec["run_label"],
+            "comparison_key": spec["comparison_key"],
+            "model_family": spec["model_family"],
             **source_only_summary,
         },
         "leave_one_cohort_summary": leave_one_cohort_summary,
@@ -448,13 +562,17 @@ def _prepare_spec_data(spec, spec_dir):
             "source_path": str(preparation["raw_grouped_stats_path"]),
             "run_key": spec["run_key"],
             "run_label": spec["run_label"],
+            "comparison_key": spec["comparison_key"],
+            "feature_set_label": spec["feature_set_label"],
+            "model_family": spec["model_family"],
             "mode": "person_grouped_nested_cv_thesis",
             "scenario": "HC vs preDLB",
             "seed": SEED,
             "outer_cv": f"StratifiedGroupKFold(max_splits={PERSON_GROUPED_OUTER_CV_SPLITS})",
             "inner_cv": f"StratifiedGroupKFold(max_splits={PERSON_GROUPED_INNER_CV_SPLITS})",
             "feature_selector_mode": spec["feature_selector_mode"],
-            "feature_selection": _feature_selection_metadata(spec["feature_selector_mode"]),
+            "feature_selection": _model_feature_selection_metadata(spec),
+            "model": _model_metadata(spec["model_family"]),
             "include_diary_covariates": bool(spec["include_diary_covariates"]),
             "feature_family_filter": {
                 "enabled": bool(allowed_family_ids),
@@ -480,7 +598,11 @@ def _prepare_spec_data(spec, spec_dir):
             ],
             "preparation_manifest": _json_ready_dict(preparation),
             "diary_covariates": _json_ready_dict(covariate_info),
-            "xgboost_runtime": xgboost_runtime_metadata(),
+            "xgboost_runtime": (
+                xgboost_runtime_metadata()
+                if spec["model_family"] == MODEL_FAMILY_XGBOOST
+                else None
+            ),
             "notes": spec["notes"],
         },
         spec_dir / "analysis_metadata.json",
@@ -538,14 +660,17 @@ def _run_grouped_nested_cv(
         subjects,
         source_cohorts,
         visit_indices,
+        model_family,
         feature_selector_mode,
         n_covariates,
+        feature_names,
         outer_splits,
         inner_splits,
 ):
     outer_cv = _build_stratified_group_cv(y, groups, outer_splits)
     prediction_rows = []
     fold_rows = []
+    coefficient_frames = []
 
     for fold_index, (train_index, test_index) in enumerate(
             outer_cv.split(X, y, groups=groups),
@@ -561,6 +686,7 @@ def _run_grouped_nested_cv(
             y=y_train,
             groups=groups_train,
             cv=inner_cv,
+            model_family=model_family,
             feature_selector_mode=feature_selector_mode,
             n_covariates=n_covariates,
         )
@@ -573,6 +699,14 @@ def _run_grouped_nested_cv(
         )
         fold_model = clone(best_estimator)
         fold_model = _fit_with_device_fallback(fold_model, X_train, y_train)
+        coefficient_frame = _elastic_net_fold_coefficients(
+            estimator=fold_model,
+            feature_names=feature_names,
+            fold_index=fold_index,
+            model_family=model_family,
+        )
+        if not coefficient_frame.empty:
+            coefficient_frames.append(coefficient_frame)
         y_prob = _predict_positive_probability(fold_model, X_test)
         y_pred_default = fold_model.predict(X_test).astype(int)
         y_pred_tuned = _binarize_proba(y_prob, tuned_threshold).astype(int)
@@ -581,6 +715,7 @@ def _run_grouped_nested_cv(
             prediction_rows.append(
                 {
                     "fold": int(fold_index),
+                    "model_family": model_family,
                     "#Subject": str(subjects[row_index]),
                     "person_group": str(groups[row_index]),
                     "source_cohort": str(source_cohorts[row_index]),
@@ -598,6 +733,7 @@ def _run_grouped_nested_cv(
         fold_rows.append(
             {
                 "fold": int(fold_index),
+                "model_family": model_family,
                 "train_subjects": int(len(train_index)),
                 "test_subjects": int(len(test_index)),
                 "train_person_groups": int(len(np.unique(groups_train))),
@@ -616,14 +752,28 @@ def _run_grouped_nested_cv(
             }
         )
 
-    return pd.DataFrame(prediction_rows), pd.DataFrame(fold_rows)
+    coefficient_details = (
+        pd.concat(coefficient_frames, ignore_index=True)
+        if coefficient_frames
+        else pd.DataFrame()
+    )
+    return pd.DataFrame(prediction_rows), pd.DataFrame(fold_rows), coefficient_details
 
 
-def _run_grouped_search(X, y, groups, cv, feature_selector_mode, n_covariates):
-    search_settings = _search_settings_for_selector_mode(feature_selector_mode)
+def _run_grouped_search(
+        X,
+        y,
+        groups,
+        cv,
+        model_family,
+        feature_selector_mode,
+        n_covariates,
+):
+    search_settings = _search_settings_for_model(model_family, feature_selector_mode)
     search = RandomizedSearchCV(
-        estimator=_build_pipeline_with_selector(
-            feature_selector_mode,
+        estimator=_build_model_pipeline(
+            model_family=model_family,
+            feature_selector_mode=feature_selector_mode,
             n_covariates=n_covariates,
         ),
         cv=cv,
@@ -639,6 +789,180 @@ def _run_grouped_search(X, y, groups, cv, feature_selector_mode, n_covariates):
         else:
             raise
     return search.best_estimator_, search
+
+
+def _build_model_pipeline(model_family, feature_selector_mode, n_covariates):
+    if model_family == MODEL_FAMILY_XGBOOST:
+        if feature_selector_mode not in (FEATURE_SELECTOR_MODE_KBEST, FEATURE_SELECTOR_MODE_RFE):
+            raise ValueError(
+                f"XGBoost requires kbest or rfe selection, got {feature_selector_mode}"
+            )
+        return _build_pipeline_with_selector(
+            feature_selector_mode,
+            n_covariates=n_covariates,
+        )
+    if model_family == MODEL_FAMILY_ELASTIC_NET:
+        if feature_selector_mode != FEATURE_SELECTOR_MODE_EMBEDDED:
+            raise ValueError(
+                "Elastic-net uses embedded shrinkage and requires "
+                f"{FEATURE_SELECTOR_MODE_EMBEDDED}, got {feature_selector_mode}"
+            )
+        return Pipeline(
+            [
+                (
+                    "covariate_residualizer",
+                    FoldwiseCovariateResidualizer(n_covariates=n_covariates),
+                ),
+                ("imputer", SimpleImputer(strategy="median")),
+                ("variance_filter", VarianceThreshold(threshold=0.0)),
+                ("scaler", MinMaxScaler(feature_range=(0, 1))),
+                (
+                    "clf",
+                    LogisticRegression(
+                        solver="saga",
+                        l1_ratio=0.5,
+                        C=1.0,
+                        class_weight="balanced",
+                        max_iter=20000,
+                        tol=1e-4,
+                        random_state=SEED,
+                    ),
+                ),
+            ]
+        )
+    raise ValueError(f"Unknown model family {model_family}. Available: {', '.join(MODEL_FAMILIES)}")
+
+
+def _search_settings_for_model(model_family, feature_selector_mode):
+    if model_family == MODEL_FAMILY_XGBOOST:
+        return _search_settings_for_selector_mode(feature_selector_mode)
+    if model_family == MODEL_FAMILY_ELASTIC_NET:
+        return {
+            "param_distributions": {
+                "clf__C": [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0],
+                "clf__l1_ratio": [0.05, 0.25, 0.5, 0.75, 0.95, 1.0],
+            },
+            "scoring": "balanced_accuracy",
+            "n_jobs": 1,
+            "n_iter": ELASTIC_NET_SEARCH_ITER,
+            "verbose": 1,
+            "random_state": SEED,
+            "return_train_score": False,
+        }
+    raise ValueError(f"Unknown model family {model_family}. Available: {', '.join(MODEL_FAMILIES)}")
+
+
+def _model_feature_selection_metadata(spec):
+    if spec["model_family"] == MODEL_FAMILY_XGBOOST:
+        return _feature_selection_metadata(spec["feature_selector_mode"])
+    return {
+        "pipeline_steps": [
+            "foldwise covariate residualisation",
+            "median imputation",
+            "constant-feature removal",
+            "min-max scaling",
+            "elastic-net embedded shrinkage and selection",
+        ],
+        "note": (
+            "No separate univariate selector is used. C and l1_ratio are tuned only "
+            "inside the person-grouped inner CV; exact zero coefficients define selection."
+        ),
+    }
+
+
+def _model_metadata(model_family):
+    if model_family == MODEL_FAMILY_XGBOOST:
+        return {
+            "family": model_family,
+            "estimator": "XGBClassifier",
+            "search": "existing strict XGBoost search space",
+        }
+    if model_family == MODEL_FAMILY_ELASTIC_NET:
+        return {
+            "family": model_family,
+            "estimator": "LogisticRegression",
+            "solver": "saga",
+            "penalty": "elasticnet",
+            "class_weight": "balanced",
+            "C_options": [
+                0.001,
+                0.003,
+                0.01,
+                0.03,
+                0.1,
+                0.3,
+                1.0,
+                3.0,
+                10.0,
+                30.0,
+                100.0,
+            ],
+            "l1_ratio_options": [0.05, 0.25, 0.5, 0.75, 0.95, 1.0],
+            "search_iterations": ELASTIC_NET_SEARCH_ITER,
+        }
+    raise ValueError(f"Unknown model family {model_family}. Available: {', '.join(MODEL_FAMILIES)}")
+
+
+def _elastic_net_fold_coefficients(estimator, feature_names, fold_index, model_family):
+    if model_family != MODEL_FAMILY_ELASTIC_NET:
+        return pd.DataFrame()
+
+    feature_names = np.asarray(feature_names, dtype=object)
+    variance_filter = estimator.named_steps["variance_filter"]
+    variance_mask = np.asarray(variance_filter.get_support(), dtype=bool)
+    coefficients = np.asarray(estimator.named_steps["clf"].coef_, dtype=float).reshape(-1)
+    if len(variance_mask) != len(feature_names):
+        raise ValueError(
+            "Elastic-net coefficient export could not align variance-filtered features "
+            f"({len(variance_mask)} mask values vs {len(feature_names)} names)"
+        )
+    if int(variance_mask.sum()) != len(coefficients):
+        raise ValueError(
+            "Elastic-net coefficient export could not align classifier coefficients "
+            f"({variance_mask.sum()} retained features vs {len(coefficients)} coefficients)"
+        )
+
+    all_coefficients = np.zeros(len(feature_names), dtype=float)
+    all_coefficients[variance_mask] = coefficients
+    return pd.DataFrame(
+        {
+            "fold": int(fold_index),
+            "feature": feature_names,
+            "coefficient": all_coefficients,
+            "absolute_coefficient": np.abs(all_coefficients),
+            "nonzero": np.abs(all_coefficients) > 1e-10,
+            "retained_after_variance_filter": variance_mask,
+        }
+    )
+
+
+def _elastic_net_coefficient_stability(coefficient_details):
+    rows = []
+    for feature, feature_df in coefficient_details.groupby("feature", sort=False):
+        coefficients = feature_df["coefficient"].astype(float).to_numpy()
+        nonzero = np.abs(coefficients) > 1e-10
+        nonzero_coefficients = coefficients[nonzero]
+        if len(nonzero_coefficients):
+            positive_fraction = float((nonzero_coefficients > 0).mean())
+            sign_consistency = max(positive_fraction, 1.0 - positive_fraction)
+        else:
+            sign_consistency = np.nan
+        rows.append(
+            {
+                "feature": feature,
+                "outer_fold_count": int(len(feature_df)),
+                "nonzero_fold_count": int(nonzero.sum()),
+                "selection_frequency": float(nonzero.mean()),
+                "mean_coefficient": float(coefficients.mean()),
+                "median_coefficient": float(np.median(coefficients)),
+                "median_absolute_coefficient": float(np.median(np.abs(coefficients))),
+                "sign_consistency_when_nonzero": sign_consistency,
+            }
+        )
+    return pd.DataFrame(rows).sort_values(
+        by=["selection_frequency", "median_absolute_coefficient", "feature"],
+        ascending=[False, False, True],
+    )
 
 
 def _estimate_grouped_threshold_from_training(estimator, X_train, y_train, groups_train, cv):
@@ -744,6 +1068,7 @@ def _leave_one_cohort_out_validation(prepared, spec):
             y=y_train,
             groups=groups_train,
             cv=inner_cv,
+            model_family=spec["model_family"],
             feature_selector_mode=spec["feature_selector_mode"],
             n_covariates=len(prepared["adjustment_columns"]),
         )
@@ -764,6 +1089,7 @@ def _leave_one_cohort_out_validation(prepared, spec):
             {
                 "run_key": spec["run_key"],
                 "run_label": spec["run_label"],
+                "model_family": spec["model_family"],
                 "validation_type": "leave_one_cohort_out",
                 "held_out_source_cohort": cohort,
                 "status": "completed",
@@ -813,15 +1139,17 @@ def _within_cohort_nested_cv(prepared, spec):
             rows.append(_skipped_sensitivity_row(spec, "within_cohort_nested_cv", cohort, skip_reason))
             continue
 
-        predictions, _ = _run_grouped_nested_cv(
+        predictions, _, _ = _run_grouped_nested_cv(
             X=prepared["X"][cohort_mask],
             y=y,
             groups=groups,
             subjects=prepared["subjects"][cohort_mask],
             source_cohorts=prepared["source_cohorts"][cohort_mask],
             visit_indices=prepared["visit_indices"][cohort_mask],
+            model_family=spec["model_family"],
             feature_selector_mode=spec["feature_selector_mode"],
             n_covariates=len(prepared["adjustment_columns"]),
+            feature_names=prepared["feature_columns"],
             outer_splits=PERSON_GROUPED_OUTER_CV_SPLITS,
             inner_splits=PERSON_GROUPED_INNER_CV_SPLITS,
         )
@@ -834,6 +1162,7 @@ def _within_cohort_nested_cv(prepared, spec):
             {
                 "run_key": spec["run_key"],
                 "run_label": spec["run_label"],
+                "model_family": spec["model_family"],
                 "validation_type": "within_cohort_nested_cv",
                 "source_cohort": cohort,
                 "status": "completed",
@@ -910,6 +1239,7 @@ def _cohort_distribution(predictions, spec):
     )
     output.insert(0, "run_label", spec["run_label"])
     output.insert(0, "run_key", spec["run_key"])
+    output.insert(0, "model_family", spec["model_family"])
     return output
 
 
@@ -925,6 +1255,7 @@ def _cohort_performance(predictions, spec):
             {
                 "run_key": spec["run_key"],
                 "run_label": spec["run_label"],
+                "model_family": spec["model_family"],
                 "source_cohort": cohort,
                 "subject_count": int(len(cohort_df)),
                 "person_group_count": int(cohort_df["person_group"].nunique()),
@@ -934,6 +1265,178 @@ def _cohort_performance(predictions, spec):
             }
         )
     return pd.DataFrame(rows)
+
+
+def _paired_model_comparisons(completed_runs, n_bootstrap):
+    columns = [
+        "comparison_key",
+        "feature_set_label",
+        "metric",
+        "higher_is_better",
+        "subject_count",
+        "person_group_count",
+        "bootstrap_unit",
+        "bootstrap_replicates",
+        "xgboost_value",
+        "elastic_net_value",
+        "difference_elastic_minus_xgboost",
+        "difference_ci_low",
+        "difference_ci_high",
+        "probability_elastic_net_better",
+        "probability_note",
+    ]
+    grouped_runs = {}
+    for result in completed_runs:
+        spec = result["spec"]
+        grouped_runs.setdefault(spec["comparison_key"], {})[spec["model_family"]] = result
+
+    rows = []
+    rng = np.random.default_rng(SEED)
+    for comparison_key, family_runs in grouped_runs.items():
+        if not all(family in family_runs for family in MODEL_FAMILIES):
+            continue
+        xgboost_result = family_runs[MODEL_FAMILY_XGBOOST]
+        elastic_result = family_runs[MODEL_FAMILY_ELASTIC_NET]
+        paired = _pair_model_predictions(
+            xgboost_result["predictions"],
+            elastic_result["predictions"],
+        )
+        observed_xgboost = _comparison_metric_values(
+            paired["y_true"],
+            paired["y_pred_xgboost"],
+            paired["probability_xgboost"],
+        )
+        observed_elastic = _comparison_metric_values(
+            paired["y_true"],
+            paired["y_pred_elastic_net"],
+            paired["probability_elastic_net"],
+        )
+        bootstrap_differences = {
+            metric: [] for metric in observed_xgboost
+        }
+        group_indices = {
+            person_group: person_df.index.to_numpy(dtype=int)
+            for person_group, person_df in paired.groupby("person_group", sort=False)
+        }
+        person_labels = paired[["person_group", "y_true"]].drop_duplicates()
+        groups_by_class = {
+            diagnosis: person_labels.loc[
+                person_labels["y_true"].eq(diagnosis), "person_group"
+            ].to_numpy(dtype=object)
+            for diagnosis in (0, 1)
+        }
+        if not all(len(groups_by_class[diagnosis]) for diagnosis in (0, 1)):
+            continue
+
+        for _ in range(int(n_bootstrap)):
+            sampled_groups = []
+            for diagnosis in (0, 1):
+                class_groups = groups_by_class[diagnosis]
+                sampled_groups.extend(
+                    rng.choice(class_groups, size=len(class_groups), replace=True).tolist()
+                )
+            sampled_indices = np.concatenate(
+                [group_indices[person_group] for person_group in sampled_groups]
+            )
+            sampled = paired.loc[sampled_indices]
+            sampled_xgboost = _comparison_metric_values(
+                sampled["y_true"],
+                sampled["y_pred_xgboost"],
+                sampled["probability_xgboost"],
+            )
+            sampled_elastic = _comparison_metric_values(
+                sampled["y_true"],
+                sampled["y_pred_elastic_net"],
+                sampled["probability_elastic_net"],
+            )
+            for metric in bootstrap_differences:
+                bootstrap_differences[metric].append(
+                    sampled_elastic[metric] - sampled_xgboost[metric]
+                )
+
+        for metric, xgboost_value in observed_xgboost.items():
+            elastic_value = observed_elastic[metric]
+            differences = np.asarray(bootstrap_differences[metric], dtype=float)
+            higher_is_better = metric not in {"BRIER", "LOG_LOSS"}
+            if higher_is_better:
+                probability_better = float(
+                    (differences > 0).mean() + 0.5 * (differences == 0).mean()
+                )
+            else:
+                probability_better = float(
+                    (differences < 0).mean() + 0.5 * (differences == 0).mean()
+                )
+            rows.append(
+                {
+                    "comparison_key": comparison_key,
+                    "feature_set_label": xgboost_result["spec"]["feature_set_label"],
+                    "metric": metric,
+                    "higher_is_better": higher_is_better,
+                    "subject_count": int(len(paired)),
+                    "person_group_count": int(paired["person_group"].nunique()),
+                    "bootstrap_unit": "person_group, stratified by diagnosis",
+                    "bootstrap_replicates": int(n_bootstrap),
+                    "xgboost_value": xgboost_value,
+                    "elastic_net_value": elastic_value,
+                    "difference_elastic_minus_xgboost": elastic_value - xgboost_value,
+                    "difference_ci_low": float(np.quantile(differences, 0.025)),
+                    "difference_ci_high": float(np.quantile(differences, 0.975)),
+                    "probability_elastic_net_better": probability_better,
+                    "probability_note": (
+                        "Descriptive paired-bootstrap proportion, not a p-value. "
+                        "Positive differences favour elastic-net except for BRIER and "
+                        "LOG_LOSS, where negative differences favour elastic-net."
+                    ),
+                }
+            )
+    return pd.DataFrame(rows, columns=columns)
+
+
+def _pair_model_predictions(xgboost_predictions, elastic_predictions):
+    identity_columns = ["#Subject", "person_group", "source_cohort", "visit_index"]
+    xgboost = xgboost_predictions[
+        identity_columns + ["y_true", "y_pred_default", "pred_probability_positive"]
+    ].rename(
+        columns={
+            "y_pred_default": "y_pred_xgboost",
+            "pred_probability_positive": "probability_xgboost",
+        }
+    )
+    elastic = elastic_predictions[
+        identity_columns + ["y_true", "y_pred_default", "pred_probability_positive"]
+    ].rename(
+        columns={
+            "y_true": "y_true_elastic_net",
+            "y_pred_default": "y_pred_elastic_net",
+            "pred_probability_positive": "probability_elastic_net",
+        }
+    )
+    paired = xgboost.merge(elastic, on=identity_columns, how="inner", validate="one_to_one")
+    if len(paired) != len(xgboost) or len(paired) != len(elastic):
+        raise ValueError(
+            "Paired model comparison requires identical held-out subjects for XGBoost "
+            f"and elastic-net; got {len(xgboost)}, {len(elastic)}, and {len(paired)} paired rows"
+        )
+    if not np.array_equal(
+        paired["y_true"].astype(int).to_numpy(),
+        paired["y_true_elastic_net"].astype(int).to_numpy(),
+    ):
+        raise ValueError("Paired model comparison found inconsistent diagnosis labels")
+    return paired.drop(columns=["y_true_elastic_net"]).reset_index(drop=True)
+
+
+def _comparison_metric_values(y_true, y_pred, y_prob):
+    y_true = np.asarray(y_true, dtype=int)
+    y_pred = np.asarray(y_pred, dtype=int)
+    y_prob = np.clip(np.asarray(y_prob, dtype=float), 1e-12, 1.0 - 1e-12)
+    return {
+        "AUC": float(roc_auc_score(y_true, y_prob)),
+        "PR_AUC": float(average_precision_score(y_true, y_prob)),
+        "BACC": float(balanced_accuracy_score(y_true, y_pred)),
+        "MCC": float(matthews_corrcoef(y_true, y_pred)),
+        "BRIER": float(brier_score_loss(y_true, y_prob)),
+        "LOG_LOSS": float(log_loss(y_true, y_prob, labels=[0, 1])),
+    }
 
 
 def _save_prediction_outputs(
@@ -959,6 +1462,18 @@ def _save_prediction_outputs(
         recall_curve=recall_curve,
         pr_thresholds=pr_thresholds,
     )
+    fraction_positive, mean_predicted = calibration_curve(
+        y_true,
+        y_prob,
+        n_bins=10,
+        strategy="quantile",
+    )
+    pd.DataFrame(
+        {
+            "mean_predicted_probability": mean_predicted,
+            "observed_positive_fraction": fraction_positive,
+        }
+    ).to_excel(spec_dir / "calibration_curve_points.xlsx", index=False)
     _classification_report_dataframe(y_true, y_pred_default, target_names).to_excel(
         spec_dir / "classification_report_default.xlsx"
     )
@@ -1030,6 +1545,8 @@ def _binary_metrics(y_true, y_pred, y_prob):
             "SEN": np.nan,
             "SPE": np.nan,
             "PRE": np.nan,
+            "BRIER": np.nan,
+            "LOG_LOSS": np.nan,
             "TN": np.nan,
             "FP": np.nan,
             "FN": np.nan,
@@ -1045,6 +1562,8 @@ def _binary_metrics(y_true, y_pred, y_prob):
         "SEN": float(recall_score(y_true, y_pred, zero_division=0)),
         "SPE": float(tn / (tn + fp)) if (tn + fp) else np.nan,
         "PRE": float(precision_score(y_true, y_pred, zero_division=0)),
+        "BRIER": float(brier_score_loss(y_true, y_prob)),
+        "LOG_LOSS": float(log_loss(y_true, y_prob, labels=[0, 1])),
         "TN": int(tn),
         "FP": int(fp),
         "FN": int(fn),
@@ -1080,6 +1599,7 @@ def _skipped_sensitivity_row(spec, validation_type, cohort, reason):
     return {
         "run_key": spec["run_key"],
         "run_label": spec["run_label"],
+        "model_family": spec["model_family"],
         "validation_type": validation_type,
         "source_cohort": cohort,
         "held_out_source_cohort": cohort,
@@ -1126,13 +1646,18 @@ def _settings(output_dir):
         [
             {"setting": "output_dir", "value": str(output_dir)},
             {"setting": "scenario", "value": "HC vs preDLB"},
+            {"setting": "model_families", "value": ", ".join(MODEL_FAMILIES)},
+            {
+                "setting": "paired_bootstrap_replicates",
+                "value": MODEL_COMPARISON_BOOTSTRAPS,
+            },
             {"setting": "outer_cv", "value": f"StratifiedGroupKFold({PERSON_GROUPED_OUTER_CV_SPLITS})"},
             {"setting": "inner_cv", "value": f"StratifiedGroupKFold({PERSON_GROUPED_INNER_CV_SPLITS})"},
             {
                 "setting": "purpose",
                 "value": (
-                    "Thesis-oriented classifier validation with true person-grouped "
-                    "outer/inner CV and cohort/source sensitivity analyses."
+                    "Thesis-oriented XGBoost versus elastic-net comparison with true "
+                    "person-grouped outer/inner CV and cohort/source sensitivity analyses."
                 ),
             },
             {

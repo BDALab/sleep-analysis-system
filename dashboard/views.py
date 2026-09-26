@@ -778,16 +778,17 @@ def utils(request, action=None):
                 )
             }
         elif action == 'classification-person-grouped-hc-predlb':
-            logger.info('Run HC-vs-preDLB person-grouped thesis classification')
+            logger.info('Run HC-vs-preDLB person-grouped XGBoost vs elastic-net comparison')
             result = run_hc_vs_predlb_person_grouped_classification()
             logger.info(
-                'HC-vs-preDLB person-grouped thesis classification completed: '
+                'HC-vs-preDLB person-grouped XGBoost vs elastic-net comparison completed: '
                 f'{result["run_dir"]}'
             )
             context = {
                 'ok': (
-                    'HC-vs-preDLB person-grouped thesis classification completed: '
-                    f'{result["run_dir"]} | {result["summary_path"]}'
+                    'HC-vs-preDLB person-grouped XGBoost vs elastic-net comparison completed: '
+                    f'{result["run_dir"]} | {result["summary_path"]} | '
+                    f'{result["comparison_path"]}'
                 )
             }
         elif action == 'classification-grouped-stats-ablation-clinical':
