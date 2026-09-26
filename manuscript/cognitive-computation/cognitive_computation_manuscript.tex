@@ -105,11 +105,13 @@ feature families supported HC-versus-MCI-LB classification under nested,
 person-grouped validation and source-sensitive analyses.
 
 The computational contribution is a source-aware phenotyping and validation
-framework rather than a new learning algorithm. It combines (i) conceptual
-family reduction of hundreds of correlated multi-night features, (ii)
-person-clustered estimation of clinically interpretable associations across
-repeat visits, and (iii) nested person-grouped classification with first-visit,
-source-stratified, and ascertainment-stratum-only audits. This design makes
+framework rather than a new learning algorithm. It combines: 
+\begin{enumerate}
+  \item conceptual family reduction of hundreds of correlated multi-night features,
+  \item person-clustered estimation of clinically interpretable associations across repeat visits,
+  \item nested person grouped classification with first visit, source stratified, and ascertainment stratum only audits.
+\end{enumerate}
+This design makes
 recruitment-source dependence an explicit part of model evaluation and
 separates exploratory phenotype discovery from diagnostic-performance claims.
 
@@ -389,10 +391,13 @@ validation.
 
 Classification was a secondary validity analysis, not the primary clinical
 claim. Three XGBoost gradient-boosted tree pipelines were evaluated
-\cite{chen2016xgboost}: (1) a broad sleep/diary set with recursive feature
-elimination (RFE) and diary/lifestyle predictors, (2) fixed stable sleep
-families with univariate $K$-best selection, and (3) the stable sleep families
-plus activity variability. All preprocessing was fit within training folds:
+\cite{chen2016xgboost}: 
+\begin{enumerate}
+  \item a broad sleep/diary set with recursive feature elimination (RFE) and diary/lifestyle predictors,
+  \item fixed stable sleep families with univariate $K$-best selection, and
+  \item the stable sleep families plus activity variability.
+\end{enumerate}
+All preprocessing was fit within training folds:
 linear residualisation of wearable features for sex and education, median
 imputation, removal of constant features, min--max scaling, feature selection,
 hyperparameter search, and classification.
