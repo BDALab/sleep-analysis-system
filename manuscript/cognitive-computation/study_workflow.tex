@@ -61,8 +61,8 @@
 \node[paneltitle, text=clinical] at (0.90,8.48) {Clinical multi-night phenotyping};
 \node[note, anchor=east] at (17.70,8.48) {Independent clinical sample: 132 visits / 118 people; no development participants};
 
-\node[source] (nu20) at (2.05,7.15) {\textbf{NU20-04-00294}\\77 visits / 63 people; HC and preDLB};
-\node[source] (ninr) at (2.05,5.65) {\textbf{NINR LX22NPO5107}\\55 visits / 55 people; HC and preDLB};
+\node[source] (nu20) at (2.05,7.15) {\textbf{NU20-04-00294}\\77 visits / 63 people; HC and MCI-LB};
+\node[source] (ninr) at (2.05,5.65) {\textbf{NINR LX22NPO5107}\\55 visits / 55 people; HC and MCI-LB};
 \node[process] (recording) at (6.10,6.40) {\textbf{Home recording}\\25-Hz GENEActiv +\\7-day sleep diary};
 \node[process, draw=clinical, line width=0.9pt] (inference) at (10.05,6.40) {\textbf{Nightly inference}\\sleep/wake + sleep, wake\\and activity endpoints};
 \node[result] (features) at (14.75,6.40) {\textbf{Across-night summaries}\\5--7 valid nights\\260 core / 690 extended};
@@ -93,7 +93,7 @@
 
 \node[box, minimum width=8.45cm, text width=7.95cm, minimum height=2.65cm,
   anchor=north east] (class) at (17.45,3.52) {};
-\node[font=\bfseries, text=analysis, anchor=north west] at ($(class.north west)+(0.20,-0.18)$)
+\node[font=\bfseries, text=warm, anchor=north west] at ($(class.north west)+(0.20,-0.18)$)
   {Classification validity pathway};
 \node[process, minimum width=2.02cm, text width=1.76cm, minimum height=1.22cm]
   (nested) at (10.75,1.90) {Nested 5-fold\\person-grouped CV};

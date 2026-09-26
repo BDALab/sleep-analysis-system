@@ -76,12 +76,12 @@ class FeatureFamilyFollowupTest(unittest.TestCase):
     def test_focused_plot_writes_png_and_pdf(self):
         rng = np.random.default_rng(9)
         person_ids = [f"P{i}" for i in range(24)]
-        diagnosis = np.repeat(["HC", "preDLB"], 12)
+        diagnosis = np.repeat(["HC", "MCI-LB"], 12)
         feature = rng.normal(size=24)
         outcome = (
                 2.0
                 + 0.8 * feature
-                + 1.2 * (diagnosis == "preDLB")
+                + 1.2 * (diagnosis == "MCI-LB")
                 + rng.normal(scale=0.25, size=24)
         )
         analysis_df = pd.DataFrame(
@@ -119,7 +119,7 @@ class FeatureFamilyFollowupTest(unittest.TestCase):
                 spec=spec,
                 output_dir=Path(temporary_directory),
                 position=1,
-                scenario_label="preDLB vs HC",
+                scenario_label="MCI-LB vs HC",
             )
 
             self.assertTrue(result["png_path"].exists())

@@ -1,6 +1,6 @@
 # TRIPOD+AI working audit
 
-This is an internal, paraphrased audit of the secondary HC-versus-preDLB
+This is an internal, paraphrased audit of the secondary HC-versus-MCI-LB
 classification analysis. It is not the journal's official checklist and should
 be revisited immediately before submission. The official 27-item TRIPOD+AI
 statement is Collins et al., *BMJ* 2024;385:e078378:
@@ -19,7 +19,7 @@ than implying readiness for clinical use.
   computational contribution.
 - The four data sources and the sleep/wake model-development sources are
   separated from the two clinical collections.
-- The outcome is HC versus preDLB, with repeated visits linked to the underlying
+- The outcome is HC versus MCI-LB, with repeated visits linked to the underlying
   person before splitting.
 - The three candidate predictor pipelines and feature-family restrictions are
   described.
@@ -42,7 +42,7 @@ than implying readiness for clinical use.
   clinical exclusion reasons, after confirmation by the clinical team.
 - [ ] Confirm recruitment dates, eligibility criteria, diagnostic procedures,
   clinical assessors, and ethics/consent identifiers with the clinical team.
-- [x] State that the sample used all analytically eligible available HC/preDLB
+- [x] State that the sample used all analytically eligible available HC/MCI-LB
   visits and that no prospective prediction-model sample-size calculation was
   performed.
 - [x] Report predictor and demographic missingness, the 90% coverage filter, and

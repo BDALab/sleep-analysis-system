@@ -252,7 +252,7 @@ def _plot_calibration(predictions_by_model: dict[str, pd.DataFrame], output_path
         ax.plot(predicted, observed, marker="o", linewidth=1.5, label=model)
     ax.set(
         xlabel="Mean out-of-fold predicted probability",
-        ylabel="Observed preDLB proportion",
+        ylabel="Observed MCI-LB proportion",
         xlim=(0, 1),
         ylim=(0, 1),
         title="Descriptive calibration of secondary classifiers",

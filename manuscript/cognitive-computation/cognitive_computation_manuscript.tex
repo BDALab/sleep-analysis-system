@@ -21,7 +21,7 @@
 
 \begin{document}
 
-\title[Source-aware actigraphy phenotyping in preDLB]{Source-Aware Computational Phenotyping from Multi-Night Wrist Actigraphy in Predementia Lewy Body Disease}
+\title[Source-aware actigraphy phenotyping in MCI-LB]{Source-Aware Computational Phenotyping from Multi-Night Wrist Actigraphy in Mild Cognitive Impairment with Lewy Bodies}
 
 % Replace the placeholders below only after every co-author approves the order.
 \author[1]{\fnm{Marek} \sur{Mikulec}}
@@ -35,9 +35,9 @@
 
 \abstract{%
 \textbf{Background / introduction:} Wrist actigraphy may provide scalable
-markers of sleep and activity disturbance in predementia Lewy body disease
-(preDLB). We examined feature--clinical associations in healthy controls
-(HC) and preDLB and audited diagnosis classification.
+markers of sleep and activity disturbance in mild cognitive impairment with
+Lewy bodies (MCI-LB). We examined feature--clinical associations in healthy
+controls (HC) and MCI-LB and audited diagnosis classification.
 
 \textbf{Methods:} A polysomnography-referenced sleep/wake classifier was
 developed from two external wearable datasets. We then analysed 132 visits from
@@ -56,15 +56,14 @@ scores (adjusted beta 1.322 points per feature standard deviation, 95\% CI
 $-0.311$ to $-0.084$). More variable long awakenings were associated with
 lower executive scores (beta $-0.155$, 95\% CI $-0.254$ to $-0.056$).
 Wake-bout frequency, sleep efficiency, and wake after sleep onset had
-preDLB-specific associations with REM-sleep-behaviour symptom scores. The broad
+MCI-LB-specific associations with REM-sleep-behaviour symptom scores. The broad
 classifier achieved ROC AUC 0.746 (95\% CI 0.652--0.830).
 
 \textbf{Conclusions:} Free-living activity variability and sleep continuity
-show interpretable associations in HC and preDLB and merit independent
-validation. The pooled data do not establish diagnostic performance independent
-of their recruitment design.}
+show interpretable associations in HC and MCI-LB and merit independent
+validation.}
 
-\keywords{actigraphy, wearable sensors, Lewy body disease, sleep fragmentation, interpretable machine learning, multi-cohort validation}
+\keywords{actigraphy, wearable sensors, mild cognitive impairment with Lewy bodies, sleep fragmentation, interpretable machine learning, multi-cohort validation}
 
 \maketitle
 
@@ -94,15 +93,15 @@ addressed together: whether engineered wearable features have clinically
 interpretable associations, and whether apparent diagnostic performance
 survives participant-grouped and source-sensitive validation.
 
-The present exploratory study focused on healthy control (HC) and predementia
-Lewy body disease (preDLB) visits assembled from multiple Czech research data
-sources. We first screened a broad set of sleep, diary, and activity features
+The present exploratory study focused on healthy control (HC) and mild
+cognitive impairment with Lewy bodies (MCI-LB) visits assembled from multiple
+Czech research data sources. We first screened a broad set of sleep, diary, and activity features
 against motor, sleep-behaviour, fluctuation, visuospatial, attention, and
 executive outcomes. To reduce the risk of interpreting many correlated
 variants as independent discoveries, we mapped features to fixed conceptual
 families, clustered highly redundant variants, and followed representative
 features with person-clustered regression. We then asked whether the same
-feature families supported HC-versus-preDLB classification under nested,
+feature families supported HC-versus-MCI-LB classification under nested,
 person-grouped validation and source-sensitive analyses.
 
 The computational contribution is a source-aware phenotyping and validation
@@ -121,7 +120,7 @@ separates exploratory phenotype discovery from diagnostic-performance claims.
 This was a retrospective secondary analysis built from four distinct datasets
 (Table~\ref{tab:data-sources}; Fig.~\ref{fig:study-workflow}). The Newcastle PSG--accelerometer and DREAMT
 datasets were used only to develop the sleep/wake classifier; their participants
-did not contribute to the HC-versus-preDLB sample, its clinical outcomes, or
+did not contribute to the HC-versus-MCI-LB sample, its clinical outcomes, or
 the reported count of 132 visits. The clinical application used two closed
 Czech data collections. The first was assembled under Czech Ministry of Health
 project NU20-04-00294, \textit{Diagnostics of Lewy body diseases in prodromal
@@ -145,8 +144,11 @@ to 20 February 2025.
 Clinical variables were
 harmonised from those two research workbooks.
 
+For the primary comparison, visits were selected from the source-workbook
+categories HC and MCI-LB.
+
 %The primary comparison included database visits labelled HC (diagnosis code 0)
-%or preDLB (diagnosis code 3). Identifiers ending in 2 or 3 represented later
+%or MCI-LB (diagnosis code 3). Identifiers ending in 2 or 3 represented later
 %visits; these visits were retained but assigned to the same underlying person
 %as the first visit. The two closed collections yielded three provenance and
 %ascertainment strata for sensitivity analysis: NINR, NU20 HC/HC2,
@@ -154,14 +156,14 @@ harmonised from those two research workbooks.
 %project dataset, rather than separate datasets. HC/HC2 participants were
 %recruited with the prior expectation of being healthy, whereas
 %pre-LBD/pre-LBD2 included people with an expected clinical problem.
-%NINR was not recruited using the same HC-versus-preDLB division.
+%NINR was not recruited using the same HC-versus-MCI-LB division.
 %Consequently, ascertainment-stratum membership was expected a priori to contain
 %information about the eventual diagnostic label. We refer to this property as
 %diagnosis-enriched ascertainment rather than evidence of a technical acquisition
 %artefact.
 
-The analysis contained 132 visits from 118 people: 73 HC (healthy control) visits from 71 people
-and 59 preDLB (predementia Lewy body disease) visits from 47 people. Fourteen people contributed two visits.
+The analysis contained 132 visits from 118 people: 73 HC visits from 71 people
+and 59 MCI-LB visits from 47 people. Fourteen people contributed two visits.
 Each included visit had five to seven valid nights of wearable-derived data.
 Clinical scale availability varied slightly by outcome, and analyses used
 complete cases for the variables in each model.
@@ -180,9 +182,9 @@ Newcastle PSG--accelerometer & Public & 28 patients & One-night PSG scored every
 \midrule
 DREAMT v2.2.0 & Restricted & 100 participants & One-night PSG labels and left-wrist Empatica E4 accelerometry and temperature & Development data for the binary sleep/wake classifier \\
 \midrule
-NU20-04-00294 & Closed & 77 visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
+NU20-04-00294 & Closed & 77 visits from 63 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-MCI-LB clinical analysis \\
 \midrule
-LX22NPO5107 & Closed & 55 visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-preDLB clinical analysis \\
+LX22NPO5107 & Closed & 55 visits from 55 people & GENEActiv, sleep diaries, clinical scales, and cognitive assessment & HC-versus-MCI-LB clinical analysis \\
 \bottomrule
 \end{tabular}
 
@@ -205,8 +207,8 @@ The external development participants are not included in the clinical sample of
   summaries. These features entered complementary association and
   source-sensitive classification pathways. CV, cross-validation; FDR,
   false-discovery rate; GEE, generalised estimating equation; HC, healthy
-  control; MCC, Matthews correlation coefficient; preDLB, predementia Lewy
-  body disease; PSG, polysomnography.}
+  control; MCC, Matthews correlation coefficient; MCI-LB, mild cognitive
+  impairment with Lewy bodies; PSG, polysomnography.}
   \label{fig:study-workflow}
 \end{figure*}
 \FloatBarrier
@@ -334,16 +336,15 @@ Recorded sex was coded female or male.
 \subsection{Exploratory association analysis}\label{subsec:statistics}
 
 An initial covariate-balance screen compared age and education with Welch's
-two-sample $t$ tests and sex with a chi-squared test. In HC versus preDLB, sex
+two-sample $t$ tests and sex with a chi-squared test. In HC versus MCI-LB, sex
 ($p=0.0102$) and education ($p=6.6\times10^{-6}$) passed the prespecified
 $p<0.05$ imbalance rule and were selected as adjustment covariates; age did not
-($p=0.1799$). This rule was created during project development and was not
-preregistered.
+($p=0.1799$).
 
 Shapiro--Wilk tests assessed each calculated feature separately in HC and
-preDLB. Because most features were non-normal in at least one group, two-sided
+MCI-LB. Because most features were non-normal in at least one group, two-sided
 Mann--Whitney $U$ tests compared groups and Spearman rank correlations assessed
-every feature--clinical outcome pair in the pooled HC/preDLB sample. The
+every feature--clinical outcome pair in the pooled HC/MCI-LB sample. The
 Benjamini--Hochberg procedure controlled the false discovery rate (FDR) at 0.05
 \cite{benjamini1995fdr}. Group-comparison $p$ values were corrected across all
 tested features; correlation $p$ values were corrected separately across
@@ -367,7 +368,7 @@ person and included diagnosis, sex, and education. The clinical outcome
 remained on its original scale, while each feature was standardised within the
 model's complete-case sample; beta therefore represents outcome change per one
 feature SD. Feature-by-diagnosis interactions tested whether slopes differed
-between HC and preDLB. Spearman-rho confidence intervals were estimated with
+between HC and MCI-LB. Spearman-rho confidence intervals were estimated with
 the same person-clustered robust framework applied to standardised ranks. FDR
 was controlled separately by outcome for adjusted main effects, interactions,
 and diagnosis-specific slopes. All tests were two-sided.
@@ -398,10 +399,10 @@ hyperparameter search, and classification.
 
 No prospective prediction-model sample-size calculation was performed. The
 classification sample comprised all available database visits with an HC or
-preDLB label that met the valid-night and pipeline-specific data requirements.
+MCI-LB label that met the valid-night and pipeline-specific data requirements.
 In the core grouped table, 245 records were screened: four lacked a database
 diagnosis code and 109 had non-target labels (79 non-HC and 30 MCI-AD), leaving
-132 HC/preDLB visits from 118 people. The activity-extended pipeline included
+132 HC/MCI-LB visits from 118 people. The activity-extended pipeline included
 129 visits from 116 people because three target visits lacked usable extended
 activity features. Age and sex were complete; education was missing for three
 visits. Candidate columns with less than 90\% coverage were removed before
@@ -435,9 +436,9 @@ acquisition artefacts, because stratum was expected to be associated with
 diagnosis. We also repeated nested validation separately in the NINR stratum
 and in the NU20 pre-LBD/pre-LBD2 stratum. These
 within-stratum analyses were sensitivity checks with severe class imbalance:
-NINR contained 46 HC and 9 preDLB visits, while NU20 pre-LBD/pre-LBD2 contained
-11 HC and 49 preDLB visits. Validation was not estimable for NU20 HC/HC2 because
-it contained 16 HC visits and only one preDLB visit. Randomised searches used
+NINR contained 46 HC and 9 MCI-LB visits, while NU20 pre-LBD/pre-LBD2 contained
+11 HC and 49 MCI-LB visits. Validation was not estimable for NU20 HC/HC2 because
+it contained 16 HC visits and only one MCI-LB visit. Randomised searches used
 seed 17. Reporting of this secondary prediction analysis was guided by
 TRIPOD+AI \cite{collins2024tripodai}; it was not intended as a deployable
 clinical prediction model.
@@ -473,21 +474,21 @@ the pooled sources, not leave-one-dataset-out transportability.
 \subsection{Cohort characteristics}\label{subsec:cohort-results}
 
 The 132 visits represented 118 people, with 14 people contributing a second
-visit. HC and preDLB visits had similar mean age, but the preDLB group contained
+visit. HC and MCI-LB visits had similar mean age, but the MCI-LB group contained
 more women and fewer years of education (Table~\ref{tab:characteristics}). Most
 visits contributed seven valid nights. As expected from the database labels,
-preDLB visits had higher median RBDq, UPDRS, and MFS values and lower median
+MCI-LB visits had higher median RBDq, UPDRS, and MFS values and lower median
 cognitive-domain scores. Outcome-specific missingness was modest but explains
 small changes in sample size across analyses.
 
 \begin{table}[t]
-\caption{Visit-level characteristics of the HC-versus-preDLB analysis sample.}
+\caption{Visit-level characteristics of the HC-versus-MCI-LB analysis sample.}
 \label{tab:characteristics}
 \centering
 \small
 \begin{tabular}{@{}lll@{}}
 \toprule
-Characteristic & HC & preDLB \\
+Characteristic & HC & MCI-LB \\
 \midrule
 Visits / underlying people, $n$ & 73 / 71 & 59 / 47 \\
 Age, years, mean (SD) & 69.08 (5.90) & 70.31 (6.42) \\
@@ -506,7 +507,7 @@ Executive score, median (IQR) & 0.111 ($-0.167$--0.540) & $-0.484$ ($-0.905$--0.
 \medskip
 \begin{minipage}{0.94\linewidth}\footnotesize
 Values are calculated across database visits. Education was available for 72
-HC and 57 preDLB visits; RBDq, UPDRS, MFS, and cognitive-domain availability
+HC and 57 MCI-LB visits; RBDq, UPDRS, MFS, and cognitive-domain availability
 also varied slightly. IQR, interquartile range; MFS, Mayo Fluctuations Scale;
 RBDq, REM Sleep Behaviour Disorder Screening Questionnaire score; UPDRS,
 Unified Parkinson's Disease Rating Scale.
@@ -519,7 +520,7 @@ Across the core sleep/diary dataset, 94--97\% of features were non-normal in at
 least one diagnostic group, depending on the group-specific Shapiro--Wilk
 criterion. The corresponding proportion was 87--91\% in the extended dataset,
 supporting rank-based screening. Of 260 core features, 19 showed FDR-significant
-HC/preDLB group differences and 36 feature--outcome correlations were
+HC/MCI-LB group differences and 36 feature--outcome correlations were
 FDR-significant; reduction yielded 22 representative correlation clusters. Of
 690 extended features, the corresponding counts were 27 group differences, 83
 correlations, and 46 representative clusters. These are counts of engineered
@@ -530,7 +531,31 @@ latency, sleep efficiency, and wake-bout frequency. Activity
 variability formed an additional family in the extended dataset. A strong
 diary-normalised sleep-onset-latency screening result was also downgraded
 because the corresponding raw grouped feature was constant and could not be
-estimated in direct GEE follow-up.
+estimated in direct GEE follow-up. Figure~\ref{fig:main-analysis-results}
+summarises the reduction steps and principal association and classification
+findings reported below.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{main_analysis_results.pdf}
+  \caption{Main analysis and principal results. (A) Engineered features were
+  screened with FDR control, organised into conceptual families, reduced by
+  within-family correlation clustering, and followed with person-clustered GEE.
+  (B) Pooled rank associations and adjusted GEE estimates for the three shared
+  clinical findings. Betas are outcome units per one feature SD. (C)
+  Within-diagnosis rank associations for the three RBDq findings; the annotation
+  gives the FDR-adjusted interaction $p$-value and adjusted MCI-LB beta.
+  (D) Source-aware classification audit showing moderate pooled discrimination,
+  stronger information in ascertainment stratum alone, and imprecise
+  near-chance within-source estimates. CI, confidence interval; FDR,
+  false-discovery rate; GEE, generalised estimating equation; HC, healthy
+  control; MAD, median absolute deviation; MCI-LB, mild cognitive impairment
+  with Lewy bodies; RBDq, REM Sleep Behaviour Disorder Screening Questionnaire score;
+  ROC AUC, area under the receiver operating characteristic curve; UPDRS,
+  Unified Parkinson's Disease Rating Scale; WASO, wake after sleep onset.}
+  \label{fig:main-analysis-results}
+\end{figure*}
+\FloatBarrier
 
 \subsection{Shared adjusted clinical associations}\label{subsec:shared-results}
 
@@ -545,10 +570,10 @@ awakenings longer than five minutes were associated with lower executive
 scores ($\rho=-0.324$; adjusted beta $-0.155$;
 Fig.~\ref{fig:awakenings-executive}). None of these three feature-by-diagnosis
 interactions survived FDR correction, supporting a shared adjusted slope in the
-combined sample rather than clear evidence for different HC and preDLB slopes.
+combined sample rather than clear evidence for different HC and MCI-LB slopes.
 
 \begin{table*}[t]
-\caption{Primary shared feature--outcome associations in HC and preDLB.}
+\caption{Primary shared feature--outcome associations in HC and MCI-LB.}
 \label{tab:shared}
 \centering
 \scriptsize
@@ -582,9 +607,9 @@ range; MAD, median absolute deviation; SD, standard deviation.
   lines and bands are diagnosis-adjusted GEE predictions and robust 95\%
   confidence intervals with sex and education held constant. Greater IQR of
   nightly activity median absolute deviation was associated with higher UPDRS
-  in the pooled HC/preDLB sample. GEE, generalised estimating equation; HC,
-  healthy control; IQR, interquartile range; preDLB, predementia Lewy body
-  disease; UPDRS, Unified Parkinson's Disease Rating Scale.}
+  in the pooled HC/MCI-LB sample. GEE, generalised estimating equation; HC,
+  healthy control; IQR, interquartile range; MCI-LB, mild cognitive impairment
+  with Lewy bodies; UPDRS, Unified Parkinson's Disease Rating Scale.}
   \label{fig:activity-updrs}
 \end{figure}
 
@@ -603,12 +628,12 @@ range; MAD, median absolute deviation; SD, standard deviation.
 \subsection{Diagnosis-specific RBDq associations}\label{subsec:interaction-results}
 
 Three sleep-continuity features had FDR-significant feature-by-diagnosis
-interactions for RBDq (Table~\ref{tab:interactions}). In preDLB, a greater
+interactions for RBDq (Table~\ref{tab:interactions}). In MCI-LB, a greater
 maximum nightly number of wake bouts was associated with higher RBDq
 ($\rho=0.586$; adjusted beta 1.360 RBDq points per feature SD), whereas both
 estimates were near zero in HC (Fig.~\ref{fig:wake-bouts-rbdq}). Lower median
 normalised sleep efficiency and higher median raw WASO similarly tracked higher
-RBDq only in preDLB. Interaction FDR $p$ values were 0.00227, 0.01965, and
+RBDq only in MCI-LB. Interaction FDR $p$ values were 0.00227, 0.01965, and
 0.01436, respectively.
 
 \begin{table*}[t]
@@ -622,11 +647,11 @@ RBDq only in preDLB. Interaction FDR $p$ values were 0.00227, 0.01965, and
 Feature & Diagnosis & $n$ visits & $\rho$ (95\% CI) & Adjusted beta (95\% CI); slope FDR $p$ & Interaction FDR $p$ \\
 \midrule
 Maximum nightly wake bouts & HC & 73 & $-0.025$ ($-0.262$--0.213) & $-0.032$ ($-0.361$--0.296); 0.98460 & \multirow{2}{*}{0.00227} \\
- & preDLB & 58 & 0.586 (0.374--0.797) & 1.360 (0.662--2.058); 0.00047 & \\
+ & MCI-LB & 58 & 0.586 (0.374--0.797) & 1.360 (0.662--2.058); 0.00047 & \\
 Median normalised sleep efficiency & HC & 73 & $-0.070$ ($-0.303$--0.163) & $-0.133$ ($-0.455$--0.190); 0.73676 & \multirow{2}{*}{0.01965} \\
- & preDLB & 58 & $-0.415$ ($-0.667$ to $-0.164$) & $-1.099$ ($-1.792$ to $-0.406$); 0.00330 & \\
+ & MCI-LB & 58 & $-0.415$ ($-0.667$ to $-0.164$) & $-1.099$ ($-1.792$ to $-0.406$); 0.00330 & \\
 Median raw WASO & HC & 73 & $-0.032$ ($-0.267$--0.203) & $-0.004$ ($-0.405$--0.397); 0.98460 & \multirow{2}{*}{0.01436} \\
- & preDLB & 58 & 0.460 (0.246--0.674) & 1.076 (0.401--1.750); 0.00330 & \\
+ & MCI-LB & 58 & 0.460 (0.246--0.674) & 1.076 (0.401--1.750); 0.00330 & \\
 \bottomrule
 \end{tabular}}
 
@@ -635,7 +660,7 @@ Median raw WASO & HC & 73 & $-0.032$ ($-0.267$--0.203) & $-0.004$ ($-0.405$--0.3
 Correlations use outcome-complete visits within diagnosis. Diagnosis-specific
 betas were derived from interaction GEE models containing 129 visits from 116
 people and adjusted for sex and education. Betas are RBDq points per one
-feature SD. HC, healthy control; preDLB, predementia Lewy body disease; RBDq,
+feature SD. HC, healthy control; MCI-LB, mild cognitive impairment with Lewy bodies; RBDq,
 REM Sleep Behaviour Disorder Screening Questionnaire score; WASO, wake after
 sleep onset.
 \end{minipage}
@@ -647,7 +672,7 @@ sleep onset.
   \caption{Maximum nightly wake-bout frequency and RBDq by diagnosis. Thick
   lines and bands are diagnosis-specific adjusted GEE predictions and robust
   95\% confidence intervals; thin segments connect repeat visits. The positive
-  association was concentrated in preDLB, with an approximately null HC slope.
+  association was concentrated in MCI-LB, with an approximately null HC slope.
   Actigraphy-derived wake bouts indicate movement-defined sleep disruption and
   do not identify REM sleep or dream enactment.}
   \label{fig:wake-bouts-rbdq}
@@ -667,7 +692,7 @@ model, the UPDRS estimate remained positive with a confidence interval excluding
 zero (beta 1.186, 95\% CI 0.438--1.934; nominal $p=0.00189$), although its
 within outcome FDR value was 0.05108. The three RBDq feature-by-diagnosis
 interactions remained FDR significant after joint age and collection adjustment,
-and the corresponding preDLB slopes remained similar to the primary estimates.
+and the corresponding MCI-LB slopes remained similar to the primary estimates.
 Adjustment for the three diagnosis enriched ascertainment strata produced the
 same overall interpretation.
 
@@ -711,17 +736,17 @@ false-discovery rate; MAD, median absolute deviation.
 \toprule
 Finding & Age adjusted & Age and collection adjusted & Age and ascertainment stratum adjusted \\
 \midrule
-Wake bouts & HC: $-0.037$ ($-0.369$, 0.295);\newline preDLB: 1.362 (0.661, 2.062);\newline interaction: 0.00271 & HC: $-0.011$ ($-0.355$, 0.333);\newline preDLB: 1.419 (0.751, 2.087);\newline interaction: 0.00117 & HC: $-0.027$ ($-0.376$, 0.322);\newline preDLB: 1.443 (0.784, 2.101);\newline interaction: 0.00066 \\
+Wake bouts & HC: $-0.037$ ($-0.369$, 0.295);\newline MCI-LB: 1.362 (0.661, 2.062);\newline interaction: 0.00271 & HC: $-0.011$ ($-0.355$, 0.333);\newline MCI-LB: 1.419 (0.751, 2.087);\newline interaction: 0.00117 & HC: $-0.027$ ($-0.376$, 0.322);\newline MCI-LB: 1.443 (0.784, 2.101);\newline interaction: 0.00066 \\
 \midrule
-Sleep efficiency & HC: $-0.162$ ($-0.510$, 0.186);\newline preDLB: $-1.107$ ($-1.793$, $-0.420$);\newline interaction: 0.02582 & HC: $-0.143$ ($-0.491$, 0.204);\newline preDLB: $-1.105$ ($-1.785$, $-0.426$);\newline interaction: 0.02175 & HC: $-0.126$ ($-0.482$, 0.230);\newline preDLB: $-1.116$ ($-1.794$, $-0.439$);\newline interaction: 0.01877 \\
+Sleep efficiency & HC: $-0.162$ ($-0.510$, 0.186);\newline MCI-LB: $-1.107$ ($-1.793$, $-0.420$);\newline interaction: 0.02582 & HC: $-0.143$ ($-0.491$, 0.204);\newline MCI-LB: $-1.105$ ($-1.785$, $-0.426$);\newline interaction: 0.02175 & HC: $-0.126$ ($-0.482$, 0.230);\newline MCI-LB: $-1.116$ ($-1.794$, $-0.439$);\newline interaction: 0.01877 \\
 \midrule
-WASO & HC: 0.012 ($-0.429$, 0.452);\newline preDLB: 1.077 (0.401, 1.753);\newline interaction: 0.02152 & HC: $-0.005$ ($-0.443$, 0.432);\newline preDLB: 1.113 (0.465, 1.760);\newline interaction: 0.01155 & HC: $-0.032$ ($-0.494$, 0.429);\newline preDLB: 1.125 (0.487, 1.763);\newline interaction: 0.00961 \\
+WASO & HC: 0.012 ($-0.429$, 0.452);\newline MCI-LB: 1.077 (0.401, 1.753);\newline interaction: 0.02152 & HC: $-0.005$ ($-0.443$, 0.432);\newline MCI-LB: 1.113 (0.465, 1.760);\newline interaction: 0.01155 & HC: $-0.032$ ($-0.494$, 0.429);\newline MCI-LB: 1.125 (0.487, 1.763);\newline interaction: 0.00961 \\
 \bottomrule
 \end{tabular}
 
 \medskip
 \begin{minipage}{0.96\textwidth}\footnotesize
-Each cell reports the HC beta (95\% CI), preDLB beta (95\% CI), and
+Each cell reports the HC beta (95\% CI), MCI-LB beta (95\% CI), and
 FDR-adjusted interaction $p$-value, in that order. Betas are outcome units per
 one feature SD. The interaction tests whether the diagnosis-specific slopes
 differ; it is not an effect-size estimate. Collection adjustment distinguishes
@@ -769,7 +794,7 @@ reinforcing that these outputs should not be interpreted as individual
 clinical-risk estimates.
 
 \begin{table*}[t]
-\caption{Nested person-grouped HC-versus-preDLB classification and ascertainment-stratum-only benchmark.}
+\caption{Nested person-grouped HC-versus-MCI-LB classification and ascertainment-stratum-only benchmark.}
 \label{tab:classification}
 \centering
 \scriptsize
@@ -789,7 +814,7 @@ Ascertainment-stratum-only benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & 
 \begin{minipage}{0.96\textwidth}\footnotesize
 All wearable models used nested five-fold stratified person-grouped outer and
 inner cross-validation. BACC, balanced accuracy; HC, healthy control; PR AUC,
-area under the precision--recall curve; preDLB, predementia Lewy body disease;
+area under the precision--recall curve; MCI-LB, mild cognitive impairment with Lewy bodies;
 RFE, recursive feature elimination; ROC AUC, area under the receiver operating
 characteristic curve. The stratum-only row quantifies expected label enrichment
 from the recruitment design; it is neither a test of acquisition artefacts nor
@@ -802,13 +827,13 @@ a diagnostic model proposed for deployment.
 \subsection{Principal findings}\label{subsec:principal-findings}
 
 This exploratory analysis identified clinically interpretable wearable
-phenotypes in HC and preDLB while also demonstrating why association evidence
+phenotypes in HC and MCI-LB while also demonstrating why association evidence
 must not be conflated with diagnostic prediction. Across correlated feature
 variants, the most coherent findings involved activity variability, long
 awakenings, wake-bout frequency and sleep efficiency. Activity
 variability was associated with motor and attention outcomes, variability in
 long awakenings was associated with executive performance, and three
-sleep-continuity measures showed RBDq associations concentrated in preDLB.
+sleep-continuity measures showed RBDq associations concentrated in MCI-LB.
 These effects survived adjustment for diagnosis, sex, and education in
 person-clustered models. The person-grouped classifier showed moderate pooled
 discrimination, but the diagnosis-enriched source composition and imprecise,
@@ -856,7 +881,7 @@ symptom questionnaire, not a count of nocturnal awakenings. Wrist actigraphy
 cannot identify REM sleep without physiological sleep staging and cannot
 measure REM sleep without atonia. The observed positive relationships of RBDq
 with wake bouts and WASO, and its negative relationship with sleep efficiency,
-therefore indicate co-occurring movement-defined sleep disruption in preDLB,
+therefore indicate co-occurring movement-defined sleep disruption in MCI-LB,
 not detection of dream enactment or proof of REM sleep behaviour disorder. The
 findings are nevertheless biologically plausible and consistent with reports
 of altered rest--activity and sleep characteristics in isolated REM sleep
@@ -948,7 +973,7 @@ needed to connect actigraphy-derived fragmentation to REM-specific mechanisms.
 
 \section{Conclusion}\label{sec:conclusion}
 
-In free-living HC and preDLB observations, interpretable activity-variability
+In free-living HC and MCI-LB observations, interpretable activity-variability
 and sleep-continuity families were associated with motor, attention, executive,
 and RBD symptom measures after diagnosis and covariate adjustment. The findings
 were directionally stable in pooled age and source adjusted analyses, although

@@ -16,13 +16,13 @@
 \begin{center}
 {\Large\bfseries Supplementary Material}\\[6pt]
 {\large Source-Aware Computational Phenotyping from Multi-Night Wrist
-Actigraphy in Predementia Lewy Body Disease}\\[8pt]
+Actigraphy in Mild Cognitive Impairment with Lewy Bodies}\\[8pt]
 Marek Mikulec, Jiří Mekyska, Luboš Brabenec, and Irena Rektorová
 \end{center}
 
 \section*{Supplementary classification methods}
 
-The secondary HC-versus-preDLB analysis used nested five-fold stratified
+The secondary HC-versus-MCI-LB analysis used nested five-fold stratified
 person-grouped cross-validation. All visits belonging to one underlying person
 remained in the same fold. Preprocessing, median imputation, residualisation,
 feature selection, XGBoost hyperparameter search, and threshold selection were
@@ -55,7 +55,7 @@ person. This preserves the repeat-visit clustering in the uncertainty estimate.
 \small
 \begin{tabular}{@{}l@{\hspace{1.0cm}}r@{\hspace{0.6cm}}r@{\hspace{0.6cm}}r@{\hspace{0.6cm}}r@{}}
 \toprule
-Pipeline & Visits & People & HC & preDLB \\
+Pipeline & Visits & People & HC & MCI-LB \\
 \midrule
 Broad sleep/diary + RFE & 132 & 118 & 73 & 59 \\
 Stable sleep families & 132 & 118 & 73 & 59 \\
@@ -66,7 +66,7 @@ Stable sleep + activity variability & 129 & 116 & 72 & 57 \\
 \smallskip
 \footnotesize The core grouped table contained 245 records before target
 selection. Four records lacked a database diagnosis code and 109 had non-target
-labels (79 non-HC and 30 MCI-AD), leaving 132 HC/preDLB visits. The extended
+labels (79 non-HC and 30 MCI-AD), leaving 132 HC/MCI-LB visits. The extended
 activity pipeline lost three target visits without usable extended activity
 features. Remaining missing values were median-imputed within training folds.
 \end{table}

@@ -37,7 +37,7 @@
 
 - [ ] Confirm the full author list, order, affiliations, corresponding email,
       and CRediT contributions with the supervisor before submission.
-- [ ] Add centres, recruitment dates, eligibility criteria, operational preDLB
+- [ ] Add centres, recruitment dates, eligibility criteria, operational MCI-LB
       criteria, visit intervals, and the relationship among source cohorts.
 - [x] Add the clinical device model, 25-Hz acquisition rate, left-wrist side,
       wear/non-wear protocol, seven-night duration, calibration statement, and

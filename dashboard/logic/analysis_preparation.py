@@ -27,13 +27,13 @@ DATASET_SOURCES = {
 SCENARIOS = (
     {
         "key": "predlb-vs-hc",
-        "label": "preDLB vs HC",
+        "label": "MCI-LB vs HC",
         "positive_codes": (3,),
         "negative_codes": (0,),
     },
     {
         "key": "predlb-mci-vs-hc",
-        "label": "preDLB+MCI-AD vs HC",
+        "label": "MCI-LB+MCI-AD vs HC",
         "positive_codes": (3, 2),
         "negative_codes": (0,),
     },

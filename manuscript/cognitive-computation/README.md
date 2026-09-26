@@ -5,7 +5,7 @@ This folder contains two complementary resources:
 - `springer-nature-latex-template-dec-2024.zip`: the unmodified official
   Springer Nature journal-article template package (version 3.1, December 2024).
 - `cognitive_computation_manuscript.tex`: a complete editable first draft of
-  the HC-versus-preDLB actigraphy article, adapted to the current *Cognitive
+  the HC-versus-MCI-LB actigraphy article, adapted to the current *Cognitive
   Computation* instructions for original research.
 - `figure1_activity_variability_updrs.pdf`,
   `figure2_long_awakenings_executive.pdf`, and
@@ -14,6 +14,9 @@ This folder contains two complementary resources:
 - `study_workflow.tex` and `study_workflow.pdf`: editable vector study-workflow
   figure separating sleep/wake model development from clinical phenotyping and
   the two complementary analysis pathways.
+- `main_analysis_results.tex` and `main_analysis_results.pdf`: editable vector
+  overview of feature reduction, the six principal clinical associations, and
+  the source-aware classification audit.
 - `supplement/` and `analysis/tripod_classification_audit.py`: detailed working
   classification-audit outputs retained for reproducibility and possible
   reviewer queries. They are not part of the planned submission package.

@@ -47,18 +47,18 @@ FAMILY_CORRELATION_THRESHOLD = 0.85
 ANALYSIS_SCENARIOS = (
     {
         "key": "predlb-vs-hc",
-        "label": "preDLB vs HC",
+        "label": "MCI-LB vs HC",
         "reference_label": "HC",
         "reference_codes": (HC_CODE,),
-        "case_label": "preDLB",
+        "case_label": "MCI-LB",
         "case_codes": (PRE_DLB_CODE,),
     },
     {
         "key": "predlb-mci-vs-hc",
-        "label": "preDLB + MCI-AD vs HC",
+        "label": "MCI-LB + MCI-AD vs HC",
         "reference_label": "HC",
         "reference_codes": (HC_CODE,),
-        "case_label": "preDLB + MCI-AD",
+        "case_label": "MCI-LB + MCI-AD",
         "case_codes": (PRE_DLB_CODE, MCI_CODE),
     },
     {

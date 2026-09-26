@@ -24,7 +24,7 @@ MIN_GROUP_N = 5
 DIAGNOSIS_LABELS = {
     0: "HC",
     2: "MCI-AD",
-    3: "preDLB",
+    3: "MCI-LB",
 }
 CLINICAL_OUTCOMES = {
     "RBDq": "rbdq",
@@ -42,7 +42,7 @@ COVARIATE_COLUMNS = {
 DIAGNOSIS_COLORS = {
     "HC": "#286983",
     "MCI-AD": "#D28B26",
-    "preDLB": "#B84A3C",
+    "MCI-LB": "#B84A3C",
 }
 FOCUSED_PLOT_SPECS = (
     {
@@ -1381,7 +1381,7 @@ def _diagnosis_levels(analysis_df):
     present = set(analysis_df["Diagnosis"].dropna())
     return [
         label
-        for label in ("HC", "MCI-AD", "preDLB")
+        for label in ("HC", "MCI-AD", "MCI-LB")
         if label in present
     ]
 
