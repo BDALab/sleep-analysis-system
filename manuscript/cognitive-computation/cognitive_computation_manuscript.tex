@@ -46,9 +46,9 @@ valid nights. The wrist-accelerometry pipeline produced 260 sleep/diary and
 690 extended activity features. False-discovery-rate-corrected
 Spearman correlations were reduced into conceptual families. Generalized
 estimating equations adjusted for diagnosis, sex, and education and clustered
-visits by person. Secondary XGBoost analysis used nested five-fold
-person-grouped validation, within-source sensitivity analyses, and an
-ascertainment-stratum-only benchmark.
+visits by person. Secondary classification compared XGBoost with elastic-net
+logistic regression under nested five-fold person-grouped validation, alongside
+within-source sensitivity analyses and an ascertainment-stratum-only benchmark.
 
 \textbf{Results:} Greater activity variability was associated with higher motor
 scores (adjusted beta 1.322 points per feature standard deviation, 95\% CI
@@ -57,7 +57,7 @@ $-0.311$ to $-0.084$). More variable long awakenings were associated with
 lower executive scores (beta $-0.155$, 95\% CI $-0.254$ to $-0.056$).
 Wake-bout frequency, sleep efficiency, and wake after sleep onset had
 MCI-LB-specific associations with REM-sleep-behaviour symptom scores. The broad
-classifier achieved ROC AUC 0.746 (95\% CI 0.652--0.830).
+XGBoost classifier achieved ROC AUC 0.746 (95\% CI 0.652--0.830).
 
 \textbf{Conclusions:} Free-living activity variability and sleep continuity
 show interpretable associations in HC and MCI-LB and merit independent
@@ -105,11 +105,11 @@ feature families supported HC-versus-MCI-LB classification under nested,
 person-grouped validation and source-sensitive analyses.
 
 The computational contribution is a source-aware phenotyping and validation
-framework rather than a new learning algorithm. It combines: 
+framework rather than a new learning algorithm. It combines:
 \begin{enumerate}
   \item conceptual family reduction of hundreds of correlated multi-night features,
   \item person-clustered estimation of clinically interpretable associations across repeat visits,
-  \item nested person grouped classification with first visit, source stratified, and ascertainment stratum only audits.
+  \item nested person-grouped comparison of a nonlinear tree ensemble and a sparse linear model, with first-visit, source-stratified, and ascertainment-stratum-only audits.
 \end{enumerate}
 This design makes
 recruitment-source dependence an explicit part of model evaluation and
@@ -397,6 +397,13 @@ claim. Three XGBoost gradient-boosted tree pipelines were evaluated
   \item fixed stable sleep families with univariate $K$-best selection, and
   \item the stable sleep families plus activity variability.
 \end{enumerate}
+As a post hoc model-family sensitivity analysis, each feature set was also
+evaluated with elastic-net logistic regression, which combines $L_1$ and
+$L_2$ penalties and performs shrinkage and embedded variable selection
+\cite{zou2005elasticnet}. Unlike the XGBoost pipelines, the elastic-net
+pipelines did not use a separate RFE or univariate $K$-best step. They therefore
+compare complete modelling strategies rather than isolating the effect of the
+final classifier.
 All preprocessing was fit within training folds:
 linear residualisation of wearable features for sex and education, median
 imputation, removal of constant features, min--max scaling, feature selection,
@@ -423,8 +430,12 @@ address class imbalance without synthetic resampling, the positive-class
 weight was searched over 1, 2, 3, 4, and 5. The optional decision threshold
 maximised Matthews correlation coefficient in grouped inner-fold predictions;
 default-threshold results used 0.5. We report ROC AUC, precision--recall AUC
-(PR AUC), balanced accuracy, and first-visit-only performance from the held-out
-predictions.
+(PR AUC), balanced accuracy, Matthews correlation coefficient (MCC), and
+first-visit-only performance from the held-out predictions. Elastic-net models
+used the SAGA solver, balanced class weights, and the same grouped outer and
+inner folds. The inner search evaluated 30 randomly sampled combinations from
+inverse regularisation strengths $C\in\{0.001,0.003,0.01,0.03,0.1,0.3,1,3,
+10,30,100\}$ and $L_1$ ratios in $\{0.05,0.25,0.50,0.75,0.95,1.00\}$.
 
 Uncertainty intervals for classification metrics used 10,000 stratified
 person-level bootstrap samples, resampling people with replacement within
@@ -433,6 +444,16 @@ summarised descriptive out-of-fold calibration using the Brier score and
 calibration slope. Because classification was a validity analysis rather than
 an individual-risk model, calibration was not assigned a clinical decision
 interpretation.
+
+The model-family comparison used the saved outer-fold predictions for the same
+held-out records and participants. For each feature set, elastic-net-minus-
+XGBoost differences were calculated for ROC AUC, PR AUC, balanced accuracy,
+MCC, Brier score, and log loss. Their 95\% percentile intervals came from
+10,000 diagnosis-stratified participant-level bootstrap resamples that retained
+all visits for each sampled person. Models were not refitted inside this
+verification bootstrap. These intervals quantify paired metric differences
+conditional on the fitted workflows and validation folds; they are not
+$p$-values.
 
 To quantify the label information built into this recruitment design, we fitted
 an ascertainment-stratum-only logistic-regression benchmark under
@@ -460,7 +481,8 @@ GitLab repository \cite{bdalab2026sleepanalysis,mikulec2026geneactiv}.
 % searches used seed 17. Canonical association outputs were the corrected
 % \texttt{dataset-clinical} run \texttt{20260629\_132528\_560853} and
 % \texttt{dataset-clinical-acc} run \texttt{20260629\_132533\_149540}; the
-% person-grouped classification run was \texttt{20260702\_111118}.
+% person-grouped classification and model-family comparison run was
+% \texttt{20260927\_113622}.
 
 \section{Results}\label{sec:results}
 
@@ -776,9 +798,20 @@ moderate ranking performance (ROC AUC 0.746, 95\% CI 0.652--0.830; PR AUC
 inner-fold threshold tuning (Table~\ref{tab:classification}). Restricting input
 to the stable sleep families reduced ROC AUC to 0.706 (95\% CI 0.612--0.795),
 while adding activity variability reduced it further to 0.620 (95\% CI
-0.516--0.721). First-visit-only AUC values were similar or lower, indicating
+0.516--0.721). First visit only AUC values were similar or lower, indicating
 that repeat-visit leakage did not explain the broad model's entire apparent
 signal.
+
+The paired model-family analysis did not show a clear difference for the broad
+feature set: elastic-net minus XGBoost ROC AUC was $-0.086$ (95\% CI
+$-0.206$ to 0.036), and the corresponding balanced-accuracy difference was
+$-0.008$ (95\% CI $-0.116$ to 0.099). For the stable sleep families, all six
+paired metric intervals favoured XGBoost, including an AUC difference of
+$-0.168$ (95\% CI $-0.274$ to $-0.061$). After adding activity variability,
+the AUC ($-0.147$, 95\% CI $-0.266$ to $-0.029$), PR AUC, balanced accuracy,
+and MCC intervals favoured XGBoost, whereas Brier-score and log-loss
+differences remained uncertain. Differences are elastic net minus XGBoost;
+these paired bootstrap intervals are not $p$-values.
 
 The ascertainment-stratum-only benchmark achieved ROC AUC 0.814 (95\% CI
 0.722--0.895) and balanced accuracy 0.840 (95\% CI 0.767--0.904). Diagnosis and
@@ -791,7 +824,7 @@ pre-LBD/pre-LBD2; corresponding values for the stable sleep model were 0.522
 evidence for transportable discrimination within either stratum, but their
 precision and interpretation are constrained by the small minority classes.
 
-Descriptive out-of-fold calibration was weak. Brier scores were 0.237 for the
+Descriptive out-of-fold XGBoost calibration was weak. Brier scores were 0.237 for the
 broad model, 0.242 for stable sleep families, and 0.273 after adding activity
 variability; corresponding calibration slopes were 0.391, 0.359, and 0.269.
 The slopes substantially below one indicate overly extreme probabilities,
@@ -808,9 +841,12 @@ clinical-risk estimates.
 \toprule
 Model & Visits / people & ROC AUC & PR AUC & Default BACC & Tuned BACC & First-visit AUC & First-visit BACC \\
 \midrule
-Broad sleep/diary + RFE & 132 / 118 & 0.746 & 0.744 & 0.649 & 0.666 & 0.740 & 0.648 \\
-Stable sleep families & 132 / 118 & 0.706 & 0.634 & 0.663 & 0.642 & 0.677 & 0.644 \\
-Stable sleep + activity variability & 129 / 116 & 0.620 & 0.575 & 0.604 & 0.620 & 0.589 & 0.586 \\
+Broad sleep/diary + RFE (XGBoost) & 132 / 118 & 0.746 & 0.744 & 0.649 & 0.666 & 0.740 & 0.648 \\
+Broad sleep/diary + embedded selection (elastic net) & 132 / 118 & 0.659 & 0.593 & 0.640 & 0.619 & 0.623 & 0.593 \\
+Stable sleep families (XGBoost) & 132 / 118 & 0.706 & 0.634 & 0.663 & 0.642 & 0.677 & 0.644 \\
+Stable sleep families (elastic net) & 132 / 118 & 0.538 & 0.495 & 0.552 & 0.549 & 0.485 & 0.504 \\
+Stable sleep + activity variability (XGBoost) & 129 / 116 & 0.620 & 0.575 & 0.604 & 0.620 & 0.589 & 0.586 \\
+Stable sleep + activity variability (elastic net) & 129 / 116 & 0.472 & 0.430 & 0.492 & 0.470 & 0.441 & 0.465 \\
 Ascertainment-stratum-only benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & -- & -- \\
 \bottomrule
 \end{tabular}}
@@ -818,7 +854,9 @@ Ascertainment-stratum-only benchmark & 132 / 118 & 0.814 & 0.727 & 0.840 & -- & 
 \medskip
 \begin{minipage}{0.96\textwidth}\footnotesize
 All wearable models used nested five-fold stratified person-grouped outer and
-inner cross-validation. BACC, balanced accuracy; HC, healthy control; PR AUC,
+inner cross-validation. XGBoost used RFE for the broad model and univariate
+$K$-best selection for the restricted models; elastic net used embedded
+shrinkage and selection. BACC, balanced accuracy; HC, healthy control; PR AUC,
 area under the precision--recall curve; MCI-LB, mild cognitive impairment with Lewy bodies;
 RFE, recursive feature elimination; ROC AUC, area under the receiver operating
 characteristic curve. The stratum-only row quantifies expected label enrichment
@@ -897,7 +935,9 @@ a useful bridge between hundreds of correlated calculations and mechanisms
 that a clinician can inspect. However, family restriction did not improve
 classification. This is informative: interpretability constraints can expose
 stable association domains without guaranteeing individual-level diagnostic
-separation. Because source and diagnosis were structurally entangled by the
+separation. Elastic net did not improve the broad model and showed poorer
+discrimination than XGBoost for the restricted feature sets.
+Because source and diagnosis were structurally entangled by the
 recruitment design, the broad classifier's moderate pooled AUC cannot determine
 how much discrimination arose from disease-related wearable signal versus
 wearable differences associated with the recruitment strata. The high
@@ -913,7 +953,8 @@ visits, nonparametric screening appropriate to the observed distributions,
 FDR correction, reduction of correlated variants into interpretable families,
 and reporting of both rank correlations and adjusted effects with robust
 confidence intervals. The classification audit used true person-grouped nested
-validation, first-visit sensitivity, within-source evaluation, and a simple
+validation, a paired sparse-linear comparator, first-visit sensitivity,
+within-source evaluation, and a simple
 ascertainment-stratum-only benchmark. The WASO implementation was audited and all
 canonical exports were regenerated after correction rather than retaining a
 weakened result.
@@ -934,7 +975,14 @@ UPDRS association had an age-adjusted confidence interval excluding zero but
 its within-outcome FDR value was 0.05108; the other pooled findings retained
 FDR significance.
 
-Third, group labels and clinical variables were
+Third, the elastic-net comparison was post hoc. It compared complete modelling
+strategies rather than only substituting the final learner, because elastic net
+used embedded shrinkage and selection while the XGBoost pipelines used RFE or
+univariate selection. The paired bootstrap reused saved out-of-fold predictions
+without refitting either model, so its intervals are conditional on these
+particular fitted workflows and validation folds.
+
+Fourth, group labels and clinical variables were
 harmonised retrospectively across the NU20 and NINR source workbooks. The
 strong differences in diagnosis composition were an intended consequence of
 the NU20 recruitment strata and the distinct NINR sampling frame, not
@@ -950,11 +998,11 @@ source-dependent inference.
 % The exact recruitment, diagnostic, and acquisition protocols must
 % also be documented before this draft can be submitted.
 
-Fourth, actigraphy infers movement-defined sleep and wake rather than measuring
+Fifth, actigraphy infers movement-defined sleep and wake rather than measuring
 sleep stages. No conclusions about REM sleep physiology or causation can be
 drawn. 
 
-Fifth, hundreds of summaries were generated from overlapping nightly
+Sixth, hundreds of summaries were generated from overlapping nightly
 signals. FDR and family reduction reduce but do not eliminate researcher
 degrees of freedom. The sign reversal observed for one visuospatial activity
 feature between preprocessed correlation and direct adjusted modelling further
@@ -984,7 +1032,8 @@ and RBD symptom measures after diagnosis and covariate adjustment. The findings
 were directionally stable in pooled age and source adjusted analyses, although
 within-collection support was uneven. They support wearable feature families as exploratory phenotypes for clinical
 association research. They do not yet establish diagnostic classification
-independent of study design: diagnosis was deliberately enriched across
+independent of study design: a sparse linear comparator did not improve
+performance, diagnosis was deliberately enriched across
 ascertainment strata, and the minority classes were too small for decisive within-source
 validation. Independent validation with adequate representation of both groups
 within each source is required before either biomarker or clinical-utility
