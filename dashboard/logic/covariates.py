@@ -20,6 +20,11 @@ COVARIATE_SCENARIOS = (
     ((3, 2), (0,)),
     ((2,), (0,)),
 )
+COVARIATE_SCENARIO_LABELS = {
+    ((3,), (0,)): "MCI-LB vs HC",
+    ((3, 2), (0,)): "MCI-LB+MCI-AD vs HC",
+    ((2,), (0,)): "MCI-AD vs HC",
+}
 COVARIATE_ALPHA = 0.05
 CORRELATION_TYPES = ("pearson", "spearman", "kendall")
 EXCLUDED_NORM_COLUMNS = (
@@ -201,7 +206,8 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
     test_rows = []
     group_rows = []
     for positive_codes, negative_codes in COVARIATE_SCENARIOS:
-        scenario_label = _scenario_label(positive_codes, negative_codes)
+        scenario_code_key = covariate_scenario_code_key(positive_codes, negative_codes)
+        scenario_label = covariate_scenario_label(positive_codes, negative_codes)
         scenario_codes = set(positive_codes) | set(negative_codes)
         scenario_df = subject_df[subject_df["diagnosis_code"].isin(scenario_codes)].copy()
         scenario_df["group"] = scenario_df["diagnosis_code"].apply(
@@ -212,6 +218,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
             test_rows.append(
                 _welch_test_row(
                     scenario_df=scenario_df,
+                    scenario_code_key=scenario_code_key,
                     scenario_label=scenario_label,
                     covariate=covariate,
                     alpha=alpha,
@@ -220,6 +227,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
 
         sex_test, sex_groups = _chi_squared_sex_rows(
             scenario_df=scenario_df,
+            scenario_code_key=scenario_code_key,
             scenario_label=scenario_label,
             alpha=alpha,
         )
@@ -228,6 +236,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
         for group_name in ("negative", "positive"):
             group_df = scenario_df[scenario_df["group"] == group_name]
             row = {
+                "scenario_code_key": scenario_code_key,
                 "scenario": scenario_label,
                 "group": group_name,
                 "n_subjects": int(len(group_df)),
@@ -256,13 +265,17 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
     ]
     scenario_covariates = [
         {
-            "scenario": scenario_label,
+            "scenario_code_key": scenario_code_key,
+            "scenario": tests_df.loc[
+                tests_df["scenario_code_key"] == scenario_code_key,
+                "scenario",
+            ].iloc[0],
             "selected_covariates": [
                 covariate
                 for covariate in CANDIDATE_COVARIATES
                 if bool(
                     tests_df.loc[
-                        (tests_df["scenario"] == scenario_label)
+                        (tests_df["scenario_code_key"] == scenario_code_key)
                         & (tests_df["covariate"] == covariate)
                         & (tests_df["control_recommended"]),
                         "control_recommended",
@@ -270,7 +283,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
                 )
             ],
         }
-        for scenario_label in tests_df["scenario"].drop_duplicates().tolist()
+        for scenario_code_key in tests_df["scenario_code_key"].drop_duplicates().tolist()
     ]
 
     if output_dir is None:
@@ -288,7 +301,7 @@ def verify_covariates_for_excel(source_path, alpha=COVARIATE_ALPHA, output_dir=N
                     "selection_rule",
                     "selected_covariates_union",
                     *[
-                        f"selected_covariates_{item['scenario']}"
+                        f"selected_covariates_{item['scenario_code_key']}"
                         for item in scenario_covariates
                     ],
                 ],
@@ -429,7 +442,13 @@ def _build_computation_settings():
     ]
 
 
-def _welch_test_row(scenario_df, scenario_label, covariate, alpha):
+def _welch_test_row(
+        scenario_df,
+        scenario_code_key,
+        scenario_label,
+        covariate,
+        alpha,
+):
     negative = pd.to_numeric(
         scenario_df.loc[scenario_df["group"] == "negative", covariate],
         errors="coerce",
@@ -445,6 +464,7 @@ def _welch_test_row(scenario_df, scenario_label, covariate, alpha):
         statistic, p_value = ttest_ind(negative, positive, equal_var=False)
 
     return {
+        "scenario_code_key": scenario_code_key,
         "scenario": scenario_label,
         "covariate": covariate,
         "test": "Welch t-test",
@@ -458,7 +478,7 @@ def _welch_test_row(scenario_df, scenario_label, covariate, alpha):
     }
 
 
-def _chi_squared_sex_rows(scenario_df, scenario_label, alpha):
+def _chi_squared_sex_rows(scenario_df, scenario_code_key, scenario_label, alpha):
     valid = scenario_df[scenario_df["gender"].isin(("F", "M"))].copy()
     contingency = pd.crosstab(valid["group"], valid["gender"]).reindex(
         index=["negative", "positive"],
@@ -489,6 +509,7 @@ def _chi_squared_sex_rows(scenario_df, scenario_label, alpha):
         for group in contingency.index
     }
     return {
+        "scenario_code_key": scenario_code_key,
         "scenario": scenario_label,
         "covariate": "gender",
         "test": "Pearson chi-squared",
@@ -503,11 +524,23 @@ def _chi_squared_sex_rows(scenario_df, scenario_label, alpha):
     }, group_counts
 
 
-def _scenario_label(positive_codes, negative_codes):
+def covariate_scenario_label(positive_codes, negative_codes):
+    configured_label = COVARIATE_SCENARIO_LABELS.get(
+        (tuple(positive_codes), tuple(negative_codes))
+    )
+    if configured_label:
+        return configured_label
+
     labels = dict(Subject.DIAGNOSIS_CODE)
     positive = "+".join(labels[code] for code in positive_codes)
     negative = "+".join(labels[code] for code in negative_codes)
     return f"{positive} vs {negative}"
+
+
+def covariate_scenario_code_key(positive_codes, negative_codes):
+    positive = "+".join(str(code) for code in positive_codes)
+    negative = "+".join(str(code) for code in negative_codes)
+    return f"{positive}-vs-{negative}"
 
 
 def _safe_float(value):

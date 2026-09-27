@@ -11,6 +11,8 @@ from dashboard.logic.covariates import (
     _attach_subject_covariates,
     _impute_covariates,
     _prepare_dataset,
+    covariate_scenario_code_key,
+    covariate_scenario_label,
     verify_covariates_for_excel,
 )
 from dashboard.logic.group_data import group_clinical_data_excel
@@ -27,19 +29,19 @@ DATASET_SOURCES = {
 SCENARIOS = (
     {
         "key": "predlb-vs-hc",
-        "label": "MCI-LB vs HC",
+        "label": covariate_scenario_label((3,), (0,)),
         "positive_codes": (3,),
         "negative_codes": (0,),
     },
     {
         "key": "predlb-mci-vs-hc",
-        "label": "MCI-LB+MCI-AD vs HC",
+        "label": covariate_scenario_label((3, 2), (0,)),
         "positive_codes": (3, 2),
         "negative_codes": (0,),
     },
     {
         "key": "mci-vs-hc",
-        "label": "MCI-AD vs HC",
+        "label": covariate_scenario_label((2,), (0,)),
         "positive_codes": (2,),
         "negative_codes": (0,),
     },
@@ -73,6 +75,10 @@ def prepare_analysis_dataset(dataset_name):
         alpha=COVARIATE_ALPHA,
         output_dir=verification_dir,
     )
+    selected_covariates_by_scenario = {
+        scenario["key"]: _selected_covariates_for_scenario(verification, scenario)
+        for scenario in SCENARIOS
+    }
     source_df = pd.read_excel(source_path, index_col=0)
     source_df = _prepare_dataset(_attach_subject_covariates(source_df))
     source_df = _attach_diagnosis_code(source_df)
@@ -86,10 +92,7 @@ def prepare_analysis_dataset(dataset_name):
 
     scenario_results = []
     for scenario in SCENARIOS:
-        selected_covariates = _selected_covariates_for_scenario(
-            verification,
-            scenario["label"],
-        )
+        selected_covariates = selected_covariates_by_scenario[scenario["key"]]
         scenario_result = _prepare_scenario_dataset(
             source_df=source_df,
             run_dir=run_dir,
@@ -131,11 +134,15 @@ def _prepare_scenario_dataset(
         pd.to_numeric,
         errors="coerce",
     )
-    covariate_fields = [
-        COVARIATE_FIELDS[covariate]
-        for covariate in selected_covariates
-        if COVARIATE_FIELDS[covariate] in scenario_df.columns
+    covariate_fields = [COVARIATE_FIELDS[covariate] for covariate in selected_covariates]
+    missing_covariate_fields = [
+        column for column in covariate_fields if column not in scenario_df.columns
     ]
+    if missing_covariate_fields:
+        raise ValueError(
+            f"Scenario {scenario['key']} selected adjustment covariates whose columns "
+            f"are missing: {missing_covariate_fields}"
+        )
     if covariate_fields:
         covariates_df = _impute_covariates(scenario_df[covariate_fields])
         feature_medians = adjusted_features.median(axis=0, skipna=True).fillna(0)
@@ -176,6 +183,10 @@ def _prepare_scenario_dataset(
 
     settings = {
         "scenario_key": scenario["key"],
+        "scenario_code_key": covariate_scenario_code_key(
+            scenario["positive_codes"],
+            scenario["negative_codes"],
+        ),
         "scenario_label": scenario["label"],
         "positive_codes": list(scenario["positive_codes"]),
         "negative_codes": list(scenario["negative_codes"]),
@@ -205,14 +216,57 @@ def _attach_diagnosis_code(df):
     return enriched
 
 
-def _selected_covariates_for_scenario(verification, scenario_label):
+def _selected_covariates_for_scenario(verification, scenario):
+    scenario_code_key = covariate_scenario_code_key(
+        scenario["positive_codes"],
+        scenario["negative_codes"],
+    )
+    tests = verification.get("tests")
+    if not isinstance(tests, list):
+        raise ValueError("Covariate verification is missing the tests list")
+
+    scenario_tests = [
+        test
+        for test in tests
+        if test.get("scenario_code_key") == scenario_code_key
+    ]
+    if not scenario_tests:
+        available_keys = sorted(
+            {
+                test.get("scenario_code_key")
+                for test in tests
+                if test.get("scenario_code_key") is not None
+            }
+        )
+        raise ValueError(
+            "Covariate verification has no records for prepared scenario "
+            f"{scenario['key']} ({scenario_code_key}). "
+            f"Available scenario code keys: {available_keys}"
+        )
+
+    tests_by_covariate = {}
+    for test in scenario_tests:
+        covariate = test.get("covariate")
+        if covariate not in COVARIATE_FIELDS:
+            continue
+        if covariate in tests_by_covariate:
+            raise ValueError(
+                f"Covariate verification contains duplicate {covariate} records "
+                f"for scenario {scenario_code_key}"
+            )
+        tests_by_covariate[covariate] = test
+
+    missing_covariates = [
+        covariate for covariate in COVARIATE_FIELDS if covariate not in tests_by_covariate
+    ]
+    if missing_covariates:
+        raise ValueError(
+            f"Covariate verification is incomplete for scenario {scenario_code_key}; "
+            f"missing tests: {missing_covariates}"
+        )
+
     return [
         covariate
         for covariate in COVARIATE_FIELDS
-        if any(
-            test["scenario"] == scenario_label
-            and test["covariate"] == covariate
-            and test["control_recommended"]
-            for test in verification["tests"]
-        )
+        if bool(tests_by_covariate[covariate].get("control_recommended"))
     ]
