@@ -124,6 +124,27 @@ visit code is not an independent-person ID; use the established person mapping
 when modeling repeated visits. Do not send this dataset through the canonical
 screening command, which would create a different multiple-testing problem.
 
+The targeted RBDq follow-up is now implemented separately. It validates the
+extraction against the frozen manuscript cohort, reaggregates both states over
+the same valid nights, uses a common complete-case visit sample, and reuses the
+article's person-clustered GEE and adjustment/sensitivity conventions:
+
+```bash
+python3 manage.py run_state_activity_rbdq --input-dir /Volumes/Portable/geneactiv-processing-data/media/state-activity/20261026_130149_395288
+```
+
+It writes a new timestamped directory under `media/state-activity-rbdq/`, with
+`summary.md`, matched input and cohort/coverage audits, all model/rank/slope CSVs,
+an immutable pre-fit `protocol.json`, and a completion manifest. The statistical
+runtime also requires SciPy, statsmodels, Matplotlib, scikit-learn and openpyxl,
+already included in the project's full `requirements.txt` (the minimal
+extraction-only environment below may not include these).
+
+The analysis plan is in `report/state_activity_rbdq_protocol.md`. No feature
+selection is repeated, no classifier is retrained, and no original manuscript
+result is replaced. Use a new output directory on reruns; do not overwrite a
+previous result.
+
 ## Environment
 
 Python, Django, NumPy, pandas, and PyTables (`tables`) are required. Use the

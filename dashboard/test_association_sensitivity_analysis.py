@@ -34,11 +34,11 @@ class AssociationSensitivityAnalysisTest(unittest.TestCase):
         n = 80
         feature = rng.normal(size=n)
         age = rng.normal(70, 6, size=n)
-        diagnosis = np.where(np.arange(n) % 2 == 0, "HC", "preDLB")
+        diagnosis = np.where(np.arange(n) % 2 == 0, "HC", "MCI-LB")
         outcome = (
                 1.25 * feature
                 + 0.08 * age
-                + 0.4 * (diagnosis == "preDLB")
+                + 0.4 * (diagnosis == "MCI-LB")
                 + rng.normal(scale=0.25, size=n)
         )
         data = pd.DataFrame(
