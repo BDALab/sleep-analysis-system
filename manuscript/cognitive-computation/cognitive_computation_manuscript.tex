@@ -137,9 +137,12 @@ This was a retrospective secondary analysis built from four distinct datasets
 were used only to develop the sleep/wake classifier. Their participants
 did not contribute to the HC versus MCI-LB sample, its clinical outcomes, or
 the reported count of 132 visits. The clinical application used two closed
-Czech data collections. The first was assembled under Czech Ministry of Health
+Czech data collections. The first was the preDLB collection, which originated
+under Czech Ministry of Health
 project NU20-04-00294, \textit{Diagnostics of Lewy body diseases in prodromal
-stage based on multimodal data analysis} \cite{nu20project}. 
+stage based on multimodal data analysis} \cite{nu20project}. The preDLB research
+also continued under the National Institute for Neurological Research (NINR;
+National Recovery Plan project LX22NPO5107) \cite{ninrproject}.
 %The project ran from May 2020 through
 %December 2024 and included actigraphy among its multimodal assessments
 %\cite{nu20project}. 
@@ -148,16 +151,19 @@ stage based on multimodal data analysis} \cite{nu20project}.
 The analysed recordings were dated
 26 June 2020 to 8 February 2023.
 
-The second closed collection assessed cognitive risk during follow up using several types of measurements. It was assembled
-within the National Institute for Neurological Research (NINR; project
-LX22NPO5107), specifically its work package on biomarkers, risk factors, and
+The second closed collection was the NINR Kardiovize follow up collection,
+which assessed cognitive risk using several types of measurements. It was assembled
+within NINR project LX22NPO5107, specifically its work package on biomarkers, risk factors, and
 modifiers of neurodegeneration with cognitive impairment. Its analysed recordings were dated 8 March 2023
 to 20 February 2025. 
 %Participants were assigned the internal prefix COBEN in
 %the analysis database, while their source files and clinical workbook retained
 %the label KARDIOVIZE and legacy source identifiers. 
 Clinical variables were
-harmonised from those two research workbooks.
+harmonised from those two research workbooks. Throughout the analyses, NU20
+and NINR identify these two source collections, not mutually exclusive funding
+projects. The preDLB and Kardiovize protocols had separate ethics approvals,
+as detailed in the Ethics approval declaration.
 For the primary comparison, visits were selected from the source workbook
 categories HC and MCI-LB.
 
@@ -205,7 +211,9 @@ LX22NPO5107 & Closed & 55 visits from 55 people & GENEActiv, sleep diaries, clin
 \medskip
 \begin{minipage}{0.96\textwidth}\footnotesize
 The external development participants are not included in the clinical sample of
-132 visits from 118 people. PSG, polysomnography.
+132 visits from 118 people. Project identifiers are shorthand for the source
+collections; project LX22NPO5107 also covered preDLB research under a separate
+protocol from Kardiovize. PSG, polysomnography.
 \end{minipage}
 \end{table*}
 \FloatBarrier
@@ -227,12 +235,11 @@ The external development participants are not included in the clinical sample of
 \end{figure*}
 \FloatBarrier
 
-% \textit{[Author query: confirm with the clinical investigators that the COBEN-coded
-% sample belongs to NINR project LX22NPO5107, work package 2.1, and confirm whether
-% ``Kardiovize recruitment pool aged 60 years or older'' is the preferred cohort
-% description. Add the participating centres, inclusion and exclusion criteria,
+% \textit{[Author query: confirm the Kardiovize recruitment phase and preferred
+% cohort description. Add the participating centres, inclusion and exclusion criteria,
 % operational diagnostic criteria and assessors, medication policy, visit interval,
-% and ethics identifiers. Recording dates above were recovered from the analysed
+% and the mapping of analysed preDLB visits to the two approved protocols.
+% Recording dates above were recovered from the analysed
 % filenames and may not equal recruitment dates.]}
 
 \subsection{External datasets for sleep/wake model development}\label{subsec:sleep-model-data}
@@ -1161,14 +1168,12 @@ biomarkers.
 
 \subsection*{Funding}
 
-The NU20 clinical collection was supported by the Ministry of Health of the
-Czech Republic (project NU20-04-00294). The public project record and scientific
-report associate follow up of cognitive risk with NINR project
-LX22NPO5107, funded by the Ministry of Education, Youth and Sports of the Czech
-Republic through the National Recovery Plan and the European Union's Next
-Generation EU \cite{ninr2023report,ninrproject}. [Author query: confirm this
-attribution with the clinical investigators, add any additional funding for data
-collection and the present analysis, and state the role of each funder.]
+The preDLB research was supported by the Ministry of Health of the
+Czech Republic (project NU20-04-00294) and by NINR project LX22NPO5107.
+Project LX22NPO5107 also supported the Kardiovize follow up collection and was
+funded by the Ministry of Education, Youth and Sports of the Czech Republic
+through the National Recovery Plan and the European Union's Next Generation EU
+\cite{ninr2023report,ninrproject}.
 
 \subsection*{Competing interests}
 
@@ -1176,20 +1181,14 @@ The authors have no relevant financial or other interests to disclose.
 
 \subsection*{Ethics approval}
 
+% Clinical project/approval mapping supplied by Lubos Brabenec via the author.
+The preDLB research under project NU20-04-00294 was approved by the Masaryk
+University Research Ethics Committee (EKV-2019-061). The preDLB research under
+project LX22NPO5107 was approved by the same committee (EKV-2022-094).
+The Kardiovize research under project LX22NPO5107 was approved by the Ethics
+Committee of St. Anne's University Hospital in Brno (66V/2022-AM).
 The public DREAMT source reports approval by the Duke Health Institutional
-Review Board (Pro00108961). [Author query: name the approving committees and
-approval identifiers for the NU20 and NINR collections, and
-confirm whether a separate approval or waiver covered this secondary analysis.]
-
-\subsection*{Consent to participate}
-
-DREAMT reports written informed consent. [Author query: state how consent was
-obtained for the Newcastle, NU20, and NINR participants, or describe an
-approved waiver where applicable.]
-
-\subsection*{Consent for publication}
-
-[Confirm whether consent for publication is applicable and was obtained.]
+Review Board (Pro00108961).
 
 \subsection*{Data availability}
 
@@ -1197,7 +1196,8 @@ The Newcastle PSG and accelerometer development dataset is available from Zenodo
 at \url{https://doi.org/10.5281/zenodo.1160410}. DREAMT v2.2.0 is available
 under the PhysioNet procedure for credentialed access at
 \url{https://doi.org/10.13026/3f7y-2d80}. Wearable and clinical data for individual
-participants from NU20-04-00294 and the NINR collection are not publicly available
+participants from the preDLB and NINR Kardiovize collections, obtained under
+projects NU20-04-00294 and LX22NPO5107, are not publicly available
 because they contain potentially identifiable health data. [Author query: add
 the responsible institution, contact, governance review, and conditions under
 which qualified researchers may request controlled access; state whether a
