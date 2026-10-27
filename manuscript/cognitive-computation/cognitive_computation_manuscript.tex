@@ -973,6 +973,17 @@ Table~\ref{tab:classification}. BACC, balanced accuracy.
 \end{minipage}
 \end{table*}
 
+% Exploratory state activity classifier run: 20261027_092016_604414.
+In a separate post hoc comparison, activity summaries calculated during predicted
+sleep and nocturnal wake were added to the stable sleep and whole interval
+activity features, using the same participants, nights and validation folds
+for both feature sets (114 visits from 102 people). XGBoost ROC AUC changed
+from 0.608 to 0.645 (difference 0.037, 95\% CI $-0.023$ to 0.098), while
+elastic net ROC AUC changed from 0.570 to 0.564 (difference $-0.006$, 95\% CI
+$-0.029$ to 0.012). The paired intervals from 10,000 bootstrap resamples of
+participants included zero for both models, providing no clear evidence of
+added discriminatory value.
+
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
 
